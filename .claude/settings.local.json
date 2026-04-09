@@ -21,7 +21,24 @@
       "Bash(uvx --version)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(uv pip:*)",
+      "Bash(git remote:*)",
+      "Bash(claude mcp:*)",
+      "Bash(claude plugin:*)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(npx skills:*)",
+      "Bash(npx -y skills add remotion-dev/skills -y)",
+      "Bash(npx create-video@latest --template blank --no-open)",
+      "Bash(npx create-video@latest)",
+      "Bash(npx --yes create-video@latest --allow-in-git)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(sqlite3 /opt/pipeline/data/pipeline.db ':*)",
+      "Bash(sqlite3 /opt/pipeline/data/pipeline.db \".tables\")",
+      "Bash(sudo -S apt-get install -y sqlite3)",
+      "Bash(sqlite3 /opt/pipeline/data/pipeline.db \"INSERT INTO briefs \\(concept_text\\) VALUES \\('test brief'\\); SELECT * FROM briefs;\")",
+      "Bash(sqlite3 /opt/pipeline/data/pipeline.db \"DELETE FROM briefs WHERE concept_text='test brief';\")"
     ]
   }
 }
