@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ffmpeg -version)",
+      "Bash(git --version)",
+      "Bash(tmux -V)",
+      "Bash(uv --version)",
+      "Bash(npx --version)",
+      "Bash(claude --version)",
+      "Bash(npx playwright:*)",
+      "Read(//home/farouq/.cache/ms-playwright/**)",
+      "Bash(env)",
+      "Bash([ -f /opt/pipeline/.env ])",
+      "Bash([ -f /opt/pipeline/.gitignore ])",
+      "WebSearch",
+      "Skill(telegram:configure)",
+      "Bash(chmod 600:*)",
+      "Bash(curl -LsSf https://astral.sh/uv/install.sh)",
+      "Bash(sh)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(uvx --version)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
