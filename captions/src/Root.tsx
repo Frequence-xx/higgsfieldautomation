@@ -24,7 +24,7 @@ export const RemotionRoot: React.FC = () => {
 			<Composition
 				id="Captions"
 				component={CaptionComposition}
-				durationInFrames={90}
+				durationInFrames={186}
 				fps={30}
 				width={1920}
 				height={1080}
@@ -37,7 +37,7 @@ export const RemotionRoot: React.FC = () => {
 			<Composition
 				id="CaptionsVertical"
 				component={CaptionComposition}
-				durationInFrames={90}
+				durationInFrames={186}
 				fps={30}
 				width={1080}
 				height={1920}
@@ -50,7 +50,7 @@ export const RemotionRoot: React.FC = () => {
 			<Composition
 				id="CaptionsSquare"
 				component={CaptionComposition}
-				durationInFrames={90}
+				durationInFrames={186}
 				fps={30}
 				width={1080}
 				height={1080}

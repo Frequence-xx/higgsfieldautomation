@@ -80,6 +80,21 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 - Title cards: center
 - Lower-thirds: bottom-left, similar to 16:9
 
+## On-Screen Text Cards (Separate from Captions)
+
+Some briefs specify on-screen text that is NOT voiceover captions — these are designed text elements with their own timing (e.g., "BINNEN MINUTEN DUIDELIJKHEID" during a hook shot).
+
+**Rules for on-screen text cards:**
+- Same Montserrat Black, ALL CAPS styling as captions
+- Positioned **center of frame** (not lower-third like captions)
+- Larger font size: 72px for hero text, 48px for secondary
+- Animated entrance: scale-up spring or fade-in from below
+- Animated exit: fade-out
+- Can appear simultaneously with voiceover captions (text card at center, captions at 60% height)
+- Rendered via Remotion as a separate overlay, composited in FFmpeg
+
+**Timing:** On-screen text cards follow the shot list timing, NOT the voiceover timing. They are independent elements.
+
 ## Consistency Rules
 
 - Same font, same weight, same animation style across ALL 50 videos in a month

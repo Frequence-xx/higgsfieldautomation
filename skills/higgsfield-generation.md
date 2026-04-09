@@ -1,77 +1,133 @@
 ---
-name: Higgsfield Generation
-description: Two-path generation skill — Higgsfield Cloud API (primary) and Playwright browser automation (fallback) for video and image generation.
+name: Video Generation
+description: AIMLAPI-first generation — Nano Banana Pro for hero frames, Kling v3 I2V for video animation. Higgsfield browser as fallback only.
 autoInvoke: true
 triggers:
   - video generation
   - image generation
   - Higgsfield
+  - AIMLAPI
   - generate clip
   - generate frame
+  - Kling
+  - animate
 ---
 
-# Higgsfield Generation — Dual-Path Skill
+# Video Generation — AIMLAPI-First Architecture
 
-## Primary Path: Higgsfield Cloud API
+## Tier 1A: AIMLAPI — Hero Frame Generation (API)
 
-Use the `higgsfield-client` Python SDK via the project venv at `/opt/pipeline/.venv/`.
+Use AIMLAPI for hero frame (still image) generation. No browser needed.
 
 ```python
-from higgsfield_client import SyncClient, submit, status, result
+import httpx, os
 
-client = SyncClient(api_key=os.environ['HIGGSFIELD_API_KEY'])
-controller = submit(application='<model>', arguments={...})
-# Poll for completion
-while not controller.is_done():
-    time.sleep(5)
-# Download result
-output = result(controller.request_id)
+API_KEY = os.environ['AIMLAPI_API_KEY']
+headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+
+# Nano Banana Pro (cheapest, good quality)
+resp = httpx.post("https://api.aimlapi.com/v2/generate/image/google/generation", json={
+    "model": "google/nano-banana-pro",
+    "prompt": "<scene description with cinematic details>",
+    "aspect_ratio": "16:9",
+}, headers=headers, timeout=30)
 ```
 
-**When to use API:** All standard text-to-image, image-to-video, and model-based generations. This is the default for every generation task.
+**Image model options:**
+- `google/nano-banana-pro` — cheapest, good for establishing shots and B-roll
+- `flux-pro/v1.1` — higher quality, better for hero shots with fine detail
+- `flux-pro/v1.1-ultra` — highest quality, money shots only
+- `bytedance/seedream-v4-text-to-image` — alternative high-quality option
 
-**API error handling:**
-- Rate limit → wait 60 seconds, retry (max 3 retries)
-- Credit exhaustion → STOP all generation, notify owner via Telegram
-- Model unavailable → switch to next-best model (Kling 3.0 → Veo 3.1 → Sora 2)
-- Network error → retry with exponential backoff (5s, 15s, 45s)
+**After generating:** Run QA on the hero frame (8 dimensions + Shari'ah + cinematic quality). Only send to Tier 1B if it passes.
 
-## Fallback Path: Playwright Browser Automation
+## Tier 1B: AIMLAPI — Video Animation (API)
 
-Use only when the API doesn't expose a needed feature (Cinema Studio camera controls, Hero Frame workflows, lipsync studio).
+Use AIMLAPI for all image-to-video animation. Clean REST API, no browser needed.
 
-**Stealth configuration:**
-- Launch with `--browser-channel=chrome` (system Chrome, not Chromium)
-- Use `--vision` mode (screenshot-based interaction)
-- Add human-like timing: 50-200ms between keystrokes, 500-1500ms between actions
-- Randomize mouse movements slightly
-- Never navigate faster than a human would
+```python
+import httpx, os
 
-**Login flow:**
-1. Navigate to higgsfield.ai/login
-2. Enter HIGGSFIELD_EMAIL and HIGGSFIELD_PASSWORD with realistic typing delays
-3. Handle any 2FA or CAPTCHA — screenshot and analyze, escalate to owner if unsolvable
-4. Verify login success by checking for dashboard elements
+API_KEY = os.environ['AIMLAPI_API_KEY']
+headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
-**DataDome detection recovery:**
-If blocked by DataDome (page returns challenge/403/blank):
-1. Close browser session
-2. Switch to API path for this generation
-3. Log the incident for debugging
-4. If API cannot handle this specific task, notify owner via Telegram
+# Submit Kling v3 Standard I2V (audio OFF — cheapest option)
+resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", json={
+    "model": "kling-video/v3/standard/image-to-video",
+    "image_url": "<hero_frame_cdn_url>",
+    "prompt": "<motion description>",
+    "duration": "5",
+    "aspect_ratio": "16:9"
+}, headers=headers, timeout=30)
 
-## Model Selection Rules
+task_id = resp.json()["id"]
 
-| Shot Type | Model | Credits | Notes |
-|-----------|-------|---------|-------|
-| Establishing shots, truck footage, B-roll | Kling 3.0 | ~6 | Default for 80% of shots |
-| Hero shots needing camera control | Cinema Studio + Kling 3.0 | ~12-20 | Via Playwright if API doesn't support Cinema Studio |
-| Money shots (climax, reveal, CTA) | Veo 3.1 | 40-70 | Only after static frame passes QA |
-| Static frame validation | Flux.2 Pro / Seedream / Nano Banana | 0-2 | Always generate still first for premium shots |
+# Poll for completion (every 10s, max 5 min)
+import time
+for i in range(30):
+    time.sleep(10)
+    sr = httpx.get("https://api.aimlapi.com/v2/generate/video/kling/generation",
+                   params={"generation_id": task_id}, headers=headers, timeout=30)
+    if sr.json()["status"] == "completed":
+        video_url = sr.json()["video"]["url"]
+        break
+```
 
-## Credit Protection
+**AIMLAPI model strings:**
+- `kling-video/v3/standard/image-to-video` — $0.42/5s (80% of shots)
+- `kling-video/v3/pro/image-to-video` — $0.56/5s (hero shots)
+- Veo 3.1, Wan 2.6 also available (see credit-efficiency.md for routing)
 
-- NEVER generate a premium video clip (>20 credits) without a passed static frame first
-- ALWAYS check remaining credits before starting a batch
-- If credits drop below 500, notify owner and switch to Kling 3.0 only
-- Log every generation with model, credits consumed, and generation_method in SQLite
+**CRITICAL: Always use I2V, NOT T2V. I2V is 2.6x cheaper.**
+**CRITICAL: Always audio OFF. Add voiceover in post. Audio adds 50% surcharge.**
+
+**Error handling:**
+- 403 (out of credits) → STOP, notify owner via Telegram
+- 404 (model not found) → check model string spelling
+- Timeout → retry once with 30s timeout, then STOP
+- Generation failed → log failure, do NOT auto-retry (costs credits)
+
+## Tier 2 (Fallback): Higgsfield Cinema Studio 2.0 — Browser Generation
+
+Use Patchright browser automation only when AIMLAPI image models cannot achieve a specific Cinema Studio feature (camera body/lens simulation, 3D scene exploration, character Elements).
+
+**When to use:** Only when the prompt requires Cinema Studio 2.0-specific features not available via AIMLAPI text-to-image.
+
+**Browser setup:** `/opt/pipeline/scripts/higgsfield_browser.py`
+- Patchright + system Chrome (`channel="chrome"`)
+- Persistent profile at `~/.config/higgsfield-profile/`
+- Xvfb headed mode (`DISPLAY=:99`)
+- Cookie injection from user's browser for auth
+
+**Cinema Studio 2.0 workflow:**
+1. Open Scenes panel → click "Cinema 2.0" to switch model
+2. Set prompt, camera settings, aspect ratio, resolution
+3. Click GENERATE once (2 credits per image)
+4. Download the hero frame
+5. Send hero frame URL to AIMLAPI Tier 1 for animation
+
+## Tier 3 (Fallback): Higgsfield Cloud API — Soul/DoP
+
+Use the Higgsfield Python SDK for their native models only (Soul image, DoP video).
+
+```python
+key = f"{os.environ['HF_API_KEY']}:{os.environ['HF_API_SECRET']}"
+headers = {'Authorization': f'Key {key}', 'Content-Type': 'application/json'}
+
+# Soul text-to-image
+resp = httpx.post('https://platform.higgsfield.ai/v1/text2image/soul', json={...})
+# DoP image-to-video
+resp = httpx.post('https://platform.higgsfield.ai/v1/image2video/dop', json={...})
+```
+
+**When to use:** Only when Higgsfield-native models are specifically needed or AIMLAPI is unavailable.
+
+## Generation Rules
+
+1. **ONE generation at a time. Verify correct image before generating.**
+2. For shots WITH characters: create character reference sheet first (see `character-consistency.md`), then use Kontext Max for hero frames + Kling O1 Reference for video
+3. For shots WITHOUT characters: Nano Banana Pro for hero frame + Kling v3 Standard I2V for video
+4. Generate hero frame → QA (8 dims + cinematic + Shari'ah) → animate via AIMLAPI → QA again → post-production
+5. Log every generation in SQLite: model, cost, QA scores, pass/fail
+6. Max 3 retries per clip. After 3 failures → STOP, escalate to owner
+7. Never use text-to-video for final shots — always image-to-video from a QA-passed hero frame

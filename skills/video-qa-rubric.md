@@ -52,11 +52,36 @@ Return JSON for each frame batch:
 | shariah_compliance | Fully compliant — no violations | N/A — this is a hard gate | N/A | Any violation = reject |
 | overall_realism | Would pass as real footage | Good enough for social media | Looks like a tech demo | Uncanny valley |
 
+## Cinematic Quality Scoring (Added to Video QA)
+
+Score each video clip on these cinematic dimensions (1-10):
+
+```json
+{
+  "composition": <1-10>,       // Rule of thirds, leading lines, framing
+  "camera_movement": <1-10>,   // Smooth, deliberate, cinematic motion
+  "lighting_mood": <1-10>,     // Does lighting match the brief's emotional intent?
+  "color_palette": <1-10>,     // Consistent, graded, not flat or oversaturated
+  "production_value": <1-10>,  // Would this pass as professional footage?
+  "temporal_coherence": <1-10> // Frame-to-frame stability, no morphing/jitter
+}
+```
+
+| Score | Meaning |
+|-------|---------|
+| 9-10 | Theatrical / broadcast quality |
+| 7-8 | Premium social media ad — publishable |
+| 5-6 | Acceptable draft, needs post-production lift |
+| 3-4 | Obvious AI, unprofessional |
+| 1-2 | Unwatchable, immediate reject |
+
+**Cinematic pass threshold: ALL dimensions ≥ 7.** Any dimension below 7 triggers prompt refinement and regeneration. Refer to `cinematic-standards.md` shot type quality map for per-shot-type expectations.
+
 ## Thresholds
 
-- **Pass:** All dimensions ≥ 7 AND shariah_compliance = 10
+- **Pass:** All QA dimensions ≥ 7 AND all cinematic dimensions ≥ 7 AND shariah_compliance = 10
 - **Marginal (flag for review):** Any dimension 5-6, rest ≥ 7
-- **Reject:** Any dimension ≤ 4 OR shariah_compliance < 10
+- **Reject:** Any dimension ≤ 4 OR shariah_compliance < 10 OR any cinematic dimension < 5
 
 ## Hard Gate
 
@@ -75,6 +100,10 @@ Return JSON for each frame batch:
 - `FREE_MIXING_VIOLATION` — inappropriate gender interaction
 - `TEMPORAL_JITTER` — frame-to-frame inconsistency in video
 - `TEXT_GARBLE` — AI-generated text in scene (should be composited, not generated)
+- `FLAT_COMPOSITION` — boring framing, no depth, no leading lines
+- `WEAK_CAMERA_MOTION` — jerky, unmotivated, or static when motion was requested
+- `BAD_COLOR_GRADE` — oversaturated, flat, or inconsistent color palette
+- `LOW_PRODUCTION_VALUE` — looks like a tech demo, not a professional ad
 
 ## Regeneration Limits
 

@@ -1,7 +1,31 @@
+# Credentials
 .env
+
+# Dependencies
 node_modules/
 .venv/
+__pycache__/
+
+# Media files (large, generated — not for git)
 *.mp4
 *.webm
 *.mov
+*.mp3
+*.wav
+
+# QA frames (temporary, deleted after review)
 qa/**/*.jpg
+qa/**/*.png
+
+# Generated content directories
+generations/
+assembly/
+output/
+voice-tests/
+
+# Higgsfield browser profile (contains session cookies)
+config/higgsfield-session.json
+
+# Temporary files
+*.pyc
+.DS_Store

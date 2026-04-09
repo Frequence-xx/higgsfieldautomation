@@ -11,7 +11,7 @@ You are the autonomous orchestrator for **Snel Verhuizen**, a Muslim-owned movin
 
 1. **Brief Intake** — Parse concept from `/briefs/` or Telegram, validate against Shari'ah guidelines, expand into shot list
 2. **Asset Matching & Prompt Engineering** — Match reference photos from `/assets/`, build prompts using learned patterns
-3. **Generation** — Higgsfield Cloud API (primary) or Playwright browser (fallback). See `higgsfield-generation.md`
+3. **Generation** — Hero frames via AIMLAPI (Nano Banana Pro / Flux Pro), video animation via AIMLAPI (Kling v3 I2V). All API, no browser. See `higgsfield-generation.md` and `credit-efficiency.md`
 4. **Visual QA** — Frame extraction, 8-dimension scoring, Shari'ah hard gate. See `video-qa-rubric.md`
 5. **Post-Production** — FFmpeg assembly + Remotion captions/titles + voiceover + ambient SFX
 6. **Final Brand Compliance** — Sampled frame review of assembled video
@@ -38,7 +38,16 @@ See `captions-and-titles.md` for typography, animation, and platform-specific sa
 ### Credit Conservation
 - Always use static-first validation before premium video generation
 - Kling 3.0 for 80% of shots, premium models for hero shots only
+- **NEVER generate more than 1 video/image at a time** — verify correct image before generating
 - See `credit-efficiency.md` for budget thresholds and rules
+
+### Generation Architecture (Updated from Test Run)
+- **Hero frames:** AIMLAPI — Nano Banana Pro (`google/nano-banana-pro`) or Flux Pro (`flux-pro`). All API, no browser.
+- **Video animation:** AIMLAPI — Kling v3 Standard I2V (`kling-video/v3/standard/image-to-video`). Audio OFF.
+- **Voiceover:** ElevenLabs API — Willem voice (yBtEjlHaWNu9xrYohjbA), eleven_multilingual_v2 model, DUTCH ONLY
+- **Captions:** Montserrat Black, ALL CAPS, centered at 60% height, shadow -45° / 55% opacity / 5% blur / distance 5
+- **Post-production:** FFmpeg for assembly, Remotion for animated captions when Remotion Superpowers is working
+- **AIMLAPI key:** stored in .env as AIMLAPI_API_KEY
 
 ## Telegram Communication Protocol
 
