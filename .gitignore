@@ -1,1 +1,7 @@
 .env
+node_modules/
+.venv/
+*.mp4
+*.webm
+*.mov
+qa/**/*.jpg

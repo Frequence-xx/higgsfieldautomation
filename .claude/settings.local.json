@@ -38,7 +38,10 @@
       "Bash(sqlite3 /opt/pipeline/data/pipeline.db \".tables\")",
       "Bash(sudo -S apt-get install -y sqlite3)",
       "Bash(sqlite3 /opt/pipeline/data/pipeline.db \"INSERT INTO briefs \\(concept_text\\) VALUES \\('test brief'\\); SELECT * FROM briefs;\")",
-      "Bash(sqlite3 /opt/pipeline/data/pipeline.db \"DELETE FROM briefs WHERE concept_text='test brief';\")"
+      "Bash(sqlite3 /opt/pipeline/data/pipeline.db \"DELETE FROM briefs WHERE concept_text='test brief';\")",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)"
     ]
   }
 }
