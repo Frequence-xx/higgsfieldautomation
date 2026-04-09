@@ -174,7 +174,13 @@
       "Bash(gh --version)",
       "Bash(rm -rf /opt/pipeline/qa/kling3_frames/ /opt/pipeline/qa/*.png /opt/pipeline/qa/*.jpg)",
       "Bash(rm -f /opt/pipeline/assembly/*.mp4 /opt/pipeline/assembly/*.webm /opt/pipeline/assembly/*.mp3 /opt/pipeline/assembly/*.sh /opt/pipeline/assembly/*.json)",
-      "Bash(rm -f /opt/pipeline/generations/*.mp4 /opt/pipeline/generations/*.png)"
+      "Bash(rm -f /opt/pipeline/generations/*.mp4 /opt/pipeline/generations/*.png)",
+      "WebFetch(domain:snelverhuizen.nl)",
+      "Bash(wget -q -O /opt/pipeline/assets/logo-snelverhuizen.png \"https://snelverhuizen.nl/wp-content/uploads/2025/05/logo-sv.png\")",
+      "Bash(sudo -S apt-get install -y fonts-raleway)",
+      "Bash(wget -q -O /tmp/raleway.zip \"https://fonts.google.com/download?family=Raleway\")",
+      "Bash(unzip -o /tmp/raleway.zip -d /opt/pipeline/assets/fonts/Raleway/)",
+      "Bash(sudo -S apt-get install -y unzip)"
     ]
   }
 }
