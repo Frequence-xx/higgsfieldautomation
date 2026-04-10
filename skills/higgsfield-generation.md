@@ -45,19 +45,54 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/image/google/generation",
 
 Use AIMLAPI for all image-to-video animation. Clean REST API, no browser needed.
 
+### Correct Model Strings (updated 2026-04-10)
+- Standard (720p): `klingai/video-v3-standard-image-to-video` — $0.218/sec audio OFF = **$1.09/5s**
+- Pro (1080p): `klingai/video-v3-pro-image-to-video` — $0.291/sec audio OFF = **$1.46/5s**
+- **USE PRO FOR ALL FINAL OUTPUT** — Standard is only 720p, Pro gives native 1080p
+
+### Resolution Output
+- Standard: 720×1280 (9:16), 1280×720 (16:9), 960×960 (1:1)
+- Pro: **1080×1920 (9:16)**, 1920×1080 (16:9), 1440×1440 (1:1)
+
+### Complete API Call Template
+
 ```python
 import httpx, os
 
 API_KEY = os.environ['AIMLAPI_API_KEY']
 headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
-# Submit Kling v3 Standard I2V (audio OFF — cheapest option)
+# Submit Kling v3 Pro I2V — 1080p, audio OFF
 resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", json={
-    "model": "kling-video/v3/standard/image-to-video",
+    "model": "klingai/video-v3-pro-image-to-video",
     "image_url": "<hero_frame_cdn_url>",
     "prompt": "<motion description>",
     "duration": "5",
-    "aspect_ratio": "16:9"
+    "aspect_ratio": "9:16",
+    "generate_audio": False,
+    "cfg_scale": 0.5,
+    "negative_prompt": "blurry, distorted, low quality, jittery, flickering, morphing faces",
+    # Optional: camera control
+    "camera_control": {
+        "type": "simple",
+        "config": {
+            "horizontal": 0,
+            "vertical": 0,
+            "pan": 0,
+            "tilt": 0,
+            "roll": 0,
+            "zoom": 2  # gentle push-in
+        }
+    },
+    # Optional: character consistency (up to 4 elements)
+    # "elements": [
+    #     {
+    #         "frontal_image_url": "<character_front.png>",
+    #         "reference_image_urls": ["<character_3quarter.png>", "<character_profile.png>"]
+    #     }
+    # ],
+    # Optional: end frame for smooth transitions
+    # "tail_image_url": "<last_frame_url>"
 }, headers=headers, timeout=30)
 
 task_id = resp.json()["id"]
@@ -73,13 +108,27 @@ for i in range(30):
         break
 ```
 
-**AIMLAPI model strings:**
-- `kling-video/v3/standard/image-to-video` — $0.42/5s (80% of shots)
-- `kling-video/v3/pro/image-to-video` — $0.56/5s (hero shots)
-- Veo 3.1, Wan 2.6 also available (see credit-efficiency.md for routing)
+### All Available Parameters
 
-**CRITICAL: Always use I2V, NOT T2V. I2V is 2.6x cheaper.**
-**CRITICAL: Always audio OFF. Add voiceover in post. Audio adds 50% surcharge.**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| model | string | required | See model strings above |
+| image_url | string | required | URL or base64. Min 300x300, max 10MB, JPG/PNG |
+| prompt | string | required | Motion description, max 2500 chars |
+| duration | int | 5 | 3-15 seconds |
+| aspect_ratio | string | "16:9" | "16:9", "9:16", "1:1" |
+| generate_audio | bool | true | **ALWAYS set false** — saves 33% |
+| cfg_scale | float | 0.5 | 0-1, prompt adherence |
+| negative_prompt | string | "" | Elements to avoid, max 2500 chars |
+| tail_image_url | string | — | End frame for transitions |
+| camera_control | object | — | See camera control section above |
+| elements | array | — | Up to 4 character references for consistency |
+| static_mask_url | string | — | Motion brush: static areas |
+| dynamic_masks | array | — | Motion brush: animated paths |
+
+**CRITICAL: Always set generate_audio: false. Audio ON adds 50% surcharge.**
+**CRITICAL: Always set aspect_ratio to match target platform (9:16 for vertical).**
+**CRITICAL: Use Pro model for 1080p output. Standard is only 720p.**
 
 **Error handling:**
 - 403 (out of credits) → STOP, notify owner via Telegram
