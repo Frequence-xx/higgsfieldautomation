@@ -43,22 +43,37 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 **CRITICAL: Always generate with audio OFF. Add voiceover/SFX in post-production. Audio adds 50% surcharge.**
 
 Exact AIMLAPI model strings:
-- Standard I2V: `kling-video/v3/standard/image-to-video` (**$1.64/5s** — confirmed 2026-04-10)
-- Pro I2V: `kling-video/v3/pro/image-to-video` (est. ~$2.00/5s)
-- Note: Previous docs said $0.42 — this was WRONG. Actual price confirmed at $1.638 across 4 generations.
+- Standard I2V: `kling-video/v3/standard/image-to-video`
+  - Audio OFF: **$1.09/5s** ($0.218/sec) ← USE THIS
+  - Audio ON: **$1.64/5s** ($0.328/sec) ← NEVER USE, add audio in post
+- Pro I2V: `kling-video/v3/pro/image-to-video` (est. ~$1.50-2.00/5s)
+- CRITICAL: Always set `"generate_audio": false` — saves 33%!
+
+Required parameters for optimal Kling v3 I2V generation:
+```json
+{
+    "model": "kling-video/v3/standard/image-to-video",
+    "image_url": "<url>",
+    "prompt": "<motion description>",
+    "duration": "5",
+    "aspect_ratio": "9:16",
+    "generate_audio": false,
+    "cfg_scale": 0.5,
+    "negative_prompt": "blurry, low quality, distorted, jittery, flickering"
+}
+```
 
 ## Budget Math (AIMLAPI) — UPDATED 2026-04-10
 
-- Kling v3 Standard I2V (5s): **$1.64** per generation (not $0.42)
+- Kling v3 Standard I2V (5s, audio OFF): **$1.09** per generation
 - Hero frame (Nano Banana Pro Edit): **$0.20** per generation
 - Hero frame (Kontext Max): **$0.10** per generation
-- Per clip total (image + video): **~$1.85**
-- 50 videos × 5 clips = 250 clips
-- At 1.3× iteration: 325 generations × $1.85 = **~$600/month**
-- At 2× iteration (month 1): 500 × $1.85 = **~$925/month**
-- **Month 1 realistic budget: ~$800-1000 AIMLAPI**
-- **Steady state: ~$500-700 AIMLAPI/month**
-- IMPORTANT: Consider reducing clips per video (3-4 instead of 5) to manage costs
+- Per clip total (image + video, audio OFF): **~$1.30**
+- 50 videos × 4 clips = 200 clips
+- At 1.0× (no waste): 200 × $1.30 = **~$260/month**
+- At 1.3× iteration: 260 × $1.30 = **~$338/month**
+- **Steady state target: ~$300-400 AIMLAPI/month**
+- CRITICAL: Zero waste means getting hero frames right first time with multi-reference
 
 ## Rules
 
