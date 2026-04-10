@@ -147,7 +147,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
             "pan": 0,
             "tilt": 0,
             "roll": 0,
-            "zoom": 2  # gentle push-in
+            "zoom": -2  # gentle push-in (negative = narrower FOV = zoom in)
         }
     },
     # Optional: character consistency (up to 4 elements)
@@ -201,6 +201,120 @@ for i in range(30):
 - 404 (model not found) → check model string spelling
 - Timeout → retry once with 30s timeout, then STOP
 - Generation failed → log failure, do NOT auto-retry (costs credits)
+
+### I2V Prompt Engineering (researched 2026-04-10)
+
+**Golden Rule: Only describe MOTION. Never redescribe what is in the image.**
+
+The source image provides all visual information. The prompt directs motion only.
+
+**I2V Prompt Formula:**
+`[What moves] + [How it moves] + [Camera instruction (optional)] + [Motion endpoint]`
+
+**Optimal prompt length:** 15-40 words (much shorter than T2V's 50-80 words). Beyond ~150 words the model averages conflicting instructions.
+
+**Always include a motion endpoint** to prevent 99% processing hangs:
+- "then settles back into place"
+- "motion gradually slowing to stop"
+- "eases to a gentle stop"
+
+**What works vs what causes jitter:**
+- ONE clear motion per subject (not multiple competing motions)
+- Speed modifiers: "slowly", "gently", "smoothly" (not unspecified speed)
+- Specific body parts: "hair moves", "fingers grip" (not "person moves around")
+- Physical verbs: "walks", "lifts", "turns" (not abstract "dynamic energy")
+- "Background remains static" constraint (prevents background morphing)
+
+### CFG Scale Guidelines (researched 2026-04-10)
+
+| Shot Type | cfg_scale | Reasoning |
+|-----------|-----------|-----------|
+| Establishing shots / B-roll | 0.4 | Creative interpretation acceptable |
+| Character movement | 0.5 (default) | Balanced motion + adherence |
+| Product/truck hero shots | 0.7 | Strict adherence to preserve branding |
+| Branded transitions | 0.7 | Preserve specific visual elements |
+
+Higher CFG does NOT always mean better quality — high values can reduce natural motion fluidity.
+
+### Camera Control Best Practices (researched 2026-04-10)
+
+All values range **-10 to 10**. Recommended values for cinematic work: **2-5**.
+
+| Shot Type | Config | Notes |
+|-----------|--------|-------|
+| Gentle push-in | `zoom: -2` or `-3` | Emotional close-ups, intimacy |
+| Slow pull-back reveal | `zoom: 2` or `3` | Reveals environment |
+| Product orbit | `tilt: 3` to `5` | Moderate rotation around subject |
+| Crane up | `vertical: 3, pan: -2` | Rise with slight downward angle |
+| Lateral tracking | `horizontal: 3` to `5` | Smooth side tracking |
+| Static (prompt-driven) | All zeros | Use prompt for micro-jitter |
+
+**Rules:** Max 2 simultaneous movements. Values 7-10 are dramatic but unstable. Never combine opposing movements. Camera control overrides prompt-based camera direction — use one or the other.
+
+### Negative Prompt Template (researched 2026-04-10)
+
+**Universal baseline (always include):**
+```
+blurry, distorted, low quality, jittery, flickering, morphing faces, warping, deformed hands, extra fingers, sliding feet, identity drift, watermark, camera shake, inconsistent lighting, plastic skin, cartoonish
+```
+
+**Add for character shots:** `face distortion, unnatural skin texture, floating limbs`
+**Add for product/truck shots:** `text morphing, label warping, geometry distortion, reflection artifacts`
+**Add for camera movement shots:** `camera drift, sudden zooms, background shifting`
+
+Use 8-12 specific terms. Avoid vague terms like "bad quality" or "ugly" — be specific about the artifact to prevent.
+
+### Duration Strategy (researched 2026-04-10)
+
+| Complexity | Optimal Duration | Notes |
+|------------|-----------------|-------|
+| Simple (single subject) | Up to 10s | Full coherence maintained |
+| Medium (multiple elements) | 6-8s | Sweet spot |
+| Complex (multiple subjects) | 5s | Chain clips in post-production |
+
+**Default to 5 seconds** for maximum quality per credit. Cost doubles with duration.
+Test in Standard mode (~$1.09/5s), finalize in Pro (~$1.46/5s) to save ~19% on iteration.
+
+### Source Image Quality Checklist (researched 2026-04-10)
+
+Before submitting to I2V, verify the hero frame has:
+1. Even lighting (no harsh shadows that confuse the motion model)
+2. Clear facial geometry (direct or three-quarter view for best 3D mapping)
+3. Simple textures (solid colors prevent outfit morphing)
+4. Low noise/grain (noise converts to flicker in video)
+5. Simple background (busy backgrounds morph during camera movement)
+6. Matching aspect ratio (9:16 source for 9:16 output)
+7. No unintentional text (text warps during generation unless constrained)
+
+### Shot-Type Specific Presets (researched 2026-04-10)
+
+**Establishing shot:**
+```python
+cfg_scale=0.4, duration="5", camera={"zoom": 2, "vertical": 1},
+prompt="Slow pull-back revealing full scene, ambient elements drift gently, lighting remains consistent. Motion eases to stop.",
+negative_prompt="jittery, flickering, inconsistent lighting, morphing, camera shake, blurry"
+```
+
+**Character close-up:**
+```python
+cfg_scale=0.5, duration="5", camera={"zoom": -2},
+prompt="Subject blinks naturally, slight smile forms, hair moves gently. Background remains static. Expression settles.",
+negative_prompt="face distortion, morphing faces, identity drift, extra fingers, plastic skin, flickering, sliding feet"
+```
+
+**Truck/product hero:**
+```python
+cfg_scale=0.7, duration="5", camera={"tilt": 3},
+prompt="Slow orbit around truck, light reflections glide across surface, branding stays sharp. Motion gradually slows to stop.",
+negative_prompt="text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering"
+```
+
+**Walking/action:**
+```python
+cfg_scale=0.5, duration="5", camera={"horizontal": 3},
+prompt="Man walks forward with natural stride, coat sways with movement. Camera tracks alongside. Steps grounded. Movement eases to stop.",
+negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing faces, extra fingers, camera shake"
+```
 
 ## Tier 2 (Fallback): Higgsfield Cinema Studio 2.0 — Browser Generation
 
