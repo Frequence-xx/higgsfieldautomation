@@ -29,16 +29,19 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 ## Step-by-Step Workflow
 
 ### Step 1: Create Character Reference Sheet
-For each recurring character, generate 4 reference images using Nano Banana Pro:
+For each recurring character, generate 4 reference images using Nano Banana Pro.
+Use 1:1 for reference sheets (consistency matching), 9:16 for final hero frames.
 
 ```python
 # Generate 4 angles of the character via AIMLAPI
+# Use 1:1 for reference sheets — these are for identity matching, not final output
 for angle in ["front view", "3/4 angle from left", "profile from right side", "full body standing"]:
     resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
         "model": "google/nano-banana-pro",
         "prompt": f"A 37-year-old Dutch man with short dark brown hair, medium olive skin, clean shaven, wearing a navy blue polo shirt with company logo on left chest and dark grey cargo trousers with black work boots, {angle}, professional photography, neutral background",
-        "aspect_ratio": "1:1",
-    }, headers=headers)
+        "aspect_ratio": "1:1",    # 1:1 for ref sheets
+        "resolution": "1K",
+    }, headers=headers, timeout=60)
 ```
 
 Save to `/opt/pipeline/assets/characters/{name}/`:
@@ -53,22 +56,23 @@ Save to `/opt/pipeline/assets/characters/{name}/`:
 ```
 
 ### Step 2: Lock Character via Flux Kontext Max
-Use Kontext Max to place the character into each scene while preserving identity:
+Use Kontext Max to place the character into each scene while preserving identity.
+**Always use `aspect_ratio: "9:16"` for vertical hero frames.**
 
 ```python
-# Generate hero frame with character locked into the scene
+# Generate hero frame with character locked into the scene — NATIVE 9:16
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "flux/kontext-max/image-to-image",
-    "prompt": "Place this person on a Dutch suburban street next to a white moving truck, golden hour lighting, cinematic wide shot, 35mm anamorphic lens",
+    "prompt": "Place this person on a Dutch suburban street next to a white moving truck, golden hour lighting, cinematic vertical composition, 35mm lens",
     "image_url": [
         "https://cdn.example.com/characters/crew_lead/front.png",
         "https://cdn.example.com/characters/crew_lead/three_quarter.png"
     ],
-    "aspect_ratio": "16:9",
+    "aspect_ratio": "9:16",   # VERIFIED: produces native ~752x1392 vertical output
     "num_images": 1,
-}, headers=headers)
+}, headers=headers, timeout=90)
 # Response is SYNCHRONOUS — no polling needed
-hero_frame_url = resp.json()["images"][0]["url"]
+hero_frame_url = resp.json()["data"][0]["url"]
 ```
 
 ### Step 3: Animate with Character Reference (Kling O1)
@@ -94,7 +98,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 ```
 
 ### Step 4: Alternative — Nano Banana Pro Edit for Compositing
-For placing a character into a specific background scene (max 14 reference images):
+For placing a character into a specific background scene (max 14 reference images).
+**Always use `aspect_ratio: "9:16"` for vertical hero frames.**
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
@@ -104,9 +109,10 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
         "https://cdn.example.com/characters/crew_lead/full_body.png",
         "https://cdn.example.com/scenes/dutch_street_golden_hour.png"
     ],
-    "prompt": "Place the person from the first two images into the street scene from the third image, maintaining their exact appearance and clothing, cinematic composition",
-    "aspect_ratio": "16:9",
-}, headers=headers)
+    "prompt": "Place the person from the first two images into the street scene from the third image, maintaining their exact appearance and clothing, cinematic vertical composition",
+    "aspect_ratio": "9:16",   # Native 9:16 output — no cropping needed
+    "resolution": "1K",       # Options: 1K (768x1344), 2K (1536x2688), 4K (3072x5376)
+}, headers=headers, timeout=60)
 ```
 
 ### Step 5: Character Metadata (character.json)

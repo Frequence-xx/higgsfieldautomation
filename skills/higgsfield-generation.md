@@ -19,22 +19,88 @@ triggers:
 
 Use AIMLAPI for hero frame (still image) generation. No browser needed.
 
+**CRITICAL: All hero frames MUST be generated natively in 9:16 for vertical platforms (Reels/TikTok/Shorts). Never crop, zoom, or pad a square image.**
+
+### Endpoint
+**POST** `https://api.aimlapi.com/v1/images/generations`
+
+### Native 9:16 Generation — Verified Parameters (tested 2026-04-10)
+
+#### Nano Banana Pro (text-to-image)
 ```python
 import httpx, os
 
 API_KEY = os.environ['AIMLAPI_API_KEY']
 headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
-# Nano Banana Pro (cheapest, good quality)
-resp = httpx.post("https://api.aimlapi.com/v2/generate/image/google/generation", json={
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "google/nano-banana-pro",
     "prompt": "<scene description with cinematic details>",
-    "aspect_ratio": "16:9",
-}, headers=headers, timeout=30)
+    "aspect_ratio": "9:16",   # VERIFIED: produces native 768x1376 vertical
+    "resolution": "1K",       # Options: 1K, 2K, 4K
+    "num_images": 1,
+}, headers=headers, timeout=60)
+
+hero_url = resp.json()["data"][0]["url"]
 ```
 
-**Image model options:**
-- `google/nano-banana-pro` — cheapest, good for establishing shots and B-roll
+#### Nano Banana Pro Edit (reference-based, up to 14 images)
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "google/nano-banana-pro-edit",
+    "prompt": "<compositing instruction referencing input images>",
+    "image_urls": ["<ref1_url>", "<ref2_url>", "<scene_url>"],  # up to 14
+    "aspect_ratio": "9:16",   # Documented as supported
+    "resolution": "1K",       # Options: 1K, 2K, 4K
+    "num_images": 1,
+}, headers=headers, timeout=60)
+
+hero_url = resp.json()["data"][0]["url"]
+```
+
+#### Flux Kontext Max (image-to-image, character lock, up to 4 refs)
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "flux/kontext-max/image-to-image",
+    "prompt": "<scene description maintaining character identity>",
+    "image_url": ["<character_ref1>", "<character_ref2>"],  # up to 4
+    "aspect_ratio": "9:16",   # VERIFIED: produces native 752x1392 vertical
+    "num_images": 1,
+}, headers=headers, timeout=90)
+
+hero_url = resp.json()["data"][0]["url"]
+```
+
+### 9:16 Resolution Reference Table (Nano Banana Pro / Edit)
+
+| Resolution | 9:16 Dimensions | Cost    | Gen Time |
+|------------|-----------------|---------|----------|
+| 1K         | 768 x 1344      | ~$0.13  | ~13s     |
+| 2K         | 1536 x 2688     | ~$0.13  | ~16s     |
+| 4K         | 3072 x 5376     | ~$0.24  | ~22s     |
+
+**Note:** Actual output may vary slightly (e.g., 768x1376 observed for 1K). The aspect ratio is correct; minor pixel differences do not affect composition or Kling I2V input.
+
+### Supported Aspect Ratios (all models)
+
+| Ratio | Use Case |
+|-------|----------|
+| 9:16  | Instagram Reels, TikTok, YouTube Shorts (PRIMARY) |
+| 16:9  | YouTube landscape, desktop ads |
+| 1:1   | Instagram feed, reference sheets |
+| 4:3   | Legacy TV, some display ads |
+| 2:3   | Pinterest, portrait photography |
+| 21:9  | Ultrawide cinema |
+
+### Model Selection for Hero Frames
+
+| Model | Best For | Aspect Ratio Control | Max Refs |
+|-------|----------|---------------------|----------|
+| `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | `aspect_ratio` param | 0 (text only) |
+| `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) | `aspect_ratio` param | 14 |
+| `flux/kontext-max/image-to-image` | Character identity lock across scenes | `aspect_ratio` param | 4 |
+
+**Additional image models (not yet tested for 9:16):**
 - `flux-pro/v1.1` — higher quality, better for hero shots with fine detail
 - `flux-pro/v1.1-ultra` — highest quality, money shots only
 - `bytedance/seedream-v4-text-to-image` — alternative high-quality option
