@@ -34,28 +34,31 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 
 | Shot Type | Image Model (AIMLAPI) | Video Model (AIMLAPI) | Est. Cost/5s | Notes |
 |-----------|----------------------|----------------------|-------------|-------|
-| Wide establishing (80%) | Nano Banana Pro | Kling v3 Standard I2V (audio OFF) | **~$0.50** | Best value. Proven 7.8/10 cinematic. |
-| Hero shots (15%) | Flux Pro v1.1 | Kling v3 Pro I2V (audio OFF) | **~$0.65** | Higher image + video quality |
-| Money shot / CTA (5%) | Flux Pro v1.1 Ultra | Veo 3.1 Lite I2V | **~$0.50-0.80** | Highest quality available |
-| B-roll / texture | Nano Banana Pro | Wan 2.6 I2V | **~$0.35-0.75** | Cheapest option |
+| Wide establishing (80%) | Nano Banana Pro Edit (multi-ref) | Kling v3 Standard I2V (audio OFF) | **~$1.85** | $0.20 image + $1.64 video. ALWAYS use reference images. |
+| Hero shots (15%) | Flux Kontext Max (character ref) | Kling v3 Standard I2V (audio OFF) | **~$1.75** | $0.10 image + $1.64 video |
+| Money shot / CTA (5%) | Flux Pro v1.1 Ultra | Veo 3.1 Lite I2V | **~$2.00+** | Highest quality available |
+| B-roll / texture | Nano Banana Pro Edit (multi-ref) | Kling v3 Standard I2V (audio OFF) | **~$1.85** | Same pipeline, reference-based |
 
 **CRITICAL: Always use I2V (image-to-video), NOT T2V (text-to-video). I2V is 2.6x cheaper and preserves hero frame composition.**
 **CRITICAL: Always generate with audio OFF. Add voiceover/SFX in post-production. Audio adds 50% surcharge.**
 
 Exact AIMLAPI model strings:
-- Standard I2V: `kling-video/v3/standard/image-to-video` ($0.42/5s)
-- Pro I2V: `kling-video/v3/pro/image-to-video` ($0.56/5s)
-- Note: The test run accidentally used T2V pricing ($1.64) — always verify the `/image-to-video` suffix
+- Standard I2V: `kling-video/v3/standard/image-to-video` (**$1.64/5s** — confirmed 2026-04-10)
+- Pro I2V: `kling-video/v3/pro/image-to-video` (est. ~$2.00/5s)
+- Note: Previous docs said $0.42 — this was WRONG. Actual price confirmed at $1.638 across 4 generations.
 
-## Budget Math (AIMLAPI)
+## Budget Math (AIMLAPI) — UPDATED 2026-04-10
 
-- Kling v3 Standard I2V (5s, audio off): **$0.42** per generation
+- Kling v3 Standard I2V (5s): **$1.64** per generation (not $0.42)
+- Hero frame (Nano Banana Pro Edit): **$0.20** per generation
+- Hero frame (Kontext Max): **$0.10** per generation
+- Per clip total (image + video): **~$1.85**
 - 50 videos × 5 clips = 250 clips
-- At 1.3× iteration: 325 generations × $0.42 = **~$137/month**
-- At 2× iteration (month 1): 500 × $0.42 = **~$210/month**
-- **Month 1 realistic budget: ~$200-250 AIMLAPI**
-- **Steady state: ~$140-170 AIMLAPI/month**
-- Consider AIMLAPI Crypto plan ($100/mo) for 25% bonus credits
+- At 1.3× iteration: 325 generations × $1.85 = **~$600/month**
+- At 2× iteration (month 1): 500 × $1.85 = **~$925/month**
+- **Month 1 realistic budget: ~$800-1000 AIMLAPI**
+- **Steady state: ~$500-700 AIMLAPI/month**
+- IMPORTANT: Consider reducing clips per video (3-4 instead of 5) to manage costs
 
 ## Rules
 
