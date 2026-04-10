@@ -147,12 +147,65 @@ Score character consistency 1-10. Below 7 = reject and regenerate with stronger 
 
 ## Model Selection for Character Shots
 
-| Scenario | Image Model | Video Model | Cost Est. |
-|----------|-------------|-------------|-----------|
-| Character alone (portrait/action) | Kontext Max (4 refs) | Kling O1 Reference (4 elements) | ~$0.05 + $0.84/5s |
-| Character in specific scene | Nano Banana Pro Edit (14 refs) | Kling v3 Standard I2V | ~$0.05 + $0.42/5s |
-| Multiple characters in one shot | Nano Banana Pro Edit (14 refs) | Kling O1 Reference (4 elements) | ~$0.05 + $0.84/5s |
-| Character consistency is not critical | Nano Banana Pro (text-only) | Kling v3 Standard I2V | ~$0.05 + $0.42/5s |
+| Scenario | Character Type | Image Model | Video Model | Cost Est. |
+|----------|---------------|-------------|-------------|-----------|
+| Karel/Mourad alone | A (existing) | Nano Banana Pro Edit (existing refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Karel/Mourad in scene | A (existing) | Nano Banana Pro Edit (refs + truck + box) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| New recurring character | B (create refs first) | Kontext Max or NBP Edit (new refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Multiple characters | A or B | Nano Banana Pro Edit (14 refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Generic one-off person | C (text-only) | Nano Banana Pro (no refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Ref sheet creation (Type B) | — | Nano Banana Pro × 4 angles | — | ~$0.52 (one-time) |
+
+## Character Types — Decision Tree
+
+Every production starts here. Determine which character type applies:
+
+### Type A: Existing Characters (Karel & Mourad)
+- Reference sheets already exist at `/opt/pipeline/assets/crew/`
+- Use Nano Banana Pro Edit with existing character sheets + brand assets
+- Cheapest option — no new reference generation needed
+
+### Type B: New Recurring Character (invented)
+- Owner provides a description (age, build, skin tone, hair, clothing)
+- Generate a 4-angle reference sheet (front, 3/4, profile, full body) via Nano Banana Pro
+- Cost: ~$0.50 (4 × $0.13)
+- Send to owner for approval BEFORE using in production
+- After approval: save to `/opt/pipeline/assets/characters/{name}/` with character.json
+- Character is now "locked" and reusable across all future videos
+- Workflow: same as Karel/Mourad from this point on
+
+### Type C: Generic One-Off Person (no consistency needed)
+- For concepts where the specific person doesn't matter
+- Use Nano Banana Pro text-only with detailed appearance + Shari'ah dress description
+- Cheapest option — no reference generation needed
+- NOT reusable — each generation may look different
+- Best for: wide shots, back-of-head, silhouettes, crowd scenes
+
+### Decision Flow
+```
+Is this Karel or Mourad? → Type A (use existing refs)
+Is this a new character that appears in multiple shots? → Type B (create ref sheet first)
+Is this a person who only appears once or in a wide shot? → Type C (text-only, no ref needed)
+```
+
+### Creating a New Character (Type B — Full Workflow)
+
+1. **Owner provides brief:** "Man, 45 jaar, baard, stevig, vriendelijk, traditionele kleding"
+2. **Generate 4 reference images:**
+   ```python
+   angles = ["front view facing camera", "3/4 angle from left", "profile from right side", "full body standing"]
+   for angle in angles:
+       resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+           "model": "google/nano-banana-pro",
+           "prompt": f"<owner description with full Shari'ah compliant clothing details>, {angle}, professional photography, neutral white background, studio lighting",
+           "aspect_ratio": "1:1",
+           "resolution": "1K",
+       }, headers=headers, timeout=60)
+   ```
+3. **Send all 4 to owner via Telegram for approval**
+4. **If approved:** Save to `/opt/pipeline/assets/characters/{name}/` + create character.json
+5. **If rejected:** Adjust description and regenerate (max 2 retries)
+6. **Character is now locked** — use in all shots with Nano Banana Pro Edit or Kontext Max
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
