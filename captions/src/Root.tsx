@@ -1,6 +1,7 @@
 import React from 'react';
 import {Composition} from 'remotion';
 import {CaptionComposition} from './CaptionComposition';
+import {PhoneUIComposition} from './PhoneUI';
 
 // Word timestamps based on 11.1s voiceover starting at 0.5s in final video
 // At 30fps: frame = seconds * 30
@@ -52,6 +53,14 @@ export const RemotionRoot: React.FC = () => {
 					words: vzzWords,
 					style: captionStyle,
 				}}
+			/>
+			<Composition
+				id="PhoneUI"
+				component={PhoneUIComposition}
+				durationInFrames={90}
+				fps={30}
+				width={1080}
+				height={1920}
 			/>
 		</>
 	);
