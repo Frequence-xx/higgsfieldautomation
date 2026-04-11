@@ -95,25 +95,14 @@ export const PhoneUIComposition: React.FC = () => {
 						padding: '0 20px',
 					}}
 				>
-					{/* Box icon logo - open box SVG style */}
-					<svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-						<rect width="56" height="56" rx="12" fill="#FC8434"/>
-						<path d="M28 12L14 20V36L28 44L42 36V20L28 12Z" stroke="white" strokeWidth="2.5" fill="none"/>
-						<path d="M14 20L28 28L42 20" stroke="white" strokeWidth="2.5" fill="none"/>
-						<path d="M28 28V44" stroke="white" strokeWidth="2.5"/>
-						<path d="M21 16L35 24" stroke="white" strokeWidth="1.5" opacity="0.6"/>
-					</svg>
-					<div
+					{/* Snelverhuizen logo */}
+					<img
+						src={require('/opt/pipeline/captions/public/logo.png')}
 						style={{
-							fontSize: 26,
-							fontFamily: 'Montserrat, sans-serif',
-							fontWeight: 900,
-							color: '#FC8434',
-							letterSpacing: '0.02em',
+							width: 200,
+							height: 'auto',
 						}}
-					>
-						SNELVERHUIZEN.NL
-					</div>
+					/>
 					<div
 						style={{
 							fontSize: 13,
