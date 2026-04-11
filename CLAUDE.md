@@ -69,6 +69,35 @@ Before responding to any opinion or judgment question, mentally answer it in iso
 - Ask yourself: "Would a professional video editor accept this?" — if no, don't send it
 - If the same mistake happens twice, the process is broken — fix the process, not just the output
 
+## Model Prompting Guide Integration (Tier A — MANDATORY)
+
+**Before EVERY image or video generation API call, you MUST:**
+1. Consult `skills/model-prompting-guide.md` Part 6 routing matrix to select the correct model for this shot type
+2. Use the character identity text header from Part 4 if ANY person appears in the shot — paste it IDENTICALLY every time
+3. Confirm hero frame is native 9:16 via `aspect_ratio: "9:16"` parameter
+4. Confirm NO text or logos will be in the animated video frame — text MUST be composited in post-production (Part 5)
+5. Write motion prompt using Part 2 rules: 15-40 words, motion ONLY, defined endpoint ("eases to stop"), no "breathing" / "subtle movement" / "emotional"
+6. Include full negative prompt template from the guide
+7. Set `generate_audio: false` on ALL video generations
+8. For truck shots: include "stationary truck, parked, no vehicle movement" in prompt AND negative prompt
+9. For character shots: set Subject Binding face adherence to 80-90 (Kling) or reference strength 70-80% (Seedance)
+10. Log model choice and reasoning BEFORE the API call
+
+**If ANY of these 10 items is not verified, DO NOT generate. This is non-negotiable.**
+
+## Production Gates (Tier A — MANDATORY)
+
+1. MUST read ALL relevant memory entries before any production starts
+2. MUST QA every hero frame against brand reference before animation
+3. MUST QA every animated clip (extract 5+ frames, READ each one) before assembly
+4. MUST get owner approval on each clip before assembly — Generator NEVER self-approves
+5. MUST review final assembled video frame-by-frame before delivery
+6. MUST use real word-level timestamps for captions (Whisper or ElevenLabs) — NEVER estimate
+7. MUST NOT exceed $15 per video without explicit owner approval
+8. NEVER assemble from unreviewed clips
+9. NEVER deliver without watching the output
+10. NEVER send marginal quality hoping it passes — flag issues BEFORE the owner asks
+
 ## Non-Negotiable Rules
 
 ### Shari'ah Compliance
