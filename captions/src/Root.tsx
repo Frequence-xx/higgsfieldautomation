@@ -3,28 +3,33 @@ import {Composition} from 'remotion';
 import {CaptionComposition} from './CaptionComposition';
 import {PhoneUIComposition} from './PhoneUI';
 
-// Word timestamps based on 11.1s voiceover starting at 0.5s in final video
-// At 30fps: frame = seconds * 30
-const vzzWords = [
-	{text: 'Verhuizen', startFrame: 15, endFrame: 33},
-	{text: 'zonder', startFrame: 33, endFrame: 45},
-	{text: 'zorgen.', startFrame: 45, endFrame: 63},
-	{text: 'Wij', startFrame: 75, endFrame: 81},
-	{text: 'pakken', startFrame: 81, endFrame: 93},
-	{text: 'het', startFrame: 93, endFrame: 99},
-	{text: 'vakkundig', startFrame: 99, endFrame: 117},
-	{text: 'in,', startFrame: 117, endFrame: 126},
-	{text: 'vervoeren', startFrame: 135, endFrame: 153},
-	{text: 'het', startFrame: 153, endFrame: 159},
-	{text: 'veilig', startFrame: 159, endFrame: 174},
-	{text: 'en', startFrame: 174, endFrame: 180},
-	{text: 'leveren', startFrame: 180, endFrame: 195},
-	{text: 'het', startFrame: 195, endFrame: 201},
-	{text: 'met', startFrame: 201, endFrame: 207},
-	{text: 'zorg', startFrame: 207, endFrame: 219},
-	{text: 'af.', startFrame: 219, endFrame: 228},
-	{text: 'Snel', startFrame: 255, endFrame: 270},
-	{text: 'verhuizen.', startFrame: 270, endFrame: 294},
+const procesWords = [
+	{text: 'Een', startFrame: 0, endFrame: 5},
+	{text: 'goede', startFrame: 7, endFrame: 15},
+	{text: 'verhuizing', startFrame: 16, endFrame: 33},
+	{text: 'begint', startFrame: 38, endFrame: 49},
+	{text: 'met', startFrame: 50, endFrame: 54},
+	{text: 'duidelijkheid.', startFrame: 56, endFrame: 82},
+	{text: 'Binnen', startFrame: 121, endFrame: 131},
+	{text: 'enkele', startFrame: 133, endFrame: 143},
+	{text: 'minuten', startFrame: 145, endFrame: 160},
+	{text: 'weten', startFrame: 166, endFrame: 176},
+	{text: 'wij', startFrame: 176, endFrame: 179},
+	{text: 'precies', startFrame: 181, endFrame: 192},
+	{text: 'wat', startFrame: 194, endFrame: 197},
+	{text: 'er', startFrame: 199, endFrame: 200},
+	{text: 'nodig', startFrame: 201, endFrame: 211},
+	{text: 'is.', startFrame: 213, endFrame: 225},
+	{text: 'Daarna', startFrame: 258, endFrame: 275},
+	{text: 'regelen', startFrame: 285, endFrame: 297},
+	{text: 'we', startFrame: 298, endFrame: 301},
+	{text: 'alles', startFrame: 303, endFrame: 312},
+	{text: 'van', startFrame: 314, endFrame: 317},
+	{text: 'planning', startFrame: 319, endFrame: 332},
+	{text: 'tot', startFrame: 336, endFrame: 343},
+	{text: 'uitvoering.', startFrame: 345, endFrame: 371},
+	{text: 'Zonder', startFrame: 404, endFrame: 416},
+	{text: 'verrassingen.', startFrame: 418, endFrame: 446},
 ];
 
 const captionStyle = {
@@ -36,21 +41,21 @@ const captionStyle = {
 	strokeColor: '#000000',
 	maxWordsPerLine: 3,
 	maxLines: 2,
-	verticalPosition: 0.62,
+	verticalPosition: 0.60,
 };
 
 export const RemotionRoot: React.FC = () => {
 	return (
 		<>
 			<Composition
-				id="VZZCaptions"
+				id="ProcesCaptions"
 				component={CaptionComposition}
-				durationInFrames={450}
+				durationInFrames={525}
 				fps={30}
 				width={1080}
 				height={1920}
 				defaultProps={{
-					words: vzzWords,
+					words: procesWords,
 					style: captionStyle,
 				}}
 			/>

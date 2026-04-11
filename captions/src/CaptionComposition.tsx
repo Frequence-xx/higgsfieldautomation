@@ -35,21 +35,42 @@ export const CaptionComposition: React.FC<{
 	const maxWordsPerPage = style.maxLines * style.maxWordsPerLine;
 
 	// Find which words are currently visible based on timing
-	// Show a "page" of words: the group containing the currently active word
 	const activeWordIndex = words.findIndex(
 		(w) => frame >= w.startFrame && frame <= w.endFrame
 	);
 
-	// If no word is active, find the last word that was spoken
-	const currentIndex = activeWordIndex >= 0
-		? activeWordIndex
-		: words.findIndex((w) => frame < w.startFrame) - 1;
+	// If no word is active, check if we're in a silence gap
+	if (activeWordIndex < 0) {
+		// Find the last word that ended before current frame
+		const lastSpokenIndex = words.reduce((last, w, i) =>
+			frame > w.endFrame ? i : last, -1);
 
-	if (currentIndex < 0 && activeWordIndex < 0) {
-		return null; // No captions to show yet
+		// If no words spoken yet, hide
+		if (lastSpokenIndex < 0) return null;
+
+		// If we're past the last word entirely, hide (prevents bleed into CTA)
+		if (lastSpokenIndex === words.length - 1 && frame > words[lastSpokenIndex].endFrame + 15) {
+			return null;
+		}
+
+		// Check if gap between last word and next word is > 30 frames (1 second) = silence gap, hide
+		const nextWordIndex = lastSpokenIndex + 1;
+		if (nextWordIndex < words.length) {
+			const gap = words[nextWordIndex].startFrame - words[lastSpokenIndex].endFrame;
+			if (gap > 30 && frame > words[lastSpokenIndex].endFrame + 10) {
+				return null; // Hide during long silence gaps
+			}
+		}
 	}
 
-	const effectiveIndex = Math.max(0, currentIndex >= 0 ? currentIndex : activeWordIndex);
+	// Find effective index for page calculation
+	const currentIndex = activeWordIndex >= 0
+		? activeWordIndex
+		: words.reduce((last, w, i) => frame > w.endFrame ? i : last, -1);
+
+	if (currentIndex < 0) return null;
+
+	const effectiveIndex = Math.max(0, currentIndex);
 
 	// Calculate which page of words we're on
 	const pageIndex = Math.floor(effectiveIndex / maxWordsPerPage);
@@ -117,19 +138,19 @@ export const CaptionComposition: React.FC<{
 										fontWeight: 900,
 										color: style.color,
 										textTransform: 'uppercase' as const,
-										letterSpacing: '0.02em',
-										WebkitTextStroke: `${style.strokeWidth}px ${style.strokeColor}`,
+										letterSpacing: '0.03em',
+										WebkitTextStroke: `4px ${style.strokeColor}`,
 										paintOrder: 'stroke fill',
-										textShadow: '3px 3px 6px rgba(0,0,0,0.5)',
+										textShadow: '0 2px 8px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.3), 2px 2px 4px rgba(0,0,0,0.4)',
 										opacity: enterProgress,
-										transform: `scale(${0.8 + 0.2 * enterProgress})`,
+										transform: `scale(${0.85 + 0.15 * enterProgress})`,
 										// Orange highlight background on active word
 										backgroundColor: isActive
 											? style.highlightColor
 											: 'transparent',
-										padding: isActive ? '4px 12px' : '4px 4px',
-										borderRadius: '6px',
-										transition: 'background-color 0.05s ease',
+										padding: isActive ? '6px 14px' : '4px 4px',
+										borderRadius: '8px',
+										transition: 'background-color 0.08s ease',
 									}}
 								>
 									{word.text}
