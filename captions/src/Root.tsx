@@ -2,62 +2,55 @@ import React from 'react';
 import {Composition} from 'remotion';
 import {CaptionComposition} from './CaptionComposition';
 
-const defaultWords = [
-	{text: 'Your', startFrame: 0, endFrame: 15},
-	{text: 'move,', startFrame: 8, endFrame: 25},
-	{text: 'done', startFrame: 20, endFrame: 35},
-	{text: 'right.', startFrame: 30, endFrame: 50},
+// Word timestamps based on 11.1s voiceover starting at 0.5s in final video
+// At 30fps: frame = seconds * 30
+const vzzWords = [
+	{text: 'Verhuizen', startFrame: 15, endFrame: 33},
+	{text: 'zonder', startFrame: 33, endFrame: 45},
+	{text: 'zorgen.', startFrame: 45, endFrame: 63},
+	{text: 'Wij', startFrame: 75, endFrame: 81},
+	{text: 'pakken', startFrame: 81, endFrame: 93},
+	{text: 'het', startFrame: 93, endFrame: 99},
+	{text: 'vakkundig', startFrame: 99, endFrame: 117},
+	{text: 'in,', startFrame: 117, endFrame: 126},
+	{text: 'vervoeren', startFrame: 135, endFrame: 153},
+	{text: 'het', startFrame: 153, endFrame: 159},
+	{text: 'veilig', startFrame: 159, endFrame: 174},
+	{text: 'en', startFrame: 174, endFrame: 180},
+	{text: 'leveren', startFrame: 180, endFrame: 195},
+	{text: 'het', startFrame: 195, endFrame: 201},
+	{text: 'met', startFrame: 201, endFrame: 207},
+	{text: 'zorg', startFrame: 207, endFrame: 219},
+	{text: 'af.', startFrame: 219, endFrame: 228},
+	{text: 'Snel', startFrame: 255, endFrame: 270},
+	{text: 'verhuizen.', startFrame: 270, endFrame: 294},
 ];
 
-const defaultStyle = {
-	fontFamily: 'Playfair Display, Georgia, serif',
-	fontSize: 64,
+const captionStyle = {
+	fontFamily: 'Montserrat, sans-serif',
+	fontSize: 52,
 	color: '#FFFFFF',
-	highlightColor: '#FFD700',
-	position: 'lower-third' as const,
-	animation: 'spring' as const,
+	highlightColor: '#FC8434',
+	strokeWidth: 6,
+	strokeColor: '#000000',
+	maxWordsPerLine: 3,
+	maxLines: 2,
+	verticalPosition: 0.62,
 };
 
 export const RemotionRoot: React.FC = () => {
 	return (
 		<>
 			<Composition
-				id="Captions"
+				id="VZZCaptions"
 				component={CaptionComposition}
-				durationInFrames={186}
-				fps={30}
-				width={1920}
-				height={1080}
-				defaultProps={{
-					words: defaultWords,
-					style: defaultStyle,
-					platformFormat: '16:9' as const,
-				}}
-			/>
-			<Composition
-				id="CaptionsVertical"
-				component={CaptionComposition}
-				durationInFrames={186}
+				durationInFrames={450}
 				fps={30}
 				width={1080}
 				height={1920}
 				defaultProps={{
-					words: defaultWords,
-					style: defaultStyle,
-					platformFormat: '9:16' as const,
-				}}
-			/>
-			<Composition
-				id="CaptionsSquare"
-				component={CaptionComposition}
-				durationInFrames={186}
-				fps={30}
-				width={1080}
-				height={1080}
-				defaultProps={{
-					words: defaultWords,
-					style: defaultStyle,
-					platformFormat: '1:1' as const,
+					words: vzzWords,
+					style: captionStyle,
 				}}
 			/>
 		</>

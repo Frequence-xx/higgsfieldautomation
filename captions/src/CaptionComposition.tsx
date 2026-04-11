@@ -3,7 +3,6 @@ import {
 	AbsoluteFill,
 	useCurrentFrame,
 	useVideoConfig,
-	interpolate,
 	spring,
 } from 'remotion';
 
@@ -18,94 +17,127 @@ type CaptionStyle = {
 	fontSize: number;
 	color: string;
 	highlightColor: string;
-	position: 'lower-third' | 'center' | 'upper-third';
-	animation: 'fade' | 'spring' | 'reveal';
+	strokeWidth: number;
+	strokeColor: string;
+	maxWordsPerLine: number;
+	maxLines: number;
+	verticalPosition: number; // 0-1, where captions sit on screen
 };
-
-type PlatformFormat = '9:16' | '1:1' | '16:9';
 
 export const CaptionComposition: React.FC<{
 	words: Word[];
 	style: CaptionStyle;
-	platformFormat: PlatformFormat;
-}> = ({words, style, platformFormat}) => {
+}> = ({words, style}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
 
-	const safeMargin = platformFormat === '9:16' ? 120 : 60;
-	const bottomOffset =
-		style.position === 'lower-third'
-			? safeMargin
-			: style.position === 'center'
-				? undefined
-				: undefined;
-	const topOffset = style.position === 'upper-third' ? safeMargin : undefined;
+	// Group words into pages (max lines × max words per line)
+	const maxWordsPerPage = style.maxLines * style.maxWordsPerLine;
+
+	// Find which words are currently visible based on timing
+	// Show a "page" of words: the group containing the currently active word
+	const activeWordIndex = words.findIndex(
+		(w) => frame >= w.startFrame && frame <= w.endFrame
+	);
+
+	// If no word is active, find the last word that was spoken
+	const currentIndex = activeWordIndex >= 0
+		? activeWordIndex
+		: words.findIndex((w) => frame < w.startFrame) - 1;
+
+	if (currentIndex < 0 && activeWordIndex < 0) {
+		return null; // No captions to show yet
+	}
+
+	const effectiveIndex = Math.max(0, currentIndex >= 0 ? currentIndex : activeWordIndex);
+
+	// Calculate which page of words we're on
+	const pageIndex = Math.floor(effectiveIndex / maxWordsPerPage);
+	const pageStart = pageIndex * maxWordsPerPage;
+	const pageEnd = Math.min(pageStart + maxWordsPerPage, words.length);
+	const pageWords = words.slice(pageStart, pageEnd);
+
+	// Only show the page if at least one word has started
+	if (frame < pageWords[0]?.startFrame) {
+		return null;
+	}
+
+	// Split page words into lines
+	const lines: Word[][] = [];
+	for (let i = 0; i < pageWords.length; i += style.maxWordsPerLine) {
+		lines.push(pageWords.slice(i, i + style.maxWordsPerLine));
+	}
 
 	return (
 		<AbsoluteFill
 			style={{
-				justifyContent:
-					style.position === 'center' ? 'center' : 'flex-end',
+				justifyContent: 'flex-start',
 				alignItems: 'center',
-				paddingBottom: bottomOffset,
-				paddingTop: topOffset,
+				paddingTop: `${style.verticalPosition * 100}%`,
 			}}
 		>
 			<div
 				style={{
 					display: 'flex',
-					flexWrap: 'wrap',
-					justifyContent: 'center',
+					flexDirection: 'column',
+					alignItems: 'center',
 					gap: '8px',
-					maxWidth: '80%',
 				}}
 			>
-				{words.map((word, i) => {
-					const isActive =
-						frame >= word.startFrame && frame <= word.endFrame;
-					const hasAppeared = frame >= word.startFrame;
+				{lines.map((lineWords, lineIndex) => (
+					<div
+						key={`line-${pageIndex}-${lineIndex}`}
+						style={{
+							display: 'flex',
+							flexWrap: 'nowrap',
+							justifyContent: 'center',
+							gap: '10px',
+						}}
+					>
+						{lineWords.map((word, wordIndex) => {
+							const hasAppeared = frame >= word.startFrame;
+							const isActive =
+								frame >= word.startFrame && frame <= word.endFrame;
 
-					let opacity = 0;
-					let scale = 1;
+							// Spring animation for word appearance
+							const enterProgress = hasAppeared
+								? spring({
+										frame: frame - word.startFrame,
+										fps,
+										config: {damping: 15, stiffness: 200},
+									})
+								: 0;
 
-					if (style.animation === 'fade') {
-						opacity = interpolate(
-							frame,
-							[word.startFrame - 3, word.startFrame],
-							[0, 1],
-							{extrapolateRight: 'clamp', extrapolateLeft: 'clamp'},
-						);
-					} else if (style.animation === 'spring') {
-						const spr = spring({
-							frame: frame - word.startFrame,
-							fps,
-							config: {damping: 12, stiffness: 200},
-						});
-						opacity = hasAppeared ? 1 : 0;
-						scale = hasAppeared ? spr : 0;
-					} else {
-						opacity = hasAppeared ? 1 : 0;
-					}
-
-					return (
-						<span
-							key={i}
-							style={{
-								fontFamily: style.fontFamily,
-								fontSize: style.fontSize,
-								fontWeight: 700,
-								color: isActive ? style.highlightColor : style.color,
-								opacity,
-								transform: `scale(${scale})`,
-								textShadow: '2px 2px 8px rgba(0,0,0,0.7)',
-								letterSpacing: '0.02em',
-								transition: 'color 0.1s ease',
-							}}
-						>
-							{word.text}
-						</span>
-					);
-				})}
+							return (
+								<span
+									key={`${pageIndex}-${lineIndex}-${wordIndex}`}
+									style={{
+										fontFamily: style.fontFamily,
+										fontSize: style.fontSize,
+										fontWeight: 900,
+										color: style.color,
+										textTransform: 'uppercase' as const,
+										letterSpacing: '0.02em',
+										WebkitTextStroke: `${style.strokeWidth}px ${style.strokeColor}`,
+										paintOrder: 'stroke fill',
+										textShadow: '3px 3px 6px rgba(0,0,0,0.5)',
+										opacity: enterProgress,
+										transform: `scale(${0.8 + 0.2 * enterProgress})`,
+										// Orange highlight background on active word
+										backgroundColor: isActive
+											? style.highlightColor
+											: 'transparent',
+										padding: isActive ? '4px 12px' : '4px 4px',
+										borderRadius: '6px',
+										transition: 'background-color 0.05s ease',
+									}}
+								>
+									{word.text}
+								</span>
+							);
+						})}
+					</div>
+				))}
 			</div>
 		</AbsoluteFill>
 	);
