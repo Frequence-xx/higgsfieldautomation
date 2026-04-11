@@ -8,6 +8,10 @@ triggers:
   - frame analysis
   - score clip
   - review frames
+negatives:
+  - Do NOT invoke when generating images or video (use generation-image.md or generation-video.md)
+  - Do NOT invoke when assembling final video in post-production (use production-checklist.md)
+  - Do NOT invoke when writing prompts (use model-prompting-guide.md)
 ---
 
 # Video QA Rubric
@@ -126,6 +130,97 @@ After 3 failures on the same failure category:
    - A recommendation: different shot concept, different model, or manual override request
 3. **Wait for owner response** before proceeding
 4. **Log the escalation** in `generation_history` with retry_count = 3
+
+## Brand Binary Checklist (Pass/Fail)
+
+In addition to the 1-10 scoring dimensions above, every frame containing brand elements MUST pass ALL of these binary checks. A single FAIL on any item rejects the clip.
+
+| Check | Criteria | Pass | Fail |
+|-------|----------|------|------|
+| Logo color | Orange matches #FC8434 (not red, not yellow, not brown) | Correct orange | Wrong hue |
+| No side door | Cargo box has NO door on its side panel (Mercedes Sprinter box truck has rear doors only) | No side door visible | Side door present |
+| Correct uniform | Black crewneck sweatshirt with orange SNELVERHUIZEN logo on left chest, blue jeans, white sneakers | All items match | Any item wrong |
+| Correct box | Branded cardboard box with SNELVERHUIZEN.NL text, orange and white, handle cutouts | Matches reference | Wrong box design |
+| Truck livery | White cab + white cargo box + orange #FC8434 band across lower half with "SNELVERHUIZEN" in white | Matches reference | Wrong livery |
+| Text accuracy | Any visible text reads correctly (no garbled/morphed text like "SEDEERHUIREN") | Text legible and correct | Any text corruption |
+
+**Scoring:** Brand binary checks are separate from the 1-10 dimensions. A clip can score 10/10 on brand_accuracy but still FAIL if the binary checklist catches a specific defect (e.g., side door present).
+
+**Action on FAIL:** Identify which binary check failed, apply corrective prompt targeting that specific defect, regenerate. If the defect is text corruption, remove text from generation and composite in post (see `text-overlay-compositing.md`).
+
+## Failure Category Classification
+
+Every QA failure MUST be classified into one of four categories. The category determines the corrective action.
+
+### Cat A — Prompt-Fixable
+
+The model CAN produce correct output. The failure was caused by an insufficient, incorrect, or missing prompt instruction.
+
+**Examples:**
+- Missing "stationary truck" caused ghost driving
+- Missing clothing description caused wrong uniform
+- Missing negative prompt term allowed an artifact
+- Incorrect aspect ratio parameter
+
+**Action:** Fix the prompt/parameters. Retry with the same model. Log the corrective prompt for future reuse.
+
+### Cat B — Model Limit (Ceiling)
+
+The model CANNOT produce correct output for this shot type regardless of prompt quality. This is a fundamental capability gap.
+
+**Examples:**
+- Kling v3 cannot render "SNELVERHUIZEN.NL" text without morphing
+- Close-up hand interactions produce melted fingers despite all mitigations
+- Multi-person scenes with complex interactions degrade despite reference anchoring
+- Character face identity drifts beyond acceptable threshold despite Subject Binding at 90
+
+**Action:** Mark as ceiling in `learned_preferences` (see `model-ceiling-detection.md`). Route to next-tier model or simplify composition. Do NOT retry same model — it wastes credits.
+
+### Cat C — Reference Quality
+
+The failure traces back to the quality of the input — the hero frame, reference images, or character sheet.
+
+**Examples:**
+- Hero frame had harsh shadows that confused the I2V motion model
+- Character reference sheet had inconsistent lighting across angles
+- Truck reference photo was low resolution or wrong angle
+- Hero frame had busy background that morphed during animation
+
+**Action:** Fix the source material. Regenerate the hero frame or reference images with corrective instructions, then re-attempt I2V. Do NOT blame the video model for source quality issues.
+
+### Cat D — Concept Issue
+
+The shot concept itself is fundamentally problematic — it requires capabilities that no available model can deliver at production quality.
+
+**Examples:**
+- Two people carrying a couch simultaneously (multi-person + complex physics)
+- Close-up dialogue with facial expressions (character consistency + expression control)
+- Truck driving through a busy intersection with text visible (motion + text + complex scene)
+- Interior staircase scene with narrow angles and multiple subjects
+
+**Action:** Redesign the shot. Simplify to a composition pattern known to succeed (A3-S4 pattern: close-ups, simple compositions, one subject per shot). Notify owner via Telegram with the concept limitation and proposed alternative.
+
+### Classification Decision Tree
+
+```
+Did a prompt change fix it on retry? → Cat A (prompt-fixable)
+Did 2 retries with progressively stronger prompts both fail at same dimension? → Cat B (model limit)
+Was the hero frame / reference image itself flawed? → Cat C (reference quality)
+Is this shot type fundamentally beyond current model capabilities? → Cat D (concept issue)
+```
+
+### Logging
+
+Log every failure with its category in `generation_history`:
+
+```sql
+UPDATE generation_history SET
+    failure_category = '<A|B|C|D>',
+    failure_dimension = '<dimension_name>',
+    failure_code = '<failure_code>',
+    corrective_action = '<what was done>'
+WHERE id = <generation_id>;
+```
 
 ## Post-QA Cleanup
 

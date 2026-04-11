@@ -8,6 +8,10 @@ triggers:
   - video ad
   - campaign
   - shot list
+negatives:
+  - Do NOT invoke when generating images or video from an already-approved shot list
+  - Do NOT invoke when performing QA, post-production, or final assembly
+  - Do NOT invoke when the owner sends feedback on a delivered video (use feedback logging instead)
 ---
 
 # Brief Intake Skill

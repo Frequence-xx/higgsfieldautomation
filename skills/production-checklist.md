@@ -9,11 +9,63 @@ triggers:
   - video
   - hero frame
   - assembly
+negatives:
+  - Do NOT invoke when doing research, study, or documentation tasks
+  - Do NOT invoke when parsing briefs or planning shot lists (use brief-intake.md)
+  - Do NOT invoke when the task is purely administrative (git, file cleanup, database maintenance)
 ---
 
 # Production Checklist — MANDATORY
 
 **This checklist is NON-NEGOTIABLE. Every item must be verified. Skipping any step is a pipeline failure.**
+
+## Character Type Classification — MANDATORY Pre-Generation Step
+
+Before generating ANY shot containing people, determine the character type. This step is NON-NEGOTIABLE. See `character-consistency.md` for full details on each type.
+
+### Decision Tree
+
+```
+Does this shot contain people? → NO → Skip to Pre-Production Gate
+                                → YES ↓
+
+Is this Karel or Mourad? → YES → Type A: Use existing reference sheets
+                          → NO ↓
+
+Does this person appear in multiple shots? → YES → Type B: Create reference sheet FIRST
+                                             → NO ↓
+
+Is this a wide shot, silhouette, or back-of-head? → YES → Type C: Text-only prompt, no refs needed
+                                                     → NO → Type B (create refs for consistency)
+```
+
+### Type A: Existing Characters (Karel & Mourad)
+
+- [ ] Reference sheets located at `/opt/pipeline/assets/crew/`
+- [ ] Use Nano Banana Pro Edit with character sheet as Image 1 in EVERY call
+- [ ] Include identity-locking phrase: "Keep facial features exactly the same as Image 1"
+- [ ] Include full clothing description in prompt (black crewneck, orange logo, blue jeans, white sneakers)
+- [ ] For video: Kling v3 Pro with Subject Binding 80-90, Element Library with 3-4 reference photos
+
+### Type B: New Recurring Character
+
+- [ ] Owner has provided character description
+- [ ] Generate 4-angle reference sheet (front, 3/4, profile, full body) via Nano Banana Pro at 1:1
+- [ ] Send reference sheet to owner for approval via Telegram
+- [ ] Owner approved? → Save to `/opt/pipeline/assets/characters/{name}/` with character.json
+- [ ] Owner rejected? → Adjust and regenerate (max 2 retries on ref sheet)
+- [ ] Character locked — proceed as Type A from this point
+
+### Type C: Generic One-Off Person
+
+- [ ] Confirm person appears only once OR in wide/silhouette/back framing
+- [ ] Use Nano Banana Pro text-only with detailed appearance + Shari'ah dress description
+- [ ] Do NOT reuse across shots — each generation may look different
+- [ ] Best for: wide shots, back-of-head, silhouettes, crowd scenes
+
+**MUST complete character classification before proceeding to the Pre-Production Gate below.**
+
+---
 
 ## Pre-Production Gate
 

@@ -10,6 +10,10 @@ triggers:
   - trend
   - engagement
   - research
+negatives:
+  - Do NOT invoke when generating or animating existing approved shot lists
+  - Do NOT invoke when performing QA on already-generated clips
+  - Do NOT invoke when doing post-production assembly (captions, audio, FFmpeg)
 ---
 
 # Viral Research Agent

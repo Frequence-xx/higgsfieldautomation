@@ -10,6 +10,10 @@ triggers:
   - consistent
   - reference image
   - anchor
+negatives:
+  - Do NOT invoke when generating shots with no people (truck-only, B-roll, establishing shots)
+  - Do NOT invoke when doing post-production or caption work
+  - Do NOT invoke when the shot uses a Type C generic one-off person in a wide/silhouette framing
 ---
 
 # Character Consistency System

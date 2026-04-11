@@ -10,6 +10,10 @@ triggers:
   - truck
   - identity
   - Snel Verhuizen
+negatives:
+  - Do NOT invoke when task has no brand elements (e.g., pure code changes, database operations)
+  - Do NOT invoke when doing viral research or brief concept brainstorming before shot list stage
+  - Do NOT invoke when performing audio-only tasks (voiceover generation, SFX mixing)
 ---
 
 # Brand Identity — Snel Verhuizen

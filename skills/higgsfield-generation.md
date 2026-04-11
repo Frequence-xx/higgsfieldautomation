@@ -11,9 +11,19 @@ triggers:
   - generate frame
   - Kling
   - animate
+negatives:
+  - Do NOT invoke when doing post-production (captions, audio, FFmpeg assembly)
+  - Do NOT invoke when performing QA scoring (use video-qa-rubric.md)
+  - Do NOT invoke when writing briefs or shot lists (use brief-intake.md)
 ---
 
 # Video Generation — AIMLAPI-First Architecture
+
+> **NOTE:** This skill has been split into two focused skills for better invocation:
+> - **`generation-image.md`** — Tier 1A: Hero frame models (NBP, Kontext Max, Flux Pro), parameters, 9:16 native generation
+> - **`generation-video.md`** — Tier 1B: I2V models (Kling v3), parameters, motion prompts, known failures, camera control
+>
+> This file remains as the combined reference. For new work, prefer the split versions.
 
 ## Tier 1A: AIMLAPI — Hero Frame Generation (API)
 

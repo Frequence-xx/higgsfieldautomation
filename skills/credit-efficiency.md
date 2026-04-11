@@ -8,6 +8,10 @@ triggers:
   - budget
   - model selection
   - aimlapi
+negatives:
+  - Do NOT invoke when performing post-production tasks (FFmpeg, Remotion, audio mixing — these are free/local)
+  - Do NOT invoke when doing brief intake or shot list planning (no credits spent yet)
+  - Do NOT invoke when running QA on already-generated content (scoring does not cost credits)
 ---
 
 # Credit Efficiency Rules

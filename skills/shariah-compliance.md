@@ -9,6 +9,10 @@ triggers:
   - video review
   - audio mixing
   - content generation
+negatives:
+  - Do NOT invoke when task is purely technical (FFmpeg encoding, file management, git operations)
+  - Do NOT invoke when reviewing non-content artifacts (code, config files, database schemas)
+  - Do NOT invoke when generating reference sheets on neutral backgrounds with no scene context
 ---
 
 # Shari'ah Compliance Guidelines

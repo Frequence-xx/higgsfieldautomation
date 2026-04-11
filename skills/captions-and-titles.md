@@ -9,6 +9,10 @@ triggers:
   - text overlay
   - Remotion
   - subtitle
+negatives:
+  - Do NOT invoke when generating hero frames or animating video clips (no text at generation stage)
+  - Do NOT invoke when performing visual QA on raw clips before post-production
+  - Do NOT invoke when doing brief intake or shot list planning
 ---
 
 # Captions and Titles

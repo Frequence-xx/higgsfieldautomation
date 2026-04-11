@@ -9,6 +9,10 @@ triggers:
   - video generation
   - cinematic
   - quality
+negatives:
+  - Do NOT invoke when task is caption/text overlay work only (use captions-and-titles.md)
+  - Do NOT invoke when performing QA scoring (use video-qa-rubric.md for scoring dimensions)
+  - Do NOT invoke when handling Shari'ah compliance checks with no visual quality question
 ---
 
 # Cinematic Standards
