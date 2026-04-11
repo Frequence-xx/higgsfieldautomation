@@ -180,7 +180,19 @@
       "Bash(sudo -S apt-get install -y fonts-raleway)",
       "Bash(wget -q -O /tmp/raleway.zip \"https://fonts.google.com/download?family=Raleway\")",
       "Bash(unzip -o /tmp/raleway.zip -d /opt/pipeline/assets/fonts/Raleway/)",
-      "Bash(sudo -S apt-get install -y unzip)"
+      "Bash(sudo -S apt-get install -y unzip)",
+      "Bash(echo \"set -g mouse on\")",
+      "Bash(tmux source-file:*)",
+      "Bash(top -b -n 1)",
+      "Bash(ps aux:*)",
+      "Bash(awk '$8 ~ /Z/ {print $0}')",
+      "Bash(pkill -f \"hindsight-api\")",
+      "Bash(pkill -9 -f \"hindsight\")",
+      "Bash(awk '$8 ~ /Z/')",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs kill:*)",
+      "Bash(~/.cache/uv/archive-v0/KSHBN-tO88JOcg6y7FmD9/bin/hindsight-embed profile:*)",
+      "Bash(uvx hindsight-embed@latest profile list)"
     ]
   }
 }
