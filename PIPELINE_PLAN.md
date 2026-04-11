@@ -1,8 +1,10 @@
 # Autonomous Cinematic Video Ad Pipeline for a Moving Company
 
-**Stack: Claude Code (orchestrator + vision QA) · Higgsfield Ultra 6,000 credits/mo · VPS · FFmpeg · ElevenLabs**
-**New monthly cost: ~$47 | Existing subscriptions leveraged: Higgsfield Ultra (yearly) + Claude Max**
+**Stack: Claude Code (AI orchestrator + vision QA) · AIMLAPI (Kling v3 Pro + Nano Banana Pro) · VPS · FFmpeg · Remotion · ElevenLabs**
+**Estimated monthly cost: ~$300-500 (AIMLAPI generation ~$250-400 + VPS ~$30 + ElevenLabs $22 + Claude Max existing sub)**
 **Content standard: All output adheres to Islamic Shari'ah guidelines of Ahlus Sunnah wal Jama'ah**
+
+> **Last updated: 2026-04-11.** Cost projections and generation architecture updated based on 3 test production runs. Higgsfield Ultra replaced by AIMLAPI as primary generation platform. Original plan preserved below with inline corrections marked [UPDATED].
 
 ---
 
@@ -80,28 +82,40 @@ Claude Code checks your `/assets/` vault for matching reference photos: truck an
 
 Before any generation, Claude Code validates every prompt against the learned knowledge base: "This prompt structure has a 91% first-pass rate on Kling 3.0 with slow dolly push-in" vs. "Avoid Sora 2 for close-up hand interactions — 62% failure rate on finger coherence." This is where credit savings compound over time.
 
-### Phase 3 — Generation via Higgsfield Ultra (API-First with Browser Fallback)
-Your 6,000 monthly credits are the generation budget. Claude Code uses a **dual approach** to drive Higgsfield, choosing the most reliable method for each generation task.
+### Phase 3 — Generation via AIMLAPI (API-Only Architecture)
 
-**Primary method — Higgsfield Cloud API (cloud.higgsfield.ai).** Higgsfield provides a Cloud API with an official Python SDK (`higgsfield-ai/higgsfield-client`). API credits draw from your existing subscription pool — there is no separate billing. The API supports text-to-image, image-to-video, async generation with webhook/polling completion, and model selection. Community MCP servers (`geopopos/higgsfield_ai_mcp`, `jfikrat/higgsfield-mcp`) wrap this API for direct integration with Claude Code. The API path is faster, more reliable, and immune to UI changes or bot protection.
+> [UPDATED 2026-04-11] Original plan used Higgsfield Ultra credits as primary generation. DataDome bot protection and browser automation fragility made this unreliable. Pivoted to AIMLAPI — a unified API providing access to Kling v3, Nano Banana Pro, Flux Kontext Max, and other models via clean REST API calls. No browser automation needed for generation.
 
-**Fallback method — Playwright browser automation.** For features only available through the web UI (Cinema Studio's full camera body/lens/focal length controls, certain Hero Frame workflows, new features not yet in the API), Claude Code falls back to Playwright driving the Higgsfield website. Higgsfield uses **DataDome bot protection**, which detects stock headless browsers. The Playwright fallback uses `--browser-channel=chrome` (system Chrome, not Chromium), `--vision` mode (screenshot-based interaction rather than DOM traversal), and human-like interaction patterns (typing delays, mouse movements, realistic timing). If DataDome blocks a session, Claude Code switches back to the API path or flags for manual intervention.
+**Primary platform — AIMLAPI (api.aimlapi.com).** Single API key provides access to all generation models. Pay-as-you-go pricing. Clean REST API with polling for async video generation. No browser automation, no bot detection issues, no UI changes to break.
 
-**How it works:** For API generations, Claude Code calls the Higgsfield SDK directly — submit prompt, model, parameters, poll for completion, download result. For browser-based generations, it launches a headless browser session, logs into your Higgsfield account (credentials in environment variables), navigates to the tool, configures settings, submits, and downloads. In both cases, if something unexpected occurs (credit warning, model unavailable, rate limit), Claude Code adapts — retries, switches models, or flags for your attention via Telegram.
+**Hero frame generation (still images):**
+- `google/nano-banana-pro` — text-only scenes, B-roll ($0.13-0.20/image)
+- `google/nano-banana-pro-edit` — multi-reference compositing, up to 14 reference images ($0.13-0.20/image)
+- `flux/kontext-max/image-to-image` — character identity lock, up to 4 refs ($0.10/image)
+- All support native 9:16 via `aspect_ratio: "9:16"` parameter
+- Always use reference images (character sheets + truck + brand assets) for consistency
 
-**This gives you full access to every Ultra feature** through the combination of API and browser paths. For 50 videos/month (~400 total generations including QA stills), the automation runs ~15–20 hours unattended overnight on the VPS.
+**Video animation (image-to-video):**
+- `klingai/video-v3-pro-image-to-video` — 1080p output, primary model ($1.46/5s, audio OFF)
+- `klingai/video-v3-standard-image-to-video` — 720p, for drafts/testing only ($1.09/5s, audio OFF)
+- Always set `generate_audio: false` — audio added in post-production (saves 33%)
+- Motion prompts: 15-40 words, describe ONLY movement, never redescribe the image
+- Every motion instruction needs an endpoint ("then settles", "coming to rest")
 
-**Credit allocation strategy:**
+**Fallback — Higgsfield browser automation.** Only used when AIMLAPI models cannot achieve specific Cinema Studio features (camera body/lens simulation, 3D scene exploration). See `scripts/higgsfield_browser.py`. This is a supervised fallback, not autonomous.
 
-- **80% of shots → Kling 3.0 (~6 credits/clip):** Establishing shots, truck footage, interiors, B-roll. Reliable, cost-efficient, strong motion coherence.
-- **15% of shots → Cinema Studio with reference anchoring:** Hero shots requiring precise camera control. Lock a static Hero Frame from your real photo first (image generation is free/cheap on Ultra's unlimited image models), then animate from that locked reference.
-- **5% of shots → Veo 3.1 or premium models (40–70 credits/clip):** Only for the money shot — the emotional climax, the reveal, the CTA moment. Never used without a passed static frame first.
+**Static-first validation (unchanged):** Generate hero frame → QA the still → only if passed → animate to video → QA the video → post-production. Never spend video credits on a hero frame that hasn't passed QA.
 
-**Static-first validation:** Before spending 40–70 credits on a premium video clip, generate a still frame using one of Ultra's unlimited image models (Flux.2 Pro, Seedream, Nano Banana). Run it through QA. If the still fails, you've spent zero video credits. Only passed stills proceed to video generation.
+**Cost math for 20 videos/month (revised target):**
+- Each 15-30s video needs 3-5 clips
+- Per clip: hero frame ($0.15 avg) + Kling v3 Pro animation ($1.46) = ~$1.61/clip
+- Per video (4 clips avg): ~$6.44 generation + ~$0.05 voiceover = ~$6.50
+- 20 videos × $6.50 = ~$130/month at perfect execution
+- With 1.3× iteration (retries): ~$169/month
+- With owner approval steps adding selective retries: ~$200-250/month realistic
+- **Target: under €5 per approved video, €100/month for 20 videos**
 
-**Credit math for 50 videos:** Each 30–60 second video needs 4–6 clips. With the static-first funnel and learned prompts reducing iteration to ~1.3× average: ~300 clips × 1.3 × ~8 avg credits = **~3,120 credits/month.** That's roughly half your 6,000 allocation — leaving a generous buffer for experimentation, premium model hero shots, and re-generations.
-
-**Month 1 caveat:** The 1.3× iteration factor assumes learned prompt patterns and a tuned QA pipeline. In month 1, before the learning loop has data, expect ~2× iteration instead: ~300 × 2 × ~8 = ~4,800 credits. Still within the 6,000 budget, but plan for 30–35 videos in the first month rather than 50 while the system calibrates. By month 2–3, iteration rates should reach the 1.3× steady state.
+**Month 1 reality (honest assessment):** After 3 test runs, 0 videos approved. The pipeline needs to first produce 1 approved video reliably, then 5, before scaling. The iteration rate in month 1 is closer to 2-3× (prompt learning, QA calibration, owner preference learning). Budget month 1 realistically at $300-400 AIMLAPI for 10-15 videos while the system calibrates.
 
 ### Phase 4 — Intelligent Visual QA (The Core Innovation)
 
@@ -193,21 +207,34 @@ Claude Code runs periodic SQLite queries on this data, surfacing the patterns it
 
 ## Monthly Cost Breakdown
 
+> [UPDATED 2026-04-11] Costs revised based on actual test run data. AIMLAPI generation is the major cost, not $0.
+
 | Component | Tool | Cost |
 |---|---|---|
-| Video generation (6,000 credits) | Higgsfield Ultra (existing yearly sub) | **$0** |
+| Hero frame generation | AIMLAPI Nano Banana Pro / Edit / Kontext Max | **~$30-60** |
+| Video animation | AIMLAPI Kling v3 Pro I2V (audio OFF, $1.46/5s) | **~$175-300** |
 | Orchestration + Vision QA | Claude Max (existing sub) | **$0** |
-| VPS (4+ vCPU, 16+ GB RAM, 200+ GB SSD) | Hetzner or equivalent | **~$25–35** |
-| Browser automation + API | Playwright + Higgsfield SDK (open source) | **$0** |
-| 24/7 messaging | Claude Code Channels → Telegram (open source) | **$0** |
-| Persistent memory | Hindsight plugin + auto memory (open source, local) | **$0** |
-| Voiceover (~25 min/mo) | ElevenLabs Creator | **$22** |
-| Ambient SFX library | Freesound API (CC-licensed) | **$0** |
-| Post-production | FFmpeg + Python (open source) | **$0** |
-| Database & analytics | SQLite (open source) | **$0** |
-| **Total new monthly spend** | | **$47** |
+| VPS (8 vCPU, 32 GB RAM, 400 GB SSD) | Current VPS | **~$30** |
+| 24/7 messaging | Telegram MCP plugin (open source) | **$0** |
+| Persistent memory | Auto memory + SQLite (local) | **$0** |
+| Voiceover (~25 min/mo) | ElevenLabs Creator (Willem voice) | **$22** |
+| Ambient SFX | Freesound API (CC-licensed) | **$0** |
+| Post-production | FFmpeg + Remotion (open source) | **$0** |
+| Database | SQLite (open source) | **$0** |
+| **Total monthly (20 videos)** | | **~$260-410** |
+| **Total monthly (50 videos)** | | **~$600-950** |
 
-The $453 remaining under your $500 ceiling is pure buffer — available for Higgsfield credit top-ups during heavy months, ElevenLabs overages, or a VPS upgrade if you want to run InsightFace locally for faster face-matching QA.
+**Actual cost per video (observed from test runs):**
+- Test run 2 (rejected): $9.10 for 15s / 5 clips — includes wasted generations
+- Test run 3 (rejected): $8.12 for 15s / 5 clips — less waste but still rejected
+- Target (optimized, 0 waste): ~$5-7 per 15s video with 3-4 clips
+
+**Cost reduction strategies:**
+- Use Kling v3 Standard ($1.09/5s) for drafts, Pro ($1.46/5s) for finals only
+- Multi-reference hero frames from first attempt (no text-only waste)
+- Static-first validation (never animate a hero frame that hasn't passed QA)
+- Owner approval gate before each animation ($1.46 spent only on approved frames)
+- Monitor for cheaper/better models on AIMLAPI as the market evolves
 
 ---
 
