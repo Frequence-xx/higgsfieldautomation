@@ -148,6 +148,56 @@ In addition to the 1-10 scoring dimensions above, every frame containing brand e
 
 **Action on FAIL:** Identify which binary check failed, apply corrective prompt targeting that specific defect, regenerate. If the defect is text corruption, remove text from generation and composite in post (see `text-overlay-compositing.md`).
 
+## InsightFace Character Consistency Check (Evaluator MUST run for character shots)
+
+For EVERY animated clip containing Mourad or Karel (or any recurring character):
+
+```python
+import insightface
+import numpy as np
+from insightface.app import FaceAnalysis
+
+# Initialize once per session
+app = FaceAnalysis(providers=['CPUExecutionProvider'])
+app.prepare(ctx_id=0, det_size=(640, 640))
+
+# Extract face embedding from a frame
+def get_face_embedding(image_path):
+    import cv2
+    img = cv2.imread(image_path)
+    faces = app.get(img)
+    if not faces:
+        return None
+    return faces[0].embedding
+
+# Compare frames: extract at t=0, t=2.5, t=5
+emb_0 = get_face_embedding("frame_t0.png")
+emb_25 = get_face_embedding("frame_t2.5.png")
+emb_50 = get_face_embedding("frame_t5.png")
+
+# Cosine similarity
+def cosine_sim(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+sim_0_25 = cosine_sim(emb_0, emb_25)
+sim_0_50 = cosine_sim(emb_0, emb_50)
+
+# Threshold: <0.80 = expression drift = REJECT
+if sim_0_25 < 0.80 or sim_0_50 < 0.80:
+    print(f"REJECT: Face drift detected. Similarity: {sim_0_25:.3f} / {sim_0_50:.3f}")
+else:
+    print(f"PASS: Face consistent. Similarity: {sim_0_25:.3f} / {sim_0_50:.3f}")
+```
+
+**Thresholds:**
+- ≥0.90: Excellent consistency
+- 0.80-0.89: Acceptable
+- <0.80: REJECT — expression drift detected
+
+**Also compare against reference sheet:** Extract embedding from the character reference sheet and compare against frame 0 of the generated clip. Similarity <0.75 = character mismatch = REJECT.
+
+---
+
 ## Failure Category Classification
 
 Every QA failure MUST be classified into one of four categories. The category determines the corrective action.

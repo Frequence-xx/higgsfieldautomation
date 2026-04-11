@@ -76,7 +76,7 @@ AI video generation excels at some shot types and struggles with others. Route s
 - J-cuts / L-cuts (audio leads or follows the visual transition)
 - Hard cuts on action (cut mid-movement for energy)
 
-**NEVER USE:**
+**MUST NOT USE:**
 - Star wipes, circle wipes, or novelty transitions
 - Default dissolves longer than 0.5 seconds
 - Digital zoom transitions
@@ -84,7 +84,7 @@ AI video generation excels at some shot types and struggles with others. Route s
 
 ## AI Artifact Mitigation
 
-Include these in EVERY generation prompt:
+MUST include these in EVERY generation prompt:
 - "natural wear, texture, and imperfections on all surfaces"
 - "realistic fabric wrinkles and folds on clothing"
 - "subtle asymmetry in composition"

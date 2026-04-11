@@ -65,7 +65,7 @@ Every brief, regardless of input format, must be normalized to this structure be
       "on_screen_text": "BINNEN MINUTEN DUIDELIJKHEID",
       "characters": [],
       "image_model": "google/nano-banana-pro",
-      "video_model": "kling-video/v3/standard/image-to-video",
+      "video_model": "klingai/video-v3-standard-image-to-video",
       "camera": "static, slight zoom in",
       "lighting": "clean, modern, bright"
     }
@@ -141,4 +141,4 @@ After parsing, produce:
 1. Standardized JSON brief (saved to `/opt/pipeline/briefs/brief_{id}.json`)
 2. SQLite entry in `briefs` table with status "queued"
 3. Summary sent to owner via Telegram for approval
-4. Do NOT generate anything until owner approves the shot list
+4. MUST NOT generate anything until owner approves the shot list

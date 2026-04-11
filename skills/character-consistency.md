@@ -33,7 +33,7 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 ## Step-by-Step Workflow
 
 ### Step 1: Create Character Reference Sheet
-For each recurring character, generate 4 reference images using Nano Banana Pro.
+For each recurring character, MUST generate 4 reference images using Nano Banana Pro.
 Use 1:1 for reference sheets (consistency matching), 9:16 for final hero frames.
 
 ```python
@@ -214,6 +214,6 @@ Is this a person who only appears once or in a wide shot? → Type C (text-only,
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
 - Female family members (if depicted): full hijab, loose-fitting garments
-- Always specify exact clothing in prompts — never leave it to the model's default
-- Include clothing description in EVERY prompt, even if the character appeared in a previous shot
-- Reference images themselves must be Shari'ah compliant — run QA on character sheets before using
+- MUST specify exact clothing in prompts — MUST NOT leave it to the model's default
+- MUST include clothing description in EVERY prompt, even if the character appeared in a previous shot
+- Reference images themselves MUST be Shari'ah compliant — MUST run QA on character sheets before using

@@ -250,7 +250,7 @@ Formula: [Camera/shot type], [Subject with @ references], [Action/motion], [Envi
 - fal.ai: ~$0.62-0.74/5s 1080p
 - Segmind: 8-10s 720p under $1
 
-**CRITICAL LIMITATION ON AIMLAPI: Seedance 2.0 only supports 480p/720p, NOT 1080p. Content policy blocks realistic human faces in I2V. Consider Atlas Cloud for Seedance if 1080p needed.**
+**CRITICAL LIMITATION ON AIMLAPI: Seedance 2.0 is BLOCKED for human faces (content_policy_violation, tested 3x April 2026). Additionally, AIMLAPI only supports 480p/720p for Seedance, NOT 1080p. Two separate issues: (1) content policy blocks all realistic human faces in I2V, (2) resolution limited to 720p max. For Seedance with characters: consider Atlas Cloud ($0.022/sec) as alternative provider.**
 
 **Failure modes & fixes:**
 

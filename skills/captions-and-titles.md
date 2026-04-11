@@ -168,7 +168,7 @@ Default: **Slide-up reveal** — text slides up 20px from below final position w
 
 ### The 2-Layer Maximum Rule
 
-**NEVER show more than 2 text layers simultaneously.** This is the single most important rule for professional-looking captions.
+**MUST NOT show more than 2 text layers simultaneously.** This is the single most important rule for professional-looking captions.
 
 ### Vertical Zone System (9:16 / 1080x1920)
 
@@ -207,11 +207,11 @@ Three mutually exclusive vertical zones prevent spatial overlap:
 
 | Parameter | Value |
 |-----------|-------|
-| Pre-roll | 50–100ms before spoken word |
-| Post-hold | 50–100ms after word ends |
-| Gap between blocks | 150–250ms (minimum 2 frames at 30fps) |
-| Display duration | 0.3s per word + 0.5s buffer (minimum) |
-| Maximum display | 6 seconds per block |
+| Pre-roll | MUST appear 50–100ms before spoken word |
+| Post-hold | MUST hold 50–100ms after word ends |
+| Gap between blocks | MUST be 150–250ms (minimum 2 frames at 30fps) |
+| Display duration | MUST be 0.3s per word + 0.5s buffer (minimum) |
+| Maximum display | MUST NOT exceed 6 seconds per block |
 | Ideal display | 2–3 seconds per block |
 
 ### Choreography Template (15–30s Ad)
@@ -360,8 +360,8 @@ Always set `whiteSpace: 'pre'` on the caption container. Spaces are used as deli
 
 ## Consistency Rules
 
-- Same font, same weight, same animation style across ALL 50 videos in a month
-- Same highlight color across all videos
-- Same title card template across all videos
-- Same name card template across all videos
+- MUST use same font, same weight, same animation style across ALL 50 videos in a month
+- MUST use same highlight color across all videos
+- MUST use same title card template across all videos
+- MUST use same name card template across all videos
 - The only things that change are the words and timing

@@ -43,8 +43,8 @@ negatives:
 
 - **File:** `/opt/pipeline/assets/logo-snelverhuizen.png`
 - **Logo format:** Orange box icon + "SNELVERHUIZEN" text in dark
-- **Placement rule:** Bottom-right corner, 20px margin from edges, 8-10% of frame width
-- **Minimum clear space:** Half the logo height on all sides
+- **Placement rule:** MUST be placed in bottom-right corner, 20px margin from edges, 8-10% of frame width
+- **Minimum clear space:** MUST maintain half the logo height on all sides
 - **On dark backgrounds:** Use the logo as-is (orange icon + white text variant if available)
 - **On branded boxes:** Orange `#FC8434` with white text + QR code
 

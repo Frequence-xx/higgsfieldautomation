@@ -19,7 +19,7 @@ negatives:
 ## Single-Platform Architecture (AIMLAPI for everything)
 
 **Hero Frame Generation:** AIMLAPI — Nano Banana Pro (`google/nano-banana-pro`) or Flux Pro (`flux-pro`)
-**Video Animation:** AIMLAPI — Kling v3 Standard I2V (`kling-video/v3/standard/image-to-video`)
+**Video Animation:** AIMLAPI — Kling v3 Standard I2V (`klingai/video-v3-standard-image-to-video`)
 **Voiceover:** ElevenLabs (Willem voice, eleven_multilingual_v2)
 **Post-Production:** FFmpeg + Remotion (free, local)
 
@@ -27,7 +27,7 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 
 ## Static-First Validation Funnel
 
-**NEVER spend video credits without a passed static frame first.**
+**MUST NOT spend video credits without a passed static frame first.**
 
 1. Generate hero frame via AIMLAPI Nano Banana Pro or Flux Pro (cheap per image)
 2. Run the still through full QA rubric (8 dimensions + Shari'ah compliance + cinematic quality)
@@ -47,16 +47,16 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 **CRITICAL: Always generate with audio OFF. Add voiceover/SFX in post-production. Audio adds 50% surcharge.**
 
 Exact AIMLAPI model strings:
-- Standard I2V: `kling-video/v3/standard/image-to-video`
+- Standard I2V: `klingai/video-v3-standard-image-to-video`
   - Audio OFF: **$1.09/5s** ($0.218/sec) ← USE THIS
   - Audio ON: **$1.64/5s** ($0.328/sec) ← NEVER USE, add audio in post
-- Pro I2V: `kling-video/v3/pro/image-to-video` (est. ~$1.50-2.00/5s)
+- Pro I2V: `klingai/video-v3-pro-image-to-video` (est. ~$1.50-2.00/5s)
 - CRITICAL: Always set `"generate_audio": false` — saves 33%!
 
 Required parameters for optimal Kling v3 I2V generation:
 ```json
 {
-    "model": "kling-video/v3/standard/image-to-video",
+    "model": "klingai/video-v3-standard-image-to-video",
     "image_url": "<url>",
     "prompt": "<motion description>",
     "duration": "5",
@@ -81,7 +81,7 @@ Required parameters for optimal Kling v3 I2V generation:
 
 ## Rules
 
-1. **ONE generation at a time. NEVER batch multiple without confirmation.**
+1. **MUST generate ONE at a time. MUST NOT batch multiple without confirmation.**
 2. Log every generation with model, cost, and QA score in SQLite
 3. If a shot fails QA 3 times → STOP, escalate to owner with failure details
 4. Verify correct image is selected before ANY generation

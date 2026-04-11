@@ -28,7 +28,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 2. **MUST generate ONE image at a time.** Verify the output before generating the next.
 3. **MUST use reference images** for any shot containing brand assets (truck, uniform, boxes).
 4. **MUST run full QA** (8 dimensions + Shari'ah + cinematic quality) on every hero frame before sending to I2V.
-5. **SHOULD send hero frames to owner for approval** before spending video credits on animation.
+5. **MUST send hero frames to owner for approval** before spending video credits on animation. MUST NOT animate without owner sign-off.
 
 ## Model Selection Matrix
 

@@ -80,7 +80,7 @@ Inject viral patterns into the brief expansion:
 
 ### Step 4: Shari'ah Filter on Viral Trends
 
-Many viral patterns rely on haram elements. Always filter:
+Many viral patterns rely on haram elements. MUST filter:
 
 | Viral trend | Halal alternative |
 |------------|-------------------|
@@ -91,7 +91,7 @@ Many viral patterns rely on haram elements. Always filter:
 | Celebrity/influencer faces | Focus on the SERVICE, the truck, the result — not personalities |
 | Dance/lip-sync trends | Process demonstration, satisfying packing/organization shots |
 
-**The halal viral formula:** Professional excellence + satisfying process + emotional payoff + clear CTA. No music, no exploitation, no deception.
+**The halal viral formula:** Professional excellence + satisfying process + emotional payoff + clear CTA. MUST NOT include music, exploitation, or deception.
 
 ### Step 5: Log Learnings
 
@@ -104,6 +104,6 @@ After each video is approved/rejected, log:
 Over time, build a playbook of proven halal viral patterns specific to Snel Verhuizen's audience.
 
 ## Research Frequency
-- **Every brief:** Quick 2-minute research on hooks relevant to the concept
-- **Weekly:** Broader trend scan (10 minutes) — what's working in Dutch service content
-- **Monthly:** Deep dive (30 minutes) — analyze top 10 performing moving/service company videos globally, extract patterns
+- **Every brief:** SHOULD perform quick 2-minute research on hooks relevant to the concept
+- **Weekly:** SHOULD perform broader trend scan (10 minutes) — what's working in Dutch service content
+- **Monthly:** SHOULD perform deep dive (30 minutes) — analyze top 10 performing moving/service company videos globally, extract patterns

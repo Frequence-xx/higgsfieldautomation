@@ -156,4 +156,5 @@ No current video model renders text reliably. SNELVERHUIZEN.NL → "sedeerhuiren
 - Sequential: FFmpeg then Remotion, never simultaneous
 - Disk check before batch (need >20GB free)
 - SQLite is source of truth. Resume from last completed step on crash.
-- Commit after significant changes. Never commit .env.
+- NEVER commit without explicit owner approval. Ask first, commit after permission.
+- Never commit .env.

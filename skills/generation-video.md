@@ -23,7 +23,7 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 ## Critical Rules
 
-1. **MUST NOT animate a hero frame that has not passed QA.** Static-first validation is mandatory.
+1. **MUST NOT animate a hero frame that has not passed QA AND received owner approval.** Static-first validation + owner sign-off are both mandatory before spending video credits.
 2. **MUST set `generate_audio: false`** on every call. Audio ON adds 50% surcharge. Add audio in post.
 3. **MUST set `aspect_ratio: "9:16"`** to match the hero frame and target platform.
 4. **MUST use Pro model for final output** — Standard is only 720p. Pro gives native 1080p.

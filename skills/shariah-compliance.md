@@ -21,12 +21,14 @@ This skill is a HARD GATE. Every piece of content — briefs, prompts, generated
 
 ## Audio Rules
 
-**No music or musical instruments — ever.** Audio is restricted to:
+**MUST NOT include music or musical instruments — ever.** Audio is restricted to:
 - Voiceover narration (ElevenLabs)
 - Natural ambient sound effects (Freesound API): truck engines, doors, footsteps, birdsong, street ambience, tape pulling, furniture settling
 - Vocal nasheeds without instruments (where appropriate)
 
-**Never use** Remotion Superpowers' music generation feature, Epidemic Sound, or any music library. If a Freesound SFX file contains musical elements, reject it and find an alternative.
+**MUST NOT use** Remotion Superpowers' music generation feature, Epidemic Sound, or any music library. If a Freesound SFX file contains musical elements, MUST reject it and find an alternative.
+
+**Default audio when brief does not specify:** Use Willem voiceover (ElevenLabs) + quiet street ambiance with birds from Freesound (search: "quiet residential street birds ambient", duration 10-30s, CC license). Volume: voiceover 100%, ambient SFX 25-30%. This is the standard fallback for any brief that does not explicitly request different audio.
 
 ## Visual Rules — Modest Appearance
 
@@ -55,7 +57,7 @@ All content reflects **amānah** (trustworthiness) and **iḥsān** (excellence)
 
 ## QA Scoring
 
-`shariah_compliance` score must be **10/10** or the clip is instantly rejected. Failure codes:
+`shariah_compliance` score MUST be **10/10** or the clip is instantly rejected. Failure codes:
 - `DRESS_CODE_VIOLATION` — clothing doesn't meet modest dress standards
 - `HARAM_BACKGROUND_ELEMENT` — impermissible object in scene
 - `FREE_MIXING_VIOLATION` — inappropriate gender interaction

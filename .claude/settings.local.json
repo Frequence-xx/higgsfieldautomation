@@ -1,4 +1,33 @@
 {
+  "effortLevel": "high",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/pipeline/scripts/hindsight-monitor.sh",
+            "timeout": 10,
+            "statusMessage": "Checking Hindsight health..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*aimlapi.com*)",
+            "command": "/opt/pipeline/scripts/pre-generation-gate.sh",
+            "timeout": 10,
+            "statusMessage": "Pre-generation gate check..."
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(ffmpeg -version)",
