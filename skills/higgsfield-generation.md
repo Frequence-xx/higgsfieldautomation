@@ -202,21 +202,30 @@ for i in range(30):
 - Timeout → retry once with 30s timeout, then STOP
 - Generation failed → log failure, do NOT auto-retry (costs credits)
 
-### I2V Prompt Engineering (researched 2026-04-10)
+### I2V Prompt Engineering (researched 2026-04-10, updated with deep research)
 
 **Golden Rule: Only describe MOTION. Never redescribe what is in the image.**
 
 The source image provides all visual information. The prompt directs motion only.
 
-**I2V Prompt Formula:**
-`[What moves] + [How it moves] + [Camera instruction (optional)] + [Motion endpoint]`
+**I2V Prompt Formula (updated):**
+`[What moves] + [How it moves] + [Speed modifier] + [What stays still] + [Camera instruction] + [Motion endpoint]`
 
-**Optimal prompt length:** 15-40 words (much shorter than T2V's 50-80 words). Beyond ~150 words the model averages conflicting instructions.
+**Optimal prompt length:** 15-40 words (much shorter than T2V's 50-80 words). Beyond ~80 words the model starts averaging conflicting instructions.
 
-**Always include a motion endpoint** to prevent 99% processing hangs:
+**The Six Commandments of I2V Prompting:**
+1. ONE clear motion per subject — never give competing actions
+2. Always include a speed modifier — "slowly", "gently", "smoothly" (unspecified = jitter)
+3. Always include a motion endpoint — "eases to a gentle stop" (prevents 99% hangs)
+4. Always specify what stays still — "background remains static", "truck stays stationary"
+5. Use physical verbs — "walks", "lifts", "turns" (not abstract "dynamic energy")
+6. Specify specific body parts — "hair moves", "fingers grip" (not "person moves")
+
+**Motion endpoints (always include one):**
 - "then settles back into place"
 - "motion gradually slowing to stop"
 - "eases to a gentle stop"
+- "returning to stillness"
 
 **What works vs what causes jitter:**
 - ONE clear motion per subject (not multiple competing motions)
@@ -224,6 +233,9 @@ The source image provides all visual information. The prompt directs motion only
 - Specific body parts: "hair moves", "fingers grip" (not "person moves around")
 - Physical verbs: "walks", "lifts", "turns" (not abstract "dynamic energy")
 - "Background remains static" constraint (prevents background morphing)
+- NEVER include lighting descriptions in I2V prompts (image already has lighting)
+- Anchor hands to objects: "fingers grip box edges" not "moves hands freely"
+- Stage expression changes: "neutral → eyebrows lift → smile forms" (prevents morphing)
 
 ### CFG Scale Guidelines (researched 2026-04-10)
 
@@ -251,18 +263,29 @@ All values range **-10 to 10**. Recommended values for cinematic work: **2-5**.
 
 **Rules:** Max 2 simultaneous movements. Values 7-10 are dramatic but unstable. Never combine opposing movements. Camera control overrides prompt-based camera direction — use one or the other.
 
-### Negative Prompt Template (researched 2026-04-10)
+### Negative Prompt Template (researched 2026-04-10, updated with deep research)
 
-**Universal baseline (always include):**
+**Universal baseline (ALWAYS include ALL of these):**
 ```
-blurry, distorted, low quality, jittery, flickering, morphing faces, warping, deformed hands, extra fingers, sliding feet, identity drift, watermark, camera shake, inconsistent lighting, plastic skin, cartoonish
+blurry, distorted, low quality, jittery, flickering, morphing faces, warping, deformed hands, extra fingers, sliding feet, identity drift, watermark, camera shake, inconsistent lighting, plastic skin, cartoonish, color shift
 ```
 
-**Add for character shots:** `face distortion, unnatural skin texture, floating limbs`
-**Add for product/truck shots:** `text morphing, label warping, geometry distortion, reflection artifacts`
-**Add for camera movement shots:** `camera drift, sudden zooms, background shifting`
+**Add for character shots:**
+```
+face distortion, unnatural skin texture, floating limbs, breathing movement, body sway, weight shifting, expression change, mood shift
+```
 
-Use 8-12 specific terms. Avoid vague terms like "bad quality" or "ugly" — be specific about the artifact to prevent.
+**Add for truck/product shots:**
+```
+vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, surface inconsistency
+```
+
+**Add for camera movement shots:**
+```
+camera drift, sudden zooms, background shifting, unstable details, background morphing
+```
+
+Use 8-12 specific terms per category. Avoid vague terms like "bad quality" or "ugly" — be specific about the artifact to prevent.
 
 ### Duration Strategy (researched 2026-04-10)
 
@@ -291,30 +314,130 @@ Before submitting to I2V, verify the hero frame has:
 **Establishing shot:**
 ```python
 cfg_scale=0.4, duration="5", camera={"zoom": 2, "vertical": 1},
-prompt="Slow pull-back revealing full scene, ambient elements drift gently, lighting remains consistent. Motion eases to stop.",
-negative_prompt="jittery, flickering, inconsistent lighting, morphing, camera shake, blurry"
+prompt="Slow pull-back revealing full street scene. Ambient leaves drift gently in breeze. All vehicles and buildings remain stationary. Lighting remains perfectly consistent throughout. Motion eases to stop.",
+negative_prompt="jittery, flickering, inconsistent lighting, morphing, camera shake, blurry, vehicle movement, ghost driving, background shifting, color shift"
 ```
 
 **Character close-up:**
 ```python
 cfg_scale=0.5, duration="5", camera={"zoom": -2},
-prompt="Subject blinks naturally, slight smile forms, hair moves gently. Background remains static. Expression settles.",
-negative_prompt="face distortion, morphing faces, identity drift, extra fingers, plastic skin, flickering, sliding feet"
+prompt="Subject blinks once naturally. Slight confident smile forms gradually. Hair moves gently. Maintains exact posture, no body sway. Background completely static. Lighting consistent. Expression settles.",
+negative_prompt="face distortion, morphing faces, identity drift, breathing movement, body sway, expression change, extra fingers, plastic skin, flickering, sliding feet, color shift"
 ```
 
 **Truck/product hero:**
 ```python
 cfg_scale=0.7, duration="5", camera={"tilt": 3},
-prompt="Slow orbit around truck, light reflections glide across surface, branding stays sharp. Motion gradually slows to stop.",
-negative_prompt="text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering"
+prompt="Slow camera orbit around truck. Light reflections glide gently across surface. Branding text stays perfectly sharp and stable. Truck completely stationary, no vehicle movement. Foreground leaves drift subtly. Motion gradually eases to stop.",
+negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering, color shift, jittery, inconsistent lighting"
 ```
 
 **Walking/action:**
 ```python
 cfg_scale=0.5, duration="5", camera={"horizontal": 3},
-prompt="Man walks forward with natural stride, coat sways with movement. Camera tracks alongside. Steps grounded. Movement eases to stop.",
-negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing faces, extra fingers, camera shake"
+prompt="Man walks forward with natural stride, each step lands heel-first then rolls forward. Arms swing naturally. Coat fabric sways with movement. Steps grounded with visible weight transfer. Movement eases to gentle stop.",
+negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing faces, extra fingers, camera shake, breathing artifacts, robotic movement"
 ```
+
+**Box handoff (anchored hands):**
+```python
+cfg_scale=0.5, duration="5", camera={"horizontal": 2},
+prompt="Man's fingers grip firmly around cardboard box edges. He extends arms slowly forward, handing box to second person. Both characters' feet remain planted. Truck completely stationary in background. Motion eases to stop.",
+negative_prompt="floating limbs, extra fingers, deformed hands, sliding feet, identity drift, face distortion, vehicle movement, ghost driving, flickering, object morphing, color shift"
+```
+
+### CRITICAL: Preventing Known Production Failures (deep research 2026-04-10)
+
+#### Preventing Ghost Driving (Truck Movement)
+Our #1 production failure. Triple-lock approach:
+
+1. **Prompt constraint:** ALWAYS include "truck remains completely stationary, no vehicle movement" in every truck shot
+2. **Negative prompt:** ALWAYS include "vehicle movement, driving, rolling, ghost driving, sliding vehicle"
+3. **Static mask (nuclear option):** Generate a mask image (white=freeze, black=allow motion) covering the truck and pass as `static_mask` parameter:
+```python
+"static_mask": "<url_to_mask_image_covering_truck_area>"
+```
+
+#### Preventing Breathing Artifacts
+NEVER use these words in motion prompts: "breathing", "weight shift", "subtle body movement"
+- For standing characters: "maintains exact posture, no body sway"
+- Only describe the SPECIFIC motion you want: "blinks naturally" not "subtle life-like movement"
+- Negative prompt: "breathing movement, chest expansion, body sway, weight shifting"
+
+#### Preventing Expression Changes
+- Add "maintains exact expression, no expression changes" for static expression shots
+- For intentional changes, STAGE the transition: "neutral → eyebrows lift → eyes widen → smile forms"
+- Negative prompt: "sudden expression change, mood shift, grimacing"
+
+#### Preventing Color Shifts
+- NEVER include lighting descriptions in I2V prompts (image provides lighting)
+- Add "lighting remains consistent throughout" to every prompt
+- Use cfg_scale 0.7 for branded shots (higher adherence preserves colors)
+- Negative prompt: "color shift, lighting change, exposure drift, color grading change"
+
+#### Hand/Finger Stability
+- ALWAYS anchor hands to objects: "fingers grip the box edge firmly"
+- Never let hands move freely: "She moves her hands" causes deformation
+- Medium shots safer than extreme close-ups for hand interactions
+- Negative prompt: "extra fingers, deformed hands, floating limbs"
+
+#### Foot Grounding
+- Describe heel-to-toe mechanics: "each step lands heel-first, then rolls forward"
+- Keep characters centered in frame (model maintains proportions better)
+- For standing characters: "feet remain planted on ground"
+- Negative prompt: "sliding feet, floating, stiff legs, gliding, no foot contact"
+
+### Static Mask API Usage (for object freezing)
+
+When prompt + negative prompt alone cannot prevent object movement:
+
+```python
+# Create mask: white pixels = freeze, black pixels = allow motion
+# Upload to accessible URL, then include in API call:
+{
+    "static_mask": "https://cdn.example.com/truck_freeze_mask.png",
+    "prompt": "Camera slowly orbits. Foreground leaves drift. Motion eases to stop.",
+    "negative_prompt": "vehicle movement, ghost driving, ..."
+}
+```
+
+**When to use:** Truck in frame that MUST NOT move, branded signage, background objects that keep morphing.
+
+### Elements (Character Binding) for I2V Consistency
+
+```python
+{
+    "elements": [
+        {
+            "frontal_image_url": "https://cdn.example.com/character_front.png",
+            "reference_image_urls": [
+                "https://cdn.example.com/character_3quarter.png",
+                "https://cdn.example.com/character_profile.png"
+            ]
+        }
+    ]
+}
+```
+
+Provide 3-4 angles (front, three-quarter, profile). Model maps character as 3D spatial anchor, maintaining identity even during camera movement.
+
+### Hero Frame Prompting (Nano Banana Pro & Kontext Max)
+
+**Nano Banana Pro (text-to-image):**
+- Write like a Creative Director, not keyword tags
+- Include camera specs: "50mm f/2.8, shallow depth of field"
+- Wrap text in quotes: `displaying "SNELVERHUIZEN" in bold white sans-serif`
+- Provide context: "for a premium Dutch moving company ad campaign"
+- Keep text to 25 chars max per element for legibility
+
+**Flux Kontext Max (character lock):**
+- Reference images by position AND content: "the man from the first image"
+- NEVER use pronouns — use descriptive names
+- End with explicit preservation: "preserving exact facial features, expression, and outfit"
+- For scene changes: "while keeping the person in the exact same position, scale, and pose"
+- ALWAYS use original reference, never chain outputs as new references
+
+**See `/opt/pipeline/output/research/prompting_guidelines_per_model.md` for complete templates.**
 
 ## Tier 2 (Fallback): Higgsfield Cinema Studio 2.0 — Browser Generation
 
