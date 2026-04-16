@@ -122,6 +122,79 @@ resp = httpx.post('https://platform.higgsfield.ai/v1/image2video/dop', json={...
 
 **When to use:** Only when Higgsfield-native models are specifically needed or AIMLAPI is unavailable.
 
+## Prompt Engineering — Hero Frame Generation
+
+### Universal Rules (Both Models)
+- **Natural language over keyword lists.** Write like briefing a human cinematographer, not tagging a search engine.
+- **Word order = priority.** Put the most important elements first: Subject → Action → Style → Camera → Context.
+- **Sweet spot: 30–80 words.** Complex scenes may go to 100; simple shots can be shorter.
+- **Avoid vague adjectives:** "beautiful", "stunning", "aesthetic" — replace with specific visual facts: "soft directional window light from the upper left", "shallow depth of field, smooth bokeh".
+
+### Nano Banana Pro (`google/nano-banana-pro`) — Prompt Template
+
+```
+[Shot type and style] of [subject with specific physical details] [action/pose] in [setting/environment],
+[lighting description with direction], [mood/atmosphere], [lens and aperture],
+[camera angle and composition], [texture/materiality details like "worn leather", "wet pavement"].
+```
+
+**Working cinematic template (copy and adapt):**
+```
+Cinematic wide establishing shot of a large white moving truck with blue "Snel Verhuizen"
+lettering parked outside a Dutch residential home on a quiet tree-lined street,
+golden hour backlight with long shadows, warm amber highlights on chrome,
+24mm anamorphic lens, slight lens flare, rule of thirds composition,
+film grain, natural wear on asphalt, realistic fabric wrinkles on driver's jacket.
+```
+
+**Camera specs that work well with NBP:**
+| Intent | Lens | Aperture | Notes |
+|--------|------|----------|-------|
+| Wide establishing | 24mm anamorphic | f/5.6–f/8 | Reveals full scene, slight barrel distortion |
+| Truck beauty / product | 35mm | f/2.8–f/4 | Natural perspective, mild compression |
+| Portrait / emotional | 85mm | f/1.4–f/2.2 | Subject isolation, smooth bokeh |
+| Detail / texture | 100mm macro | f/2.8 | Object close-ups, tight DOF |
+| Action / moving | 50mm | f/2.8 | Natural eye perspective |
+
+**Lighting descriptions that trigger cinematic quality:**
+- "Golden hour backlight with warm amber highlights and long foreground shadows"
+- "Overcast soft diffused light, no harsh shadows, neutral whites"  
+- "Three-point studio lighting, soft key from upper left, rim light separating subject from background"
+- "Blue-hour twilight, streetlights casting warm pools, deep cool shadows"
+
+**NBP-specific strengths:**
+- Accurate Dutch street architecture (request "Amsterdam/Rotterdam residential street")
+- Up to 14 reference images accepted — pass character reference sheet images in the API call
+- Natural text rendering (truck logo, signage) — enclose text in quotes: "Snel Verhuizen"
+- Reads conversational edits: "Make the sky more dramatic with storm clouds, keep everything else the same"
+
+**What to avoid with NBP:**
+- Vague qualifiers: "cinematic", "beautiful", "high quality" without specifics
+- Multiple conflicting styles in one prompt
+- Pronouns — name subjects explicitly: "the bearded man in the navy kufiya" not "he"
+
+### Flux Kontext Max — Edit Instruction Format
+
+Use Flux Kontext Max when you have a hero frame that's close but needs targeted adjustments:
+
+**Edit instruction template:**
+```
+Change [specific element] to [new state], while keeping [everything else] exactly the same.
+Maintain [subject's name or description] facial features, clothing, and pose unchanged.
+```
+
+**Working edit examples:**
+- "Change the background to a rain-wet Amsterdam street at golden hour, while keeping the moving truck and crew in the exact same position and clothing"
+- "Replace the grey overcast sky with dramatic golden hour clouds, maintaining all foreground elements unchanged"
+- "Change the truck's livery color from white to cream, keeping all other elements the same"
+
+**Kontext Max best practices:**
+- Name subjects descriptively, never use pronouns: "the man with the white kufiya" not "him"
+- Explicitly state what to preserve: "maintaining the original composition, lighting direction, and color grading"
+- Iterative editing is stable — make multiple sequential edits without quality degradation
+- Prompt upsampling available but disables reproducibility — skip for final production frames
+- Optimal prompt length: 30–60 words for edits
+
 ## Generation Rules
 
 1. **ONE generation at a time. Verify correct image before generating.**
@@ -131,3 +204,4 @@ resp = httpx.post('https://platform.higgsfield.ai/v1/image2video/dop', json={...
 5. Log every generation in SQLite: model, cost, QA scores, pass/fail
 6. Max 3 retries per clip. After 3 failures → STOP, escalate to owner
 7. Never use text-to-video for final shots — always image-to-video from a QA-passed hero frame
+8. **Prompt failure diagnosis:** If a frame fails QA, identify the specific failing dimension before re-prompting. Adjust only the relevant prompt element — don't rebuild the whole prompt.
