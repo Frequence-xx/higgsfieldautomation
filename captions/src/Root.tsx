@@ -2,6 +2,9 @@ import React from 'react';
 import {Composition} from 'remotion';
 import {CaptionComposition} from './CaptionComposition';
 import {PhoneUIComposition} from './PhoneUI';
+import {Video3Main} from './Video3Testimonial';
+import {BrotherTestimonial} from './BrotherVideo';
+import video3Words from '../public/video3/words.json';
 
 const procesWords = [
 	{text: 'Een', startFrame: 0, endFrame: 5},
@@ -63,6 +66,22 @@ export const RemotionRoot: React.FC = () => {
 				id="PhoneUI"
 				component={PhoneUIComposition}
 				durationInFrames={90}
+				fps={30}
+				width={1080}
+				height={1920}
+			/>
+			<Composition
+				id="Video3Testimonial"
+				component={Video3Main}
+				durationInFrames={660}
+				fps={30}
+				width={1080}
+				height={1920}
+			/>
+			<Composition
+				id="BrotherTestimonial"
+				component={BrotherTestimonial}
+				durationInFrames={500}
 				fps={30}
 				width={1080}
 				height={1920}

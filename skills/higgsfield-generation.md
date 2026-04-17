@@ -1,7 +1,7 @@
 ---
-name: Video Generation
-description: AIMLAPI-first generation — Nano Banana Pro for hero frames, Kling v3 I2V for video animation. Higgsfield browser as fallback only.
-autoInvoke: true
+name: Video Generation (DEPRECATED)
+description: DEPRECATED — Use generation-image.md and generation-video.md instead. AIMLAPI-first generation — Nano Banana Pro for hero frames, Kling v3 I2V for video animation. Higgsfield browser as fallback only.
+autoInvoke: false
 triggers:
   - video generation
   - image generation
@@ -17,7 +17,13 @@ negatives:
   - Do NOT invoke when writing briefs or shot lists (use brief-intake.md)
 ---
 
-# Video Generation — AIMLAPI-First Architecture
+> **DEPRECATED** — This skill has been split into two focused skills. Use those instead:
+> - **`generation-image.md`** — Tier 1A: Hero frame models (NBP, Kontext Max, Flux Pro), parameters, 9:16 native generation
+> - **`generation-video.md`** — Tier 1B: I2V models (Kling v3), parameters, motion prompts, known failures, camera control
+>
+> This file is retained for historical reference only. Do NOT invoke for new work.
+
+# Video Generation — AIMLAPI-First Architecture (DEPRECATED)
 
 > **NOTE:** This skill has been split into two focused skills for better invocation:
 > - **`generation-image.md`** — Tier 1A: Hero frame models (NBP, Kontext Max, Flux Pro), parameters, 9:16 native generation

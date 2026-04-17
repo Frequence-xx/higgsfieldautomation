@@ -1,0 +1,252 @@
+{
+  "s2": [
+    {
+      "text": "We",
+      "startFrame": 2,
+      "endFrame": 5
+    },
+    {
+      "text": "waren",
+      "startFrame": 6,
+      "endFrame": 13
+    },
+    {
+      "text": "eerlijk",
+      "startFrame": 13,
+      "endFrame": 22
+    },
+    {
+      "text": "gezegd",
+      "startFrame": 22,
+      "endFrame": 34
+    },
+    {
+      "text": "bang",
+      "startFrame": 34,
+      "endFrame": 40
+    },
+    {
+      "text": "dat",
+      "startFrame": 40,
+      "endFrame": 43
+    },
+    {
+      "text": "de",
+      "startFrame": 44,
+      "endFrame": 47
+    },
+    {
+      "text": "kosten",
+      "startFrame": 49,
+      "endFrame": 57
+    },
+    {
+      "text": "achteraf",
+      "startFrame": 58,
+      "endFrame": 71
+    },
+    {
+      "text": "hoger",
+      "startFrame": 74,
+      "endFrame": 81
+    },
+    {
+      "text": "zouden",
+      "startFrame": 82,
+      "endFrame": 89
+    },
+    {
+      "text": "uitvallen.",
+      "startFrame": 90,
+      "endFrame": 104
+    }
+  ],
+  "s3": [
+    {
+      "text": "Ja,",
+      "startFrame": 2,
+      "endFrame": 4
+    },
+    {
+      "text": "dat",
+      "startFrame": 6,
+      "endFrame": 10
+    },
+    {
+      "text": "hadden",
+      "startFrame": 11,
+      "endFrame": 15
+    },
+    {
+      "text": "we",
+      "startFrame": 16,
+      "endFrame": 19
+    },
+    {
+      "text": "eerder",
+      "startFrame": 20,
+      "endFrame": 27
+    },
+    {
+      "text": "meegemaakt",
+      "startFrame": 28,
+      "endFrame": 47
+    },
+    {
+      "text": "bij",
+      "startFrame": 48,
+      "endFrame": 52
+    },
+    {
+      "text": "een",
+      "startFrame": 52,
+      "endFrame": 55
+    },
+    {
+      "text": "ander",
+      "startFrame": 56,
+      "endFrame": 62
+    },
+    {
+      "text": "verhuisbedrijf.",
+      "startFrame": 64,
+      "endFrame": 88
+    }
+  ],
+  "s4": [
+    {
+      "text": "Maar",
+      "startFrame": 2,
+      "endFrame": 5
+    },
+    {
+      "text": "hier",
+      "startFrame": 6,
+      "endFrame": 13
+    },
+    {
+      "text": "vulden",
+      "startFrame": 14,
+      "endFrame": 21
+    },
+    {
+      "text": "we",
+      "startFrame": 22,
+      "endFrame": 24
+    },
+    {
+      "text": "onze",
+      "startFrame": 27,
+      "endFrame": 32
+    },
+    {
+      "text": "gegevens",
+      "startFrame": 34,
+      "endFrame": 50
+    },
+    {
+      "text": "in",
+      "startFrame": 52,
+      "endFrame": 61
+    },
+    {
+      "text": "en",
+      "startFrame": 61,
+      "endFrame": 65
+    },
+    {
+      "text": "kregen",
+      "startFrame": 65,
+      "endFrame": 73
+    },
+    {
+      "text": "we",
+      "startFrame": 74,
+      "endFrame": 77
+    },
+    {
+      "text": "meteen",
+      "startFrame": 77,
+      "endFrame": 87
+    },
+    {
+      "text": "een",
+      "startFrame": 88,
+      "endFrame": 91
+    },
+    {
+      "text": "offerte",
+      "startFrame": 92,
+      "endFrame": 104
+    },
+    {
+      "text": "met",
+      "startFrame": 105,
+      "endFrame": 109
+    },
+    {
+      "text": "een",
+      "startFrame": 109,
+      "endFrame": 113
+    },
+    {
+      "text": "duidelijke",
+      "startFrame": 113,
+      "endFrame": 127
+    },
+    {
+      "text": "prijs.",
+      "startFrame": 127,
+      "endFrame": 137
+    }
+  ],
+  "s5": [
+    {
+      "text": "En",
+      "startFrame": 3,
+      "endFrame": 18
+    },
+    {
+      "text": "die",
+      "startFrame": 18,
+      "endFrame": 22
+    },
+    {
+      "text": "prijs",
+      "startFrame": 24,
+      "endFrame": 32
+    },
+    {
+      "text": "klopte",
+      "startFrame": 32,
+      "endFrame": 43
+    },
+    {
+      "text": "uiteindelijk",
+      "startFrame": 44,
+      "endFrame": 60
+    },
+    {
+      "text": "gewoon.",
+      "startFrame": 61,
+      "endFrame": 69
+    }
+  ],
+  "s6": [
+    {
+      "text": "Geen",
+      "startFrame": 2,
+      "endFrame": 9
+    },
+    {
+      "text": "verrassingen",
+      "startFrame": 9,
+      "endFrame": 22
+    },
+    {
+      "text": "achteraf.",
+      "startFrame": 23,
+      "endFrame": 35
+    }
+  ]
+}

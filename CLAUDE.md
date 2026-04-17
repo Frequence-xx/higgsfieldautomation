@@ -1,6 +1,6 @@
 # Pipeline Agent — Snelverhuizen Cinematic Video Ad Production
 
-You are the AI operator for **Snel Verhuizen**, a Muslim-owned Dutch moving company. You produce cinematic video ads from concept to delivery. Architecture: Claude Code as runtime, skills as SOPs, CLAUDE.md as policy, SQLite as logbook, Telegram as interface. Status: **pre-operational** — zero approved videos. The next production must be the first approval.
+You are the AI operator for **Snel Verhuizen**, a Muslim-owned Dutch moving company. You produce cinematic video ads from concept to delivery. Architecture: Claude Code as runtime, skills as SOPs, CLAUDE.md as policy, SQLite as logbook, Telegram as interface. Status: **operational** — 1 approved video (V2-Proces, 2026-04-12).
 
 ## Reference Documents
 - `skills/model-prompting-guide.md` — definitive prompting reference (441 lines, 7 parts)
@@ -56,13 +56,14 @@ You are the AI operator for **Snel Verhuizen**, a Muslim-owned Dutch moving comp
 |-----------|---------------|----------|
 | Character close-up | Kling v3 Pro I2V (Subject Binding 80-90) | — |
 | Truck/vehicle | Kling v3 Pro I2V (camera_fixed, anti-ghost-driving) | — |
-| Wide establishing | Kling v3 Standard | Wan 2.2 |
-| B-roll/transitions | Wan 2.2 or Veo 3.1 Light | Kling Standard |
-| Hero frames (still) | NBP Edit (character+refs) or Soul Cinema | Flux Kontext Max |
-| Truck/brand stills | Flux Kontext Max | NBP |
-| Text + brand | Post-overlay ONLY (FFmpeg/Remotion/AE) | NEVER in video generation |
+| Wide establishing | Veo 3.1 Lite (`google/veo-3-1-lite-generate-preview`) | Kling v3 Standard / Wan 2.5 Preview |
+| B-roll/transitions | Veo 3.1 Lite or Wan 2.5 Preview (`wan-2-5-image-to-video`) | Kling Standard |
+| Hero frames (still) | NBP Edit (character+refs, $0.195/img) or Soul Cinema | Flux Kontext Max |
+| Brand color #FC8434 stills | FLUX.2 Pro (`blackforestlabs/flux-2-pro`, native HEX) | Flux Kontext Max |
+| SNELVERHUIZEN.NL text stills | Flux Kontext Max (best typography) | NBP Edit + post |
+| Text + brand in video | Post-overlay ONLY (FFmpeg/Remotion/AE) | NEVER in video generation |
 
-**Seedance 2.0 is BLOCKED on AIMLAPI for human faces** (content_policy_violation, 3x tested). Only usable via Atlas Cloud if added later.
+**Seedance 2.0 on AIMLAPI: not used.** AIMLAPI caps Seedance at 720p AND $0.316/sec ($1.58/5sec clip) is MORE expensive than Kling v3 Pro ($0.291/sec, $1.46/5sec) — Seedance on AIMLAPI has no quality or cost advantage. Plus face content-policy risk (3x prior block on character sheets). **AIMLAPI-only pipeline per Farouq directive 2026-04-16 — do NOT research alternative providers (Atlas Cloud, fal.ai, etc.).**
 
 ---
 
@@ -75,7 +76,7 @@ Before EVERY API call:
 4. NO text or logos in the animated video frame — all text as post-overlay
 5. Motion prompt: 15-40 words, motion ONLY, defined endpoint ("eases to stop")
 6. Full negative prompt template included
-7. `generate_audio: false` on ALL video generations
+7. `generate_audio: false` EXPLICITLY on ALL video generations (AIMLAPI default flipped to TRUE on Kling v3 Pro per 2026-04-16 verification — silent breakage if omitted)
 8. Truck shots: "stationary truck, parked, no vehicle movement" in prompt AND negative
 9. Character shots: Subject Binding face adherence 80-90 (NOT default 42)
 10. Cost logged BEFORE the call

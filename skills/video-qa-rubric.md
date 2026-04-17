@@ -18,9 +18,13 @@ negatives:
 
 ## Frame Extraction
 
-Extract every 4th frame from each clip:
+Extract frames at t=0, t=2.5, t=5 for 5-second clips. For longer clips, extract every 2.5 seconds:
 ```bash
-ffmpeg -i clip.mp4 -vf "select=not(mod(n\,4))" -vsync vfn /opt/pipeline/qa/<brief_id>/<shot_number>/frame_%03d.jpg
+# 5-second clip (3 frames at t=0, t=2.5, t=5 — frame numbers assume 15fps output)
+ffmpeg -i clip.mp4 -vf "select=eq(n\,0)+eq(n\,37)+eq(n\,75)" -vsync vfr /opt/pipeline/qa/<brief_id>/<shot_number>/frame_%02d.jpg
+
+# Longer clip (every 2.5s)
+ffmpeg -i clip.mp4 -vf "fps=0.4" /opt/pipeline/qa/<brief_id>/<shot_number>/frame_%03d.jpg
 ```
 
 Send frames in batches to Claude vision API with the scoring rubric below.

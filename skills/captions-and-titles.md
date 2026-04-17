@@ -21,7 +21,11 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
 ## Caption Workflow (Data Flow)
 
-1. **ElevenLabs generates voiceover** with word-level timestamps
+1. **ElevenLabs generates voiceover** — TWO endpoints exist, only ONE returns word-level timestamps:
+   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (use after generating audio with regular TTS, then submit audio + transcript)
+   - ❌ **WRONG: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — only returns CHARACTER-level timestamps (insufficient for word-by-word captions; was likely root cause of V2 caption sync issues 2026-04-09/10)
+   - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
+   - Recommended model: `eleven_multilingual_v2` (most emotionally rich, proven stable for Dutch)
 2. **Parse timestamps** into frame-number arrays:
    ```
    word_timestamps → [{text: "Your", start_ms: 0, end_ms: 500}, ...]
@@ -43,7 +47,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 - **Secondary font:** Anton (ultra-heavy, free from Google Fonts) — alternative for extra-bold headlines
 - **Weights:** Black (900) for titles/hooks/names, Bold (700) for voiceover captions, SemiBold (600) for name card subtitles
 - **Size:** 55–75px for voiceover captions, 80–100px for title/hook text, 48–64px for name cards (on 1080x1920 canvas)
-- **Color:** White (#FFFFFF) with active-word highlight (yellow #F7C204 or brand accent)
+- **Color:** White (#FFFFFF) with active-word highlight (brand orange #FC8434)
 - **Outline:** `-webkit-text-stroke: 6px black; paint-order: stroke fill;` — ALWAYS. Outline is more reliable than shadow alone for readability on any background.
 - **Shadow:** `2px 2px 8px rgba(0,0,0,0.7)` — in addition to outline, for depth.
 - **Letter spacing:** 0.02em — slightly open for cinematic feel
@@ -238,7 +242,7 @@ Three mutually exclusive vertical zones prevent spatial overlap:
 The standard for professional short-form video in 2026. Active word changes color as it is spoken.
 
 - All words visible in white (#FFFFFF) with black outline (6px)
-- Active word turns yellow (#F7C204) or brand accent color
+- Active word turns brand orange (#FC8434)
 - Active word may scale to 1.05x (subtle)
 - Word highlights 50–100ms BEFORE it is spoken
 - Each word stays highlighted for full spoken duration + 50–100ms
@@ -287,7 +291,7 @@ Four distinct text roles, each with its own visual weight. Never mix them up.
 | **Title/Hook** | Montserrat | Black (900) | 80–100 | White | 6–8px black | YES |
 | **Name (card)** | Montserrat | Black (900) | 48–64 | White | 6px black | YES |
 | **Name title** | Montserrat | SemiBold (600) | 32–40 | White 80% | 4px black | No |
-| **Voiceover Caption** | Montserrat | Bold (700) | 55–75 | White (highlight: #F7C204) | 6px black | YES |
+| **Voiceover Caption** | Montserrat | Bold (700) | 55–75 | White (highlight: #FC8434) | 6px black | YES |
 | **CTA** | Montserrat | Bold (700) | 48–64 | White or brand | 6px black | YES |
 
 ### Why Montserrat (Not Playfair Display)
@@ -333,7 +337,7 @@ const { pages } = createTikTokStyleCaptions({
   const isActive = currentTimeMs >= token.fromMs && currentTimeMs < token.toMs;
   return (
     <span style={{
-      color: isActive ? '#F7C204' : '#FFFFFF',
+      color: isActive ? '#FC8434' : '#FFFFFF',
       transform: `scale(${isActive ? 1.05 : 1})`,
       WebkitTextStroke: '6px black',
       paintOrder: 'stroke fill',

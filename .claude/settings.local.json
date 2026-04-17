@@ -9,6 +9,24 @@
             "command": "/opt/pipeline/scripts/hindsight-monitor.sh",
             "timeout": 10,
             "statusMessage": "Checking Hindsight health..."
+          },
+          {
+            "type": "command",
+            "command": "/opt/pipeline/scripts/sessionstart-load-summary.sh",
+            "timeout": 10,
+            "statusMessage": "Loading last-session summary..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/opt/pipeline/scripts/precompact-summary.sh",
+            "timeout": 30,
+            "statusMessage": "Saving session summary before compaction..."
           }
         ]
       }

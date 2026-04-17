@@ -104,7 +104,7 @@ After generating EACH hero frame, before animating:
 
 After animating EACH clip, before proceeding to next:
 
-- [ ] Extract 5 frames spread across the clip (every 30th frame)
+- [ ] Extract frames at t=0, t=2.5, t=5 for 5s clips; for longer clips extract every 2.5s
 - [ ] READ each extracted frame
 - [ ] Check: Is the truck stationary? (no ghost driving)
 - [ ] Check: Does the character maintain their expression? (no breathing artifacts, no mood changes)
