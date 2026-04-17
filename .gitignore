@@ -29,3 +29,13 @@ config/higgsfield-session.json
 # Temporary files
 *.pyc
 .DS_Store
+
+# Runtime pipeline state (not meant for git)
+.claude/scheduled_tasks.lock
+data/learning-cycle-cache/
+data/learning-cycle.log
+data/learning-cycle.log.old
+data/health-check-state.json
+data/learning-cycle-monitor.state
+data/pipeline.db-shm
+data/pipeline.db-wal
