@@ -1,23 +1,63 @@
 ---
 name: Halal Audio
-description: End-to-end halal audio pipeline — nasheed sourcing, ambient SFX retrieval, mixing levels, FFmpeg commands, and LUFS normalization for Snelverhuizen video ads. No music or instruments ever.
-autoInvoke: false
+description: End-to-end halal audio pipeline — ElevenLabs Dutch voiceover, nasheed sourcing, ambient SFX retrieval, FFmpeg mixing commands, LUFS normalization for Snelverhuizen video ads. No music or instruments ever.
+autoInvoke: true
 triggers:
+  - audio
   - audio mixing
   - voiceover
   - nasheed
   - SFX
   - sound effects
   - ambient audio
+  - LUFS
   - ElevenLabs
+negatives:
+  - Do NOT invoke for purely visual tasks (image/video generation, hero frames)
+  - Do NOT invoke for caption/text overlay work (use captions-and-titles.md)
 ---
 
 # Halal Audio Pipeline
 
 No music. No instruments. Ever. Audio is restricted to:
-1. Voiceover (ElevenLabs, voice: Willem)
-2. Natural ambient SFX (Freesound, CC0 or CC-BY only)
+1. Voiceover (ElevenLabs, voice: Willem, model: `eleven_multilingual_v2`)
+2. Natural ambient SFX (Pixabay CC0 primary; Freesound CC0 fallback)
 3. Vocal nasheeds without instruments (owner approval required before use)
+
+## Audio Layer Hierarchy
+
+| Layer | Source | Volume | Notes |
+|-------|--------|--------|-------|
+| Voiceover | ElevenLabs (Willem) | 100% / 0 dB | Primary. Always present. |
+| Ambient SFX | Pixabay CC0 / Freesound CC0 | 25–30% | Background texture. Never music. |
+| Vocal Nasheed | NoCopyrightNasheeds / Internet Archive | 15–20% | Optional. Owner approval required per brief. |
+
+---
+
+## 0. ElevenLabs Dutch Voiceover Settings
+
+**Model:** `eleven_multilingual_v2` — mandatory for Dutch. Never use `eleven_monolingual_v1` for Dutch.
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| Stability | 60 | Consistent delivery; >65 → monotone on longer passages |
+| Similarity Boost | 72 | >80 introduces artifacts in Dutch |
+| Style Exaggeration | 15 | Slight energy; 0 = flat, >30 = over-dramatic |
+| Speaker Boost | true | Improves clarity on mobile speakers |
+
+**SSML for natural Dutch pacing:**
+```xml
+<speak>
+  <prosody rate="95%">
+    Verhuizen zonder zorgen? <break time="400ms"/>
+    <emphasis level="moderate">Snel Verhuizen</emphasis> regelt alles.
+    <break time="300ms"/>
+    Bel nu: 085 333 11 33.
+  </prosody>
+</speak>
+```
+
+ElevenLabs exports at ~-24 LUFS — always normalize before mixing (see 4a).
 
 ---
 
@@ -42,7 +82,30 @@ yt-dlp -x --audio-format mp3 -o "nasheed_%(title)s.%(ext)s" "https://www.youtube
 
 ---
 
-## 2. Freesound SFX — Curated Sounds for Moving Company Ads
+## 2. SFX Libraries
+
+### Tier 1: Pixabay SFX (Primary — No Attribution Required)
+
+- **URL:** `pixabay.com/sound-effects/`
+- **License:** Pixabay License — free for commercial use, no attribution required
+- Preferred over Freesound: no API key needed, direct browser/curl download
+
+**Search terms by scene:**
+
+| Scene | Pixabay search term | Duration target |
+|-------|---------------------|-----------------|
+| Truck arriving | `truck engine idle` | 10–30s loop |
+| Boxes being moved | `cardboard boxes moving` | 3–8s |
+| Door open/close | `door open creak` | 2–4s |
+| Footsteps on floor | `footsteps indoor` | 5–15s |
+| Quiet street ambient | `street ambience birds morning` | 30–60s loop |
+| Tape being applied | `tape roll dispenser` | 2–4s |
+| Furniture settling | `furniture drag wood floor` | 3–6s |
+| Family arrival warmth | `birds chirping morning quiet` | 30–60s loop |
+
+### Tier 2: Freesound (API, CC0 Filter Only)
+
+Use when Pixabay returns nothing suitable. Requires free API key from `freesound.org/apiv2/apply`.
 
 ### License Priority: CC0 > CC-BY > CC-BY-NC (never use NC for commercial ads)
 
@@ -101,14 +164,38 @@ ffmpeg -i voiceover_raw.mp3 \
 ```
 
 ### 4b. Simple mix: voiceover + ambient bed (no ducking)
+
+Use `aloop=loop=-1` to loop ambient to match video length without gaps:
 ```bash
-ffmpeg -i voiceover_normalized.mp3 -i ambient.wav \
+ffmpeg -i video_silent.mp4 -i voiceover_normalized.mp3 -i ambient.wav \
   -filter_complex \
-    "[0:a]volume=1.0[vo]; \
-     [1:a]volume=0.27[amb]; \
-     [vo][amb]amix=inputs=2:duration=first:normalize=0[out]" \
-  -map "[out]" -c:a aac -b:a 192k \
-  audio_mixed.aac
+    "[1:a]volume=1.0[vo]; \
+     [2:a]volume=0.27,aloop=loop=-1:size=2e+09[amb]; \
+     [vo][amb]amix=inputs=2:duration=first:normalize=0[audio_mixed]; \
+     [audio_mixed]loudnorm=I=-14:TP=-1.5:LRA=11[out]" \
+  -map 0:v -map "[out]" -c:v copy -c:a aac -b:a 192k \
+  output_with_audio.mp4
+```
+
+### 4b2. Mix with nasheed (owner approval required)
+```bash
+ffmpeg -i video_silent.mp4 -i voiceover_normalized.mp3 -i ambient.wav -i nasheed.mp3 \
+  -filter_complex \
+    "[1:a]volume=1.0[vo]; \
+     [2:a]volume=0.20,aloop=loop=-1:size=2e+09[amb]; \
+     [3:a]volume=0.18,aloop=loop=-1:size=2e+09[nash]; \
+     [vo][amb][nash]amix=inputs=3:duration=first:normalize=0[audio_mixed]; \
+     [audio_mixed]loudnorm=I=-14:TP=-1.5:LRA=11[out]" \
+  -map 0:v -map "[out]" -c:v copy -c:a aac -b:a 192k \
+  output_with_nasheed.mp4
+```
+
+### 4b3. Add fade in/out to ambient or nasheed tracks
+
+Replace `DURATION` with total video length in seconds:
+```bash
+# In filter_complex, replace the ambient line with:
+[2:a]afade=t=in:st=0:d=1.5,afade=t=out:st=DURATION-2:d=2.0,volume=0.27,aloop=loop=-1:size=2e+09[amb];
 ```
 
 ### 4c. Auto-ducking: ambient ducks when voiceover is active
@@ -172,3 +259,30 @@ The audio QA must also pass shariah-compliance.md hard gate:
 - Any nasheed with any instrument (even subtle beat or clap rhythm): REJECT
 - Any ambient SFX with background music (check carefully): REJECT, find alternative
 - Voiceover tone: professional, sincere — never sensationalist or manipulative
+
+---
+
+## 7. Platform Loudness Standards
+
+| Platform | Target LUFS | True Peak | Notes |
+|----------|-------------|-----------|-------|
+| Instagram Reels | -14 LUFS | -1.5 dBTP | Platform normalizes louder content down |
+| TikTok | -14 LUFS | -1.5 dBTP | Same normalization behavior |
+| YouTube Shorts | -14 LUFS | -1.0 dBTP | YouTube target |
+| WhatsApp / Telegram | -16 LUFS | -1.0 dBTP | Voice-first, slightly lower |
+
+**Rule:** Always export at -14 LUFS. Platforms normalize louder content DOWN (losing dynamics). Do not push louder to "cut through" — it triggers more limiting and sounds worse.
+
+---
+
+## 8. Known Issues and Solutions
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Ambient loops with audible click | No crossfade at loop point | Find seamless loop file or use `acrossfade` |
+| VO sounds robotic | Stability too high (>70) | Set stability to 55–60 |
+| Dutch phonemes sound off | Wrong model | Must use `eleven_multilingual_v2` |
+| Nasheed copyright claim on YouTube | Not checking each video's description | Always verify specific NCN video description before use |
+| Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
+| Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
+| SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
