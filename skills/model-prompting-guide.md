@@ -427,7 +427,7 @@ No single model excels at everything. Each failure mode maps to a specific model
 **Try 3:** Conservative fallback. Reduce motion to 0.3, shorten to 3-4s, static or slow pan camera.
 
 **Detection methods:**
-- Expression drift: InsightFace/ArcFace face embeddings per frame, cosine similarity <0.80 = drift
+- Expression drift: InsightFace/ArcFace face embeddings per frame, cosine similarity <0.65 = drift (cross-pose/lighting QA threshold; 0.80 is too strict for legitimate angle/lighting variation — see character-consistency.md for full threshold table)
 - Ghost driving: Vehicle bounding boxes per frame, flag implausible motion vectors
 
 ---
