@@ -312,6 +312,50 @@ Real but immature. Endpoint: cloud.higgsfield.ai. SDK: `pip install higgsfield-c
 
 ---
 
+### Veo 3.1 Lite (Google — T2V, Non-Character B-Roll)
+
+**Use case:** Wide establishing shots and B-roll with NO characters. Cheapest video model in the pipeline at ~$0.104/sec on AIMLAPI ($0.52/5sec). 2.8× cheaper than Kling v3 Pro.
+
+**NOT for:** Character shots. Face consistency is inferior to Kling v3 Pro. No Subject Binding. No hero-frame I2V reliability — `image_url` behavior on AIMLAPI unverified; treat as T2V until tested.
+
+**Prompt structure** — 30-80 words in natural creative-director language (same style as NBP). Describe the full scene including motion, environment, lighting, and camera.
+
+- No characters in frame
+- No text in frame (all post-overlay)
+- Specify camera motion explicitly: "slow pull-back", "gentle push-in", "locked off"
+- Describe motion endpoints: "eases to rest", "settles gently"
+- Positive framing only ("clear empty street" not "no people")
+
+**API parameters (camelCase — different from Kling snake_case):**
+
+| Parameter | Type | Value | Notes |
+|-----------|------|-------|-------|
+| `model` | string | `"google/veo-3-1-lite-generate-preview"` | Required |
+| `prompt` | string | 30-80 words | Motion + scene |
+| `aspectRatio` | string | `"9:16"` | camelCase! |
+| `durationSeconds` | int | 5-8 | camelCase, NOT `duration` |
+| `generateAudio` | bool | `False` | **ALWAYS false** — saves 46% |
+| `enhancePrompt` | bool | `False` | **ALWAYS false** — overrides brand details |
+| `negativePrompt` | string | see below | camelCase, supported |
+| `seed` | int | optional | 0-4294967295, for reproducibility |
+
+**Endpoint:** `POST https://api.aimlapi.com/v2/video/generations`
+
+**Negative prompt baseline for Veo 3.1 Lite:**
+```
+blurry, distorted, low quality, jittery, flickering, watermark, text overlay, logos, people, faces, hands
+```
+
+**Audio cost:** 65 credits with audio vs 35 credits without — **always set `generateAudio: False`**
+
+**`enhancePrompt` must be False:** When True, Veo's AI rewrites your prompt and discards brand-specific language. Always False for pipeline work.
+
+**Quality ceiling:** 720p for 5-8s clips. Adequate for establishing shots in social ads. Not suitable for close-detail hero shots.
+
+**Same-ecosystem bonus:** NBP (Gemini 3 Pro Image) + Veo 3.1 Lite share Google latent space. Hero frame generated with NBP → Veo T2V prompt from same description produces better compositional coherence than cross-ecosystem chaining.
+
+---
+
 ## Part 3 — Workflow Chaining (Image → Video)
 
 The 2026 standard: "ingredients-to-video" — generate locked hero frames first, storyboard in Figma for QA, animate only approved frames. I2V model's job = "moving pixels that already exist."
