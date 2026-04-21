@@ -34,24 +34,47 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 | Model | AIMLAPI String | Best For | Max Refs | Cost (1K) | 9:16 Output |
 |-------|---------------|----------|----------|-----------|-------------|
+| Nano Banana 2 Edit (DRAFT) | `google/nano-banana-2` | Draft iterations before committing NBP Pro credits | 14* | ~$0.07* | 768x1344* |
 | Nano Banana Pro | `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | 0 | ~$0.13 | 768x1344 |
 | Nano Banana Pro Edit | `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) | 14 | ~$0.20 | 768x1344 |
-| Flux Kontext Max | `flux/kontext-max/image-to-image` | Character identity lock across scenes | 4 | ~$0.10 | 752x1392 |
+| Flux Kontext Max | `flux/kontext-max/image-to-image` | Character identity lock across scenes | 8 | ~$0.10 | 752x1392 |
+| Flux Kontext Max T2I | `flux/kontext-max/text-to-image` | Brand color stills without input ref | 0 | ~$0.08 | 768x1344 |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
+
+*NB2 row marked with asterisk — CANARY TEST REQUIRED before production use. AIMLAPI pricing unverified. As of Feb 2026 launch, NB2 is reported to support 14 refs and 9:16; earlier April 16 audit noted a "5 refs / 5 ratio" limit that may refer to the older `google/nano-banana` (Gemini 2.5 Flash) model, not NB2. Verify in a $0 test before using on paid shots.
 
 ### Decision Flow
 
 ```
-Shot has characters (Karel/Mourad)? → Nano Banana Pro Edit (existing refs as Image 1)
+Shot has characters, need to iterate prompt? → NB2 Edit DRAFT first (if canary passes), then NBP Edit for final
+Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
 Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs)
 Shot is pure scenery / B-roll? → Nano Banana Pro (text-only, cheapest)
-Shot needs pixel-perfect text on truck? → Flux Kontext Max (best text rendering)
+Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering)
+Shot needs brand-color still without input? → Flux Kontext Max T2I
 Shot is the money shot / CTA hero? → Flux Pro v1.1 Ultra
 ```
 
 ## API Call Templates
+
+### Nano Banana 2 Edit (draft/iteration — CANARY VERIFY FIRST)
+
+```python
+# Use for prompt iteration before committing NBP Pro credits.
+# Verify 9:16 support and pricing on AIMLAPI before first use.
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "google/nano-banana-2",
+    "prompt": "Image 1: Mourad character reference sheet. DRAFT: Mourad standing next to the truck cab, three-quarter view. Keep facial features identical to Image 1. Golden hour warm backlight, 85mm portrait, shallow DOF, vertical composition.",
+    "image_urls": [mourad_sheet_url],
+    "aspect_ratio": "9:16",
+    "resolution": "1K",
+    "num_images": 1,
+}, headers=headers, timeout=60)
+hero_url = resp.json()["data"][0]["url"]
+# If canary passes: use this model for prompt iteration drafts, NBP Pro for approved finals.
+```
 
 ### Nano Banana Pro (text-to-image)
 
@@ -129,14 +152,20 @@ NBP is a "Thinking" model. Natural language outperforms tag soup.
 - Explicitly remove objects from previous scenes ("No longer holding the clipboard")
 - Character sheet MUST be Image 1 in every call for character shots
 - 6 references with high fidelity, up to 14 total
+- **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
+- First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
 
 ## Prompting Rules for Flux Kontext Max
 
 - 30-80 word sweet spot, maximum 512 tokens
 - FLUX does NOT support CLIP-style weighting — `(keyword:1.5)` is silently ignored
 - Token hierarchy: subject > action/pose > environment > lighting > style
-- For SNELVERHUIZEN.NL text: always use quotation marks, ALL CAPS, specify "bold clean sans-serif"
+- For SNELVERHUIZEN.NL text: always use quotation marks, ALL CAPS, specify "bold clean sans-serif". Text editing format: `Replace '[original text]' with '[new text]'`
 - If text morphs: generate truck text-free, composite in post
+- **ONE change per call** — progressive editing only. Change background first → then lighting → then details. Stacking multiple changes in one prompt degrades quality.
+- Refer to subjects by description, not pronouns: "the man with the black crewneck" not "him"
+- Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
+- `guidance_scale` range on AIMLAPI: 1–20. Optimal 2.5–3.5 for editing (higher = more prompt-literal, lower = more image-preserving).
 
 ## Post-Generation Checklist
 
