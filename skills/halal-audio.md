@@ -75,9 +75,13 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), confirm licensing before use or use CC0 from Internet Archive only.
 
+**Finding vocals-only tracks on NCN:** Search for "acapella", "vocals only", or "no instrument" in the track title on the NCN channel page.
+
 **yt-dlp to extract audio from NCN YouTube video (free, no API cost):**
 ```bash
-yt-dlp -x --audio-format mp3 -o "nasheed_%(title)s.%(ext)s" "https://www.youtube.com/watch?v=VIDEO_ID"
+yt-dlp -x --audio-format mp3 --audio-quality 0 \
+  -o "/opt/pipeline/sfx/nasheeds/%(title)s.%(ext)s" \
+  "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
 ---
@@ -135,6 +139,25 @@ results = client.text_search(
 **Default ambient for any brief without specified audio:**
 Search: `quiet residential street birds` — duration 20-60s — CC0 preferred
 Volume in mix: 25-30% of voiceover
+
+### Tier 3: Zapsplat (Free with Attribution)
+
+- **URL:** `zapsplat.com/sound-effect-category/trucks/`
+- **License:** Free tier requires Zapsplat credit in video description. Paid tier removes requirement.
+- **Good for:** Professional diesel truck sounds, loading dock, hydraulic lift — more variety than Pixabay for vehicle audio.
+
+### Standard SFX Kit for Snelverhuizen Videos
+
+Quick reference for recurring scenes:
+
+| Scene | SFX | Source | Search Term |
+|-------|-----|--------|-------------|
+| Truck exterior | Diesel engine idle | Pixabay | "truck engine idle" |
+| Loading / boxes | Cardboard handling, tape pull | Pixabay | "cardboard box", "packing tape" |
+| Door transition | Front door open/close | Pixabay | "door open close" |
+| Neighborhood establishing | Birdsong, distant street | Pixabay | "birds ambient residential" |
+| Arrival / unloading | Footsteps on wood | Freesound CC0 | "footsteps wood floor" |
+| Handshake / close shot | Subtle wind or silence | — | (silence is fine) |
 
 ---
 
@@ -220,12 +243,32 @@ ffmpeg -i video_silent.mp4 -i audio_mixed.aac \
   final_output.mp4
 ```
 
-### 4e. Normalize final mix master to -16 LUFS (social media master)
+### 4e. Normalize final mix master to -14 LUFS (social media master)
+
+**Single-pass (fast):**
 ```bash
 ffmpeg -i final_output.mp4 \
-  -af loudnorm=I=-16:TP=-1.0:LRA=11 \
+  -af loudnorm=I=-14:TP=-1.5:LRA=11 \
   -c:v copy \
   final_output_normalized.mp4
+```
+
+**Two-pass (accurate — required before delivery):**
+```bash
+# Pass 1: measure
+ffmpeg -i final_output.mp4 \
+  -af loudnorm=I=-14:LRA=11:TP=-1.5:print_format=json \
+  -f null - 2>&1 | tail -20
+# Copy JSON values (input_i, input_lra, input_tp, input_thresh, target_offset), then Pass 2:
+ffmpeg -i final_output.mp4 \
+  -af "loudnorm=I=-14:LRA=11:TP=-1.5:measured_I=<input_i>:measured_LRA=<input_lra>:measured_TP=<input_tp>:measured_thresh=<input_thresh>:offset=<target_offset>:linear=true" \
+  -c:v copy -c:a aac -b:a 192k \
+  final_output_normalized.mp4
+```
+
+**Or use ffmpeg-normalize (pip install ffmpeg-normalize):**
+```bash
+ffmpeg-normalize final_output.mp4 -t -14 --true-peak -1.5 -c:a aac -b:a 192k -o final_output_normalized.mp4
 ```
 
 ---
