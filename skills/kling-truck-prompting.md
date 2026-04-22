@@ -66,6 +66,11 @@ Paint the ENTIRE vehicle body WHITE (frozen). Leave the environment (sky, trees,
 
 **MUST NOT paint the vehicle body black.** The vehicle body MUST remain unpainted (white = frozen).
 
+**Mask technical requirements:**
+- **Aspect ratio MUST exactly match the hero frame** (e.g., 9:16 → mask must also be 9:16). Mismatch = task failure.
+- If using dynamic_masks simultaneously, mask resolution must also match exactly.
+- Supported formats: PNG, JPG, JPEG, WEBP. Max 10MB.
+
 ```python
 # Include in API call:
 {

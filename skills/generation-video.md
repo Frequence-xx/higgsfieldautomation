@@ -105,6 +105,8 @@ for i in range(30):
 
 ## Camera Control
 
+**AIMLAPI supports only `"simple"` type** with a numeric config object. Named presets (`"down_back"`, `"forward_up"`, etc.) appear in fal.ai/PiAPI docs but are NOT available on AIMLAPI — do not use them.
+
 All values range -10 to 10. Recommended for cinematic work: 2-5.
 
 | Shot Type | Config | Notes |
@@ -244,11 +246,72 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | generate_audio | bool | true | **ALWAYS set false** |
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
 | negative_prompt | string | "" | Max 2500 chars |
-| tail_image_url | string | — | End frame for transitions |
-| camera_control | object | — | See camera control section |
-| elements | array | — | Up to 4 character references |
-| static_mask_url | string | — | White=freeze, black=allow motion |
-| dynamic_masks | array | — | Motion brush animated paths |
+| tail_image_url | string | — | End frame for transitions. **Incompatible with Multi-Prompting.** Same image = forces stationarity. |
+| camera_control | object | — | Named preset OR simple config (not both). See camera control section. |
+| elements | array | — | Character reference images for Subject Binding. Up to 4 refs per element. |
+| static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. |
+| dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
+
+## Elements (Subject Binding) — Exact AIMLAPI Structure
+
+Pass reference images to keep a character's face consistent across clips. **No `face_weight` parameter exists on AIMLAPI** — adherence is implicit in reference image quality and count.
+
+```python
+"elements": [
+    {
+        "frontal_image_url": "https://cdn.example.com/character_front.png",
+        "reference_image_urls": [
+            "https://cdn.example.com/character_3quarter.png",
+            "https://cdn.example.com/character_profile.png"
+        ]
+    }
+]
+```
+
+**Requirements for reference images:**
+- Frontal: clear face, no occlusion, neutral expression
+- References: 2-3 different angles (3/4, profile, full body)
+- Resolution: 1024×1024+ preferred; min 300×300
+- Background: solid (white or grey preferred)
+- Lighting: consistent across all angles
+- Max 4 elements (characters) per call
+
+**Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
+
+## Dynamic Masks — Exact Structure
+
+Direct motion to specific image regions. Up to 6 mask groups per call. Each region uses a fixed RGB color and an array of (x, y) trajectory coordinates.
+
+**Fixed color assignments (must match exactly):**
+
+| Index | RGB | Hex |
+|-------|-----|-----|
+| 1 | rgb(114, 229, 40) | Green |
+| 2 | rgb(171, 105, 255) | Purple |
+| 3 | rgb(0, 170, 255) | Cyan |
+| 4 | rgb(240, 38, 173) | Pink |
+| 5 | rgb(255, 225, 29) | Yellow |
+| 6 | rgb(255, 34, 0) | Red |
+
+```python
+"dynamic_masks": [
+    {
+        "mask": "https://cdn.example.com/mask_region1.png",  # Green pixels = region 1
+        "trajectories": [
+            {"x": 512, "y": 300},   # Start point
+            {"x": 514, "y": 296},   # Intermediate (minimum 10 points recommended)
+            {"x": 512, "y": 290},   # End point
+        ]
+    }
+]
+```
+
+**Coordinate system:** Origin (0,0) top-left; x-axis right; y-axis down. Floating-point coordinates allowed. Minimum 2 points; 10+ recommended for smooth motion.
+
+**static_mask_url notes:**
+- Must match source image aspect ratio exactly — task fails otherwise
+- Must also match dynamic_masks image resolution if both are used
+- Supported: PNG/JPG/WEBP, max 10MB
 
 ## Error Handling
 
