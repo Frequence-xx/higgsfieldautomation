@@ -52,16 +52,24 @@ You are the AI operator for **Snel Verhuizen**, a Muslim-owned Dutch moving comp
 
 ## MODEL ROUTING MATRIX
 
-| Shot type | Primary model | Fallback |
-|-----------|---------------|----------|
-| Character close-up | Kling v3 Pro I2V (Subject Binding 80-90) | — |
-| Truck/vehicle | Kling v3 Pro I2V (camera_fixed, anti-ghost-driving) | — |
-| Wide establishing | Veo 3.1 Lite (`google/veo-3-1-lite-generate-preview`) | Kling v3 Standard / Wan 2.5 Preview |
-| B-roll/transitions | Veo 3.1 Lite or Wan 2.5 Preview (`wan-2-5-image-to-video`) | Kling Standard |
-| Hero frames (still) | NBP Edit (character+refs, $0.195/img) or Soul Cinema | Flux Kontext Max |
-| Brand color #FC8434 stills | FLUX.2 Pro (`blackforestlabs/flux-2-pro`, native HEX) | Flux Kontext Max |
-| SNELVERHUIZEN.NL text stills | Flux Kontext Max (best typography) | NBP Edit + post |
-| Text + brand in video | Post-overlay ONLY (FFmpeg/Remotion/AE) | NEVER in video generation |
+| Shot type | Primary model | Cost/5s | Fallback |
+|-----------|---------------|---------|----------|
+| Character close-up (final) | Kling v3 Pro I2V (Subject Binding 80-90) | $1.46 | — |
+| Character close-up (draft/iteration) | Kling v3 Standard I2V | $1.09 | — |
+| Truck/vehicle (final) | Kling v3 Pro I2V (camera_fixed, anti-ghost-driving) | $1.46 | — |
+| Truck/vehicle (draft/iteration) | Kling v3 Standard I2V | $1.09 | — |
+| Wide establishing (NO character) | Veo 3.1 Lite T2V (`google/veo-3-1-lite-generate-preview`) | $0.52 | Kling v3 Standard |
+| B-roll/transitions (NO character) | Veo 3.1 Lite T2V | $0.52 | Wan 2.6 I2V (`alibaba/wan-2-6-i2v`) |
+| Hero frames (still) | NBP Edit (character+refs, $0.195/img) | $0.195 | Flux Kontext Max |
+| Brand color #FC8434 stills | FLUX.2 Pro (`blackforestlabs/flux-2-pro`, native HEX) | $0.07 | Flux Kontext Max |
+| SNELVERHUIZEN.NL text stills | Flux Kontext Max (best typography) | $0.10 | NBP Edit + post |
+| Text + brand in video | Post-overlay ONLY (FFmpeg/Remotion/AE) | free | NEVER in video generation |
+
+**Draft→Final tiering (Kling): iterate with Standard ($1.09), lock final with Pro ($1.46). Never use Pro for prompt iteration — saves $0.37/pass.**
+
+**Veo 3.1 Lite is T2V only — NO character in frame, NO hero frame I2V.** Its `image_url` parameter behavior on AIMLAPI is unverified. Use ONLY for scenery, environment, and B-roll without characters.
+
+**Veo 3.1 Lite parameter naming differs from Kling** (camelCase): `durationSeconds` not `duration`, `aspectRatio` not `aspect_ratio`, `generateAudio` not `generate_audio`, `enhancePrompt` must be `false`. See `skills/credit-efficiency.md` for full template.
 
 **Seedance 2.0 on AIMLAPI: not used.** AIMLAPI caps Seedance at 720p AND $0.316/sec ($1.58/5sec clip) is MORE expensive than Kling v3 Pro ($0.291/sec, $1.46/5sec) — Seedance on AIMLAPI has no quality or cost advantage. Plus face content-policy risk (3x prior block on character sheets). **AIMLAPI-only pipeline per Farouq directive 2026-04-16 — do NOT research alternative providers (Atlas Cloud, fal.ai, etc.).**
 
@@ -76,7 +84,7 @@ Before EVERY API call:
 4. NO text or logos in the animated video frame — all text as post-overlay
 5. Motion prompt: 15-40 words, motion ONLY, defined endpoint ("eases to stop")
 6. Full negative prompt template included
-7. `generate_audio: false` EXPLICITLY on ALL video generations (AIMLAPI default flipped to TRUE on Kling v3 Pro per 2026-04-16 verification — silent breakage if omitted)
+7. Audio OFF EXPLICITLY on ALL video generations. Kling: `generate_audio: false`. Veo 3.1 Lite: `generateAudio: false` (camelCase!). AIMLAPI defaults audio ON — silent breakage if omitted.
 8. Truck shots: "stationary truck, parked, no vehicle movement" in prompt AND negative
 9. Character shots: Subject Binding face adherence 80-90 (NOT default 42)
 10. Cost logged BEFORE the call

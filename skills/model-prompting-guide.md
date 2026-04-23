@@ -54,6 +54,7 @@ Formula: [Subject + specific adjectives] doing [Action] in [Location]. [Composit
 - Explicitly remove objects from previous scenes ("No longer holding the clipboard") — model persists them otherwise
 - **Edit-chain ceiling:** ≤2 sequential edits per reference. Beyond that, April 2026 "smart-downgrading" pattern compounds — outputs go plastic/aged. Restart with original ref instead.
 - **Smart-downgrading (April 2026):** under peak load Pro silently degrades — if face looks plastic or aged, re-run or compress input refs to ≤2K before upload.
+- **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** in reference images — tighter face crops produce better identity anchoring. Full-body shots as sole character ref yield 60–70% first-pass consistency; a 3-angle face-crop character sheet yields 85–90%. Minimum 6 refs with face at 30–50% coverage before attempting final production.
 
 **Aspect ratio** — Native 9:16 via `aspect_ratio: "9:16"` (top-level string, not nested imageConfig). Verified: 1K = 768×1344, 2K = 1536×2688, 4K = 3072×5376. 10 ratios supported: `1:1, 21:9, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3, 5:4, 4:5`.
 
@@ -61,7 +62,7 @@ Known issue: imageConfig sometimes silently falls back to 1:1/1K through proxy A
 
 **Cost (AIMLAPI, verified 2026-04-16):** $0.195/generation flat across resolutions. Google direct rate is $0.134 at 2K / $0.24 at 4K — AIMLAPI charges single price. Log $0.195/image in cost ledger.
 
-**Do NOT use Nano Banana 2 (`google/nano-banana-2`) as drop-in:** caps at 5 references and 5 aspect ratios. Breaks our 6-ref character workflow. Always pass explicit `model: "google/nano-banana-pro-edit"`.
+**Nano Banana 2 (`google/nano-banana-2`) — DRAFT TIER, CANARY REQUIRED (2026-04-21):** NB2 = Gemini 3.1 Flash Image (Feb 26 2026 launch). Community research shows it supports 14 refs and 9:16, at ~50% of NBP Pro's official Google cost ($0.067/1K vs $0.134/1K). The April 16 audit warning "caps at 5 refs / 5 ratios" likely describes the OLDER `google/nano-banana` (Gemini 2.5 Flash), not NB2. AIMLAPI pricing for NB2 is unverified — may be flat like Pro or follow Google tier. **Before using in production:** run a canary call with 1 ref image, 9:16, verify response structure and cost. If canary passes, use NB2 for prompt-iteration drafts and NBP Pro only for owner-approved finals. This is analogous to Kling Standard → Kling Pro draft-final tiering. Always pass explicit `model: "google/nano-banana-pro-edit"` for confirmed finals.
 
 **Parameters NOT exposed:** seed, guidance scale, CFG, negative prompt. All control via natural language. Do NOT import Stable Diffusion habits.
 
@@ -119,7 +120,13 @@ Context (verified 2026-04-16): BFL has NOT officially deprecated Kontext — bot
 
 **Brand color #FC8434** — Use descriptive + material in Kontext Max: "glossy bright orange painted metal" not just "orange." Hex codes inconsistent in Kontext Max. FLUX.2 Pro has native HEX matching — verified syntax `"the color of [object] is color #FC8434"` (natural-language form).
 
-**API parameters** — `guidance_scale: 2.5-3.5` (default 3.5, above 4.0 over-saturates). 9:16 = 768×1344. Up to 8 images in multi-image mode. Quality degrades after 6+ sequential edits — limit chains, use PNG between edits.
+**Progressive editing — ONE change per call (2026-04-21):** Stacking multiple changes in one prompt degrades quality. Change background first → then lighting → then details. Specify what to KEEP: "keep the person's face and clothing exactly the same." Refer to subjects by description not pronouns: "the man in the black crewneck" not "him."
+
+**Character identity retention:** Uses AuraFace embeddings. Maintains cosine similarity **>0.92 across 6 successive edits** (competitors drop to ~0.80). Limit edit chains to 6 generations from original ref before restarting.
+
+**Text editing format:** `Replace '[original text]' with '[new text]'` — quoted text yields best accuracy.
+
+**API parameters** — `guidance_scale: 2.5-3.5` (default 3.5, above 4.0 over-saturates; range 1-20 on AIMLAPI). 9:16 = 768×1344. Up to 8 images in multi-image mode. Quality degrades after 6+ sequential edits — limit chains, use PNG between edits.
 
 **API call (AIMLAPI):**
 ```python
@@ -312,6 +319,50 @@ Real but immature. Endpoint: cloud.higgsfield.ai. SDK: `pip install higgsfield-c
 
 ---
 
+### Veo 3.1 Lite (Google — T2V, Non-Character B-Roll)
+
+**Use case:** Wide establishing shots and B-roll with NO characters. Cheapest video model in the pipeline at ~$0.104/sec on AIMLAPI ($0.52/5sec). 2.8× cheaper than Kling v3 Pro.
+
+**NOT for:** Character shots. Face consistency is inferior to Kling v3 Pro. No Subject Binding. No hero-frame I2V reliability — `image_url` behavior on AIMLAPI unverified; treat as T2V until tested.
+
+**Prompt structure** — 30-80 words in natural creative-director language (same style as NBP). Describe the full scene including motion, environment, lighting, and camera.
+
+- No characters in frame
+- No text in frame (all post-overlay)
+- Specify camera motion explicitly: "slow pull-back", "gentle push-in", "locked off"
+- Describe motion endpoints: "eases to rest", "settles gently"
+- Positive framing only ("clear empty street" not "no people")
+
+**API parameters (camelCase — different from Kling snake_case):**
+
+| Parameter | Type | Value | Notes |
+|-----------|------|-------|-------|
+| `model` | string | `"google/veo-3-1-lite-generate-preview"` | Required |
+| `prompt` | string | 30-80 words | Motion + scene |
+| `aspectRatio` | string | `"9:16"` | camelCase! |
+| `durationSeconds` | int | 5-8 | camelCase, NOT `duration` |
+| `generateAudio` | bool | `False` | **ALWAYS false** — saves 46% |
+| `enhancePrompt` | bool | `False` | **ALWAYS false** — overrides brand details |
+| `negativePrompt` | string | see below | camelCase, supported |
+| `seed` | int | optional | 0-4294967295, for reproducibility |
+
+**Endpoint:** `POST https://api.aimlapi.com/v2/video/generations`
+
+**Negative prompt baseline for Veo 3.1 Lite:**
+```
+blurry, distorted, low quality, jittery, flickering, watermark, text overlay, logos, people, faces, hands
+```
+
+**Audio cost:** 65 credits with audio vs 35 credits without — **always set `generateAudio: False`**
+
+**`enhancePrompt` must be False:** When True, Veo's AI rewrites your prompt and discards brand-specific language. Always False for pipeline work.
+
+**Quality ceiling:** 720p for 5-8s clips. Adequate for establishing shots in social ads. Not suitable for close-detail hero shots.
+
+**Same-ecosystem bonus:** NBP (Gemini 3 Pro Image) + Veo 3.1 Lite share Google latent space. Hero frame generated with NBP → Veo T2V prompt from same description produces better compositional coherence than cross-ecosystem chaining.
+
+---
+
 ## Part 3 — Workflow Chaining (Image → Video)
 
 The 2026 standard: "ingredients-to-video" — generate locked hero frames first, storyboard in Figma for QA, animate only approved frames. I2V model's job = "moving pixels that already exist."
@@ -399,7 +450,8 @@ No single model excels at everything. Each failure mode maps to a specific model
 | Truck/vehicle shots | Kling v3 Pro I2V | Physics, I2V from static, camera_fixed, anti-ghost-driving | Kling Standard |
 | Wide establishing | **Veo 3.1 Lite** (`google/veo-3-1-lite-generate-preview`) | Native 9:16, first+last frame control, cheap | Kling v3 Standard |
 | B-roll/transitions | **Veo 3.1 Lite** or Wan 2.5 Preview (`wan-2-5-image-to-video`) | Wan 2.5 Preview cheaper + better than Wan 2.2 ($0.065/480p, $0.13/720p, $0.195/1080p, 10s @ 24fps) | Kling Standard |
-| Hero frames (still) | NBP Edit ($0.195/img) or Soul Cinema | Cinematic-grade keyframes | Flux Kontext Max |
+| Hero frames (still) — draft | NB2 (`google/nano-banana-2`) | ~50% cost, 95% quality — CANARY FIRST | NBP Edit |
+| Hero frames (still) — final | NBP Edit ($0.195/img) or Soul Cinema | Cinematic-grade keyframes | Flux Kontext Max |
 | Brand color #FC8434 stills | **FLUX.2 Pro** (`blackforestlabs/flux-2-pro`) | Native HEX matching, ~33% cheaper at 9:16 vs Kontext | Kontext Max |
 | SNELVERHUIZEN.NL text stills | Flux Kontext Max | Cleaner typography integration than FLUX.2 (Melies head-to-head) | NBP Edit + post |
 | Multi-ref hero (>3 refs) | NBP Edit (14 refs) or Kontext Max (8 refs) | FLUX.2 Pro Edit on AIMLAPI caps at 3 refs | — |
@@ -427,7 +479,7 @@ No single model excels at everything. Each failure mode maps to a specific model
 **Try 3:** Conservative fallback. Reduce motion to 0.3, shorten to 3-4s, static or slow pan camera.
 
 **Detection methods:**
-- Expression drift: InsightFace/ArcFace face embeddings per frame, cosine similarity <0.80 = drift
+- Expression drift: InsightFace/ArcFace face embeddings per frame, cosine similarity <0.65 = drift (cross-pose/lighting QA threshold; 0.80 is too strict for legitimate angle/lighting variation — see character-consistency.md for full threshold table)
 - Ghost driving: Vehicle bounding boxes per frame, flag implausible motion vectors
 
 ---
