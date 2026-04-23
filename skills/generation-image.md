@@ -148,12 +148,40 @@ NBP is a "Thinking" model. Natural language outperforms tag soup.
 
 - Label every image: "Image 1: Mourad character sheet. Image 2: Truck reference."
 - Control via natural language: "Use Image 1 as a strict identity reference"
-- Identity-locking phrases: "Keep facial features exactly the same as Image 1"
+- **Identity lock formula:** "Maintain the exact same facial features as Image 1 — same eyes, nose shape, jawline contour, and skin texture." (more specific than generic "keep face the same")
+- **Add text description of distinctive features** alongside the image ref: e.g., "Mourad: warm olive skin, strong jawline, dark brown eyes, short black beard" — text reinforces the visual anchor
 - Explicitly remove objects from previous scenes ("No longer holding the clipboard")
 - Character sheet MUST be Image 1 in every call for character shots
-- 6 references with high fidelity, up to 14 total
+- **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades.
 - **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
+
+### 3-View Character Sheet Workflow (2026-04-23)
+
+**Why:** A single composite sheet (frontal + 45° + 90° side) gives the model a 3D head structure map in one slot, using only 1 of the 5 human slots instead of 3. Achieves 90%+ consistency across multi-shot batches.
+
+**How to build a character sheet from ONE approved hero frame:**
+
+```
+Step 1 — generate 3/4 left view:
+  prompt: "Image 1: Mourad hero frame. Generate Mourad at a 45-degree left profile.
+           Maintain the exact same facial features as Image 1 — same eyes, nose shape,
+           jawline contour, and skin texture. Plain white background. Head and shoulders only.
+           Same clothing as Image 1."
+  model: google/nano-banana-pro-edit
+  image_urls: [mourad_hero_url]
+
+Step 2 — generate 3/4 right view:
+  (same prompt with "45-degree right profile")
+
+Step 3 — FFmpeg composite into one image:
+  ffmpeg -i front.jpg -i left.jpg -i right.jpg \
+    -filter_complex "[0][1][2]hstack=inputs=3" character_sheet_mourad.jpg
+
+Step 4 — use character_sheet_mourad.jpg as Image 1 in all future NBP Edit calls
+```
+
+This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates slot pressure.
 
 ## Prompting Rules for Flux Kontext Max
 
@@ -165,7 +193,8 @@ NBP is a "Thinking" model. Natural language outperforms tag soup.
 - **ONE change per call** — progressive editing only. Change background first → then lighting → then details. Stacking multiple changes in one prompt degrades quality.
 - Refer to subjects by description, not pronouns: "the man with the black crewneck" not "him"
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
-- `guidance_scale` range on AIMLAPI: 1–20. Optimal 2.5–3.5 for editing (higher = more prompt-literal, lower = more image-preserving).
+- `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Optimal 2.5–3.5 for editing (higher = more prompt-literal, lower = more image-preserving). Do not exceed 5 for character editing — face structure distorts.
+- `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
 
 ## Post-Generation Checklist
 
