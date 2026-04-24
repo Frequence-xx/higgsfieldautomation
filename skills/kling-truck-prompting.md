@@ -124,9 +124,11 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 | Parameter | Value | Reasoning |
 |-----------|-------|-----------|
 | cfg_scale | **0.5** (people primary) / **0.7** (truck primary) | Higher adherence for branded asset |
-| motion_strength | **0.3-0.4** | Low motion prevents physics artifacts on rigid objects |
+| motion_strength | **0.3-0.4** (optional, 0-1 range) | Low motion prevents physics artifacts on rigid objects. Omit to use model default. |
 | duration | **5s** | Minimize time for artifacts to accumulate |
 | generate_audio | **false** | Always — add audio in post |
+
+**motion_strength range guide:** 0.1-0.3 = nearly frozen (good for stationary truck), 0.4-0.6 = moderate (walking crew), 0.7-1.0 = aggressive action (not for truck shots).
 
 ## What Motion IS Allowed in Truck Scenes
 

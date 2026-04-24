@@ -105,9 +105,29 @@ for i in range(30):
 
 ## Camera Control
 
-**AIMLAPI supports only `"simple"` type** with a numeric config object. Named presets (`"down_back"`, `"forward_up"`, etc.) appear in fal.ai/PiAPI docs but are NOT available on AIMLAPI — do not use them.
+**camera_control.type options:**
 
-All values range -10 to 10. Recommended for cinematic work: 2-5.
+| Type | Description | AIMLAPI Status |
+|------|-------------|---------------|
+| `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **Confirmed on AIMLAPI** |
+| `"down_back"` | Camera descends and pulls backward | In base Kling API; **unverified on AIMLAPI v3** |
+| `"forward_up"` | Camera moves forward and tilts upward | In base Kling API; **unverified on AIMLAPI v3** |
+| `"right_turn_forward"` | Camera rotates right while moving forward | In base Kling API; **unverified on AIMLAPI v3** |
+| `"left_turn_forward"` | Camera rotates left while moving forward | In base Kling API; **unverified on AIMLAPI v3** |
+
+**Use `"simple"` for all AIMLAPI calls.** Named presets are documented in the base Kling API but not verified to work on AIMLAPI v3 — do not use until tested.
+
+**Simple config:** all values range -10 to 10. Recommended for cinematic work: 2-5.
+
+```python
+"camera_control": {
+    "type": "simple",
+    "config": {
+        "horizontal": 0, "vertical": 0, "pan": 0,
+        "tilt": 3, "roll": 0, "zoom": 0
+    }
+}
+```
 
 | Shot Type | Config | Notes |
 |-----------|--------|-------|
@@ -240,21 +260,25 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 |-----------|------|---------|-------------|
 | model | string | required | See model strings above |
 | image_url | string | required | URL or base64. Min 300x300, max 10MB |
-| prompt | string | required | Motion description only, max 2500 chars |
+| prompt | string | required | Motion description only, max 2500 chars. Reference elements as `@Element1`, `@Element2`, etc. |
 | duration | int | 5 | 3-15 seconds |
 | aspect_ratio | string | "16:9" | "16:9", "9:16", "1:1" |
 | generate_audio | bool | true | **ALWAYS set false** |
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
+| motion_strength | float | — | 0-1. Lower = less motion/more stable (0.3-0.4 for stationary subjects). Higher = more aggressive motion (0.8-1.0). Omit for default. |
 | negative_prompt | string | "" | Max 2500 chars |
-| tail_image_url | string | — | End frame for transitions. **Incompatible with Multi-Prompting.** Same image = forces stationarity. |
+| tail_image_url | string | — | End frame for transitions. **Incompatible with Multi-Prompting/guidances.** Same image = forces stationarity. |
 | camera_control | object | — | Named preset OR simple config (not both). See camera control section. |
-| elements | array | — | Character reference images for Subject Binding. Up to 4 refs per element. |
+| elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
 | static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
+| guidances | array | — | Multi-shot prompting (up to 6 shots). **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
 
 ## Elements (Subject Binding) — Exact AIMLAPI Structure
 
-Pass reference images to keep a character's face consistent across clips. **No `face_weight` parameter exists on AIMLAPI** — adherence is implicit in reference image quality and count.
+Pass reference images to keep a character's face consistent across clips. **No `face_weight` or `face_adherence` numeric parameter exists on AIMLAPI** — adherence is entirely driven by reference image quality and count.
+
+### Image-based element (standard I2V)
 
 ```python
 "elements": [
@@ -262,21 +286,58 @@ Pass reference images to keep a character's face consistent across clips. **No `
         "frontal_image_url": "https://cdn.example.com/character_front.png",
         "reference_image_urls": [
             "https://cdn.example.com/character_3quarter.png",
-            "https://cdn.example.com/character_profile.png"
+            "https://cdn.example.com/character_profile.png",
+            "https://cdn.example.com/character_profile_left.png"  # 3-4 angles preferred
         ]
     }
 ]
 ```
 
-**Requirements for reference images:**
+### Video-based element (when a source clip exists)
+
+```python
+"elements": [
+    {
+        "video_url": "https://cdn.example.com/character_reference_clip.mp4"
+    }
+]
+```
+
+### Referencing elements in the prompt — REQUIRED
+
+After defining elements, you **must** reference them in the prompt using `@Element1`, `@Element2` etc. (positional, 1-indexed). Without the @reference, the element binding has no effect.
+
+```
+"prompt": "@Element1 walks forward carrying a box, confident stride..."
+```
+
+**Requirements for image reference images:**
 - Frontal: clear face, no occlusion, neutral expression
-- References: 2-3 different angles (3/4, profile, full body)
+- References: 3-4 different angles (front, 3/4, side profile, back) — 4 angles gives model a 3D sense of identity
 - Resolution: 1024×1024+ preferred; min 300×300
 - Background: solid (white or grey preferred)
-- Lighting: consistent across all angles
-- Max 4 elements (characters) per call
+- Lighting: consistent across all reference images
+- **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources)
 
 **Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
+
+## Multi-Shot Prompting (guidances)
+
+Kling v3 supports generating up to 6 sequential shots in one API call via the `guidances` array. **Not confirmed available on AIMLAPI for v3 I2V** — may require Kling Omni model. Use only if API returns success.
+
+**Constraints:**
+- Main `prompt` field MUST be empty when `guidances` is used
+- `tail_image_url` is INCOMPATIBLE with `guidances` — omit it
+- Total video duration = sum of all shot durations
+
+```python
+"prompt": "",  # MUST be empty
+"guidances": [
+    {"index": 1, "prompt": "@Element1 walks to the truck, confident stride", "duration": 5},
+    {"index": 2, "prompt": "@Element1 loads a box into the truck, smooth motion", "duration": 5},
+    {"index": 3, "prompt": "Wide shot: truck drives away down the street", "duration": 5}
+]
+```
 
 ## Dynamic Masks — Exact Structure
 
