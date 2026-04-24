@@ -141,7 +141,48 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
 ```
 
 ### Step 6: QA Check for Character Drift
-After generating a multi-shot sequence, compare:
+
+**Automated (InsightFace — free, runs on CPU):**
+
+```bash
+pip install insightface onnxruntime  # CPU; use onnxruntime-gpu for GPU
+```
+
+```python
+import cv2
+import numpy as np
+from insightface.app import FaceAnalysis
+
+app = FaceAnalysis(name='buffalo_l')
+app.prepare(ctx_id=-1, det_size=(640, 640))  # ctx_id=-1 = CPU
+
+def get_embedding(image_path):
+    img = cv2.imread(image_path)
+    faces = app.get(img)
+    return faces[0].embedding if faces else None  # 512-dim vector
+
+def face_similarity(path1, path2):
+    e1, e2 = get_embedding(path1), get_embedding(path2)
+    if e1 is None or e2 is None:
+        return 0.0
+    return float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2)))
+
+# Usage: compare reference photo to each extracted frame
+ref_score = face_similarity("assets/characters/mourad/front.png", "frame_t0.png")
+```
+
+**Threshold guide (buffalo_l model, cross-pose video QA):**
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| ≥ 0.68 | Strong identity match | PASS |
+| 0.60 – 0.67 | Acceptable drift (pose/lighting variation) | PASS with note |
+| 0.50 – 0.59 | Marginal — borderline drift | RETRY with more refs or higher face adherence |
+| < 0.50 | Identity failure | REJECT, regenerate |
+
+> **Note:** The prior threshold of `<0.80 = drift` in model-prompting-guide.md was too strict for cross-pose/lighting comparison. 0.80+ is correct for strict same-photo identity verification; 0.65 is the practical production threshold for I2V character consistency across different angles.
+
+**Manual QA checklist (visual):**
 - Face geometry: same jaw shape, nose, eye spacing
 - Skin tone: no shifts between shots
 - Clothing: same items, same colors, same fit
@@ -210,6 +251,33 @@ Is this a person who only appears once or in a wide shot? → Type C (text-only,
 4. **If approved:** Save to `/opt/pipeline/assets/characters/{name}/` + create character.json
 5. **If rejected:** Adjust description and regenerate (max 2 retries)
 6. **Character is now locked** — use in all shots with Nano Banana Pro Edit or Kontext Max
+
+## Reference Image Quality Requirements (Research 2026-04-20)
+
+These requirements apply to ALL reference images — both existing Karel/Mourad sheets and new Type B character sheets.
+
+**Resolution:** 1024×1024 minimum. Clarity matters more than megapixels — a sharp 1024px image outperforms a blurry 4K photo for the 3D face mapping algorithm.
+
+**Background:** Completely solid (flat color, not gradient) — makes character/background separation much easier for the model. White or light grey preferred.
+
+**Lighting:** Soft, even, diffused from a single clear direction. AVOID:
+- Strong directional shadows (model may read them as permanent facial features)
+- Color casts (warm/cool casts alter skin tone across shots)
+- Dramatic high-contrast lighting
+
+**Lighting consistency across all 4 refs:** All 4 angles MUST be from the same lighting setup. Refs with different lighting conditions produce conflicting 3D face reconstruction signals, which reduces consistency.
+
+**Expression:** Neutral across ALL reference images. Slight smile is acceptable but must be identical in all 4 shots. Do NOT mix expressions (one smiling, one neutral, one surprised) — locks in expression conflicts.
+
+**Ref count — sweet spot:**
+- 2-4 refs: optimal for identity lock
+- 6-8 refs: diminishing returns, slightly worse than 4
+- 12-15+ refs: conflicting signals can actively reduce consistency
+- For NBP Edit: use 4 high-quality refs even though 14 are supported — quality > quantity
+
+**Do NOT feed generated frames back as references.** Re-anchor ALWAYS from original approved reference photos. Generated frames accumulate drift.
+
+**10% expected failure zone:** Kling v3 achieves ~90% identity consistency with good refs. The remaining 10% fail predictably at: extreme angles (profile beyond 90°), very dark or heavily shadowed lighting in the scene, and when the character is small in frame (<15% frame height).
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing

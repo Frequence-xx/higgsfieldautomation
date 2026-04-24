@@ -21,11 +21,58 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
 ## Caption Workflow (Data Flow)
 
-1. **ElevenLabs generates voiceover** — TWO endpoints exist, only ONE returns word-level timestamps:
-   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (use after generating audio with regular TTS, then submit audio + transcript)
-   - ❌ **WRONG: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — only returns CHARACTER-level timestamps (insufficient for word-by-word captions; was likely root cause of V2 caption sync issues 2026-04-09/10)
+1. **Extract word-level timestamps** — two options, pick based on whether you have credits:
+
+   ### Option A: ElevenLabs Forced Alignment (primary, paid)
+   TWO endpoints exist, only ONE returns word-level timestamps:
+   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports Dutch natively (150+ languages, introduced 2025-04).
+   - ❌ **WRONG: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — only CHARACTER-level timestamps (root cause of V2 caption sync issues 2026-04-09/10)
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
    - Recommended model: `eleven_multilingual_v2` (most emotionally rich, proven stable for Dutch)
+
+   ### Option B: WhisperX (free local, $0, use when credits are low)
+   WhisperX aligns Whisper transcription to audio with phoneme-level wav2vec2 forced alignment. Dutch (`nl`) is natively supported with automatic model selection.
+
+   ```bash
+   # Install once
+   pip install whisperx
+
+   # CLI — Dutch audio, word-level timestamps
+   whisperx voiceover.wav --model large-v2 --language nl --batch_size 4
+
+   # Outputs: voiceover.json with word-level [{word, start, end}] under "segments[].words"
+   ```
+
+   ```python
+   import whisperx
+
+   device = "cpu"  # or "cuda" if GPU available
+   model = whisperx.load_model("large-v2", device, compute_type="int8")
+   audio = whisperx.load_audio("voiceover.wav")
+   result = model.transcribe(audio, language="nl", batch_size=4)
+
+   # Align to get word-level timestamps
+   align_model, metadata = whisperx.load_align_model(language_code="nl", device=device)
+   result = whisperx.align(result["segments"], align_model, metadata, audio, device)
+
+   # Word timestamps: result["segments"][i]["words"] → [{word, start, end, score}]
+   ```
+
+   **WhisperX hallucination prevention (automatic):**
+   - VAD (Voice Activity Detection) pre-processing enabled by default — strips silence before Whisper sees it, eliminates "Thanks for watching!" phantom hallucinations
+   - `condition_on_prev_text=False` by default — prevents context bleeding between segments
+   - Use `large-v2` not `large-v3` for Dutch (v3 has more hallucination tendency on non-English)
+
+   **Convert WhisperX output to Remotion frame arrays:**
+   ```python
+   FPS = 30
+   words = [w for seg in result["segments"] for w in seg["words"]]
+   frame_data = [
+       {"text": w["word"], "startFrame": int(w["start"] * FPS), "endFrame": int(w["end"] * FPS)}
+       for w in words if "start" in w
+   ]
+   ```
+
 2. **Parse timestamps** into frame-number arrays:
    ```
    word_timestamps → [{text: "Your", start_ms: 0, end_ms: 500}, ...]
@@ -350,6 +397,24 @@ const { pages } = createTikTokStyleCaptions({
 })}
 ```
 
+### WhisperX → SRT → Remotion (Alternative Ingest Path)
+
+WhisperX can output SRT directly: `whisperx audio.wav --model large-v2 --language nl --output_format srt`
+
+Then parse in Remotion with `parseSrt()`:
+
+```tsx
+import { parseSrt, createTikTokStyleCaptions } from '@remotion/captions';
+
+const captions = parseSrt({ input: srtFileContents });
+const { pages } = createTikTokStyleCaptions({
+  captions,
+  combineTokensWithinMilliseconds: 500,
+});
+```
+
+Note: SRT word-boundary timestamps are slightly less accurate than WhisperX JSON word-level output. Prefer the JSON path (`result["segments"][i]["words"]`) when timing precision matters.
+
 ### Key Parameter: combineTokensWithinMilliseconds
 
 - `500` — Word-by-word (recommended for business/ad content)
@@ -359,6 +424,48 @@ const { pages } = createTikTokStyleCaptions({
 ### Critical: whiteSpace: 'pre'
 
 Always set `whiteSpace: 'pre'` on the caption container. Spaces are used as delimiters and omitting this causes words to collapse.
+
+### Rounded Corner Caption Backgrounds — Remotion Only
+
+**FFmpeg `drawtext`/`drawbox` cannot produce rounded corners.** The `box=1` parameter draws a hard rectangle only. Neither ASS subtitle format nor any FFmpeg filter supports border-radius natively.
+
+**The ONLY correct path for rounded caption pill/background is Remotion CSS:**
+
+```tsx
+// Caption background pill with rounded corners
+<div style={{
+  backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  borderRadius: 12,
+  padding: '8px 20px',
+  display: 'inline-block',
+}}>
+  {currentPage?.tokens.map((token, i) => {
+    const isActive = currentTimeMs >= token.fromMs && currentTimeMs < token.toMs;
+    return (
+      <span key={i} style={{
+        color: isActive ? '#FC8434' : '#FFFFFF',
+        WebkitTextStroke: '3px black',
+        paintOrder: 'stroke fill',
+        whiteSpace: 'pre',
+        fontFamily: 'Montserrat',
+        fontWeight: 700,
+        fontSize: 64,
+        transform: `scale(${isActive ? 1.05 : 1})`,
+        display: 'inline-block',
+      }}>
+        {token.text}
+      </span>
+    );
+  })}
+</div>
+```
+
+**`borderRadius` values by use case:**
+- Voiceover caption pill: `borderRadius: 12` (subtle rounding, feels native)
+- Name card box: `borderRadius: 8` (already specified above — matches the spec)
+- CTA button style: `borderRadius: 24` (fully rounded, pill shape)
+
+If FFmpeg compositing is required without Remotion, generate a rounded-rect PNG background per phrase at pre-render time (ImageMagick or Pillow), then overlay it on video with `ffmpeg -i video -i pill.png -filter_complex [0][1]overlay=...`.
 
 ---
 
