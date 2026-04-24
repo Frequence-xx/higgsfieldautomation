@@ -20,7 +20,7 @@ negatives:
 # Halal Audio Pipeline
 
 No music. No instruments. Ever. Audio is restricted to:
-1. Voiceover (ElevenLabs, voice: Willem, model: `eleven_multilingual_v2`)
+1. Voiceover (ElevenLabs, voice: Willem, model: `eleven_v3` for production / `eleven_flash_v2_5` for drafts)
 2. Natural ambient SFX (Pixabay CC0 primary; Freesound CC0 fallback)
 3. Vocal nasheeds without instruments (owner approval required before use)
 
@@ -36,7 +36,17 @@ No music. No instruments. Ever. Audio is restricted to:
 
 ## 0. ElevenLabs Dutch Voiceover Settings
 
-**Model:** `eleven_multilingual_v2` — mandatory for Dutch. Never use `eleven_monolingual_v1` for Dutch.
+### Model Selection
+
+| Model | Model ID | Dutch? | Cost/1K chars | Use case |
+|-------|----------|--------|---------------|----------|
+| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | Check ElevenLabs pricing | **Production** — most expressive, audio tag support |
+| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.03 | Fallback if v3 unavailable |
+| Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.015 | **Draft/iteration** — 75ms latency, 50% cheaper |
+
+**Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
+
+### Voice Parameters (all models)
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
@@ -45,7 +55,29 @@ No music. No instruments. Ever. Audio is restricted to:
 | Style Exaggeration | 15 | Slight energy; 0 = flat, >30 = over-dramatic |
 | Speaker Boost | true | Improves clarity on mobile speakers |
 
-**SSML for natural Dutch pacing:**
+### eleven_v3 Audio Tags
+
+Audio tags are inline `[tag]` markers in the text that direct delivery. They are voice- and context-dependent — test on the actual voice first.
+
+**Appropriate for Snelverhuizen ads:**
+- `[sincere]` — honest, direct delivery; use for brand promise lines
+- `[warm]` — approachable, friendly; use for customer-benefit lines
+- `[confident]` — authoritative, trust-building; use for CTA
+- `[calm]` — composed, professional; use for contact info
+
+**Avoid for Snelverhuizen brand:**
+- `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
+- `[mischievously]`, `[laughs]`, `[crying]` — unprofessional
+- `[whispers]` — inaudible on phone speakers
+
+**Usage in text (eleven_v3 only):**
+```
+[sincere] Verhuizen zonder zorgen? [warm] Snel Verhuizen regelt alles. [confident] Bel nu: 085 333 11 33.
+```
+
+**Note:** Audio tags and `<prosody rate="95%">` SSML can be used together in eleven_v3.
+
+### SSML for natural Dutch pacing (all models)
 ```xml
 <speak>
   <prosody rate="95%">
@@ -243,7 +275,26 @@ ffmpeg -i video_silent.mp4 -i audio_mixed.aac \
   final_output.mp4
 ```
 
-### 4e. Normalize final mix master to -14 LUFS (social media master)
+### 4e. Pre-process ambient SFX for seamless looping (eliminates audible click)
+
+`aloop` wraps the file abruptly — if start and end don't match in level/tone, you hear a click. Pre-process the raw SFX file ONCE to create a crossfaded loop version:
+
+```bash
+# Feed the file to itself twice; acrossfade blends the end of pass 0 into the start of pass 1
+# d=1.5 = 1.5-second crossfade zone; output is ~1.5s shorter than original
+# c1/c2=exp = exponential curve (sounds more natural than linear)
+ffmpeg -i ambient_raw.wav -i ambient_raw.wav \
+  -filter_complex "[0][1]acrossfade=d=1.5:c1=exp:c2=exp" \
+  ambient_seamless.wav
+```
+
+Then use `ambient_seamless.wav` in all mix commands (4b / 4b2 / 4b3) with `aloop=loop=-1:size=2e+09` — it loops without audible clicks.
+
+**Curve options:** `exp` (default, natural), `tri` (linear), `nofade` (hard cut — use to test if click is really there).
+
+---
+
+### 4f. Normalize final mix master to -14 LUFS (social media master)
 
 **Single-pass (fast):**
 ```bash
@@ -322,7 +373,7 @@ The audio QA must also pass shariah-compliance.md hard gate:
 
 | Problem | Cause | Fix |
 |---------|-------|-----|
-| Ambient loops with audible click | No crossfade at loop point | Find seamless loop file or use `acrossfade` |
+| Ambient loops with audible click | No crossfade at loop point | Pre-process with `acrossfade` (see §4f) then re-use with `aloop` |
 | VO sounds robotic | Stability too high (>70) | Set stability to 55–60 |
 | Dutch phonemes sound off | Wrong model | Must use `eleven_multilingual_v2` |
 | Nasheed copyright claim on YouTube | Not checking each video's description | Always verify specific NCN video description before use |
