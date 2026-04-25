@@ -258,7 +258,7 @@ These requirements apply to ALL reference images — both existing Karel/Mourad 
 
 **Resolution:** 1024×1024 minimum. Clarity matters more than megapixels — a sharp 1024px image outperforms a blurry 4K photo for the 3D face mapping algorithm.
 
-**Background:** Completely solid (flat color, not gradient) — makes character/background separation much easier for the model. White or light grey preferred.
+**Background:** Pure flat white or green screen — MANDATORY for Kling Element/Subject Binding. Kling's tokenization binds the entire image region, not just the person. Any environmental content (trees, furniture, street) in the background gets co-tokenized with the character and may appear as artifacts in generated shots. A park bench in a reference photo → bench elements leaking into the character's scene is a documented failure mode. For NBP Edit the background is less critical (model handles segmentation better), but flat white is still best practice for all ref sheets.
 
 **Lighting:** Soft, even, diffused from a single clear direction. AVOID:
 - Strong directional shadows (model may read them as permanent facial features)
@@ -275,9 +275,77 @@ These requirements apply to ALL reference images — both existing Karel/Mourad 
 - 12-15+ refs: conflicting signals can actively reduce consistency
 - For NBP Edit: use 4 high-quality refs even though 14 are supported — quality > quantity
 
-**Do NOT feed generated frames back as references.** Re-anchor ALWAYS from original approved reference photos. Generated frames accumulate drift.
+**Do NOT feed generated frames back as references.** Re-anchor ALWAYS from original approved reference photos. Generated frames accumulate drift because each generation round-trips through the 3D latent, compounding small errors in face geometry. By shot 3-4 using generated frames as refs, identity coherence collapses.
+
+**Use the SAME reference images for every shot.** Switching to a "better" hero frame from a previous shot as the new ref is counterproductive — it introduces subtle pose/lighting biases from that generation's specific motion. The original clean studio-lit 4-angle refs are the permanent anchor for all shots in all future videos.
 
 **10% expected failure zone:** Kling v3 achieves ~90% identity consistency with good refs. The remaining 10% fail predictably at: extreme angles (profile beyond 90°), very dark or heavily shadowed lighting in the scene, and when the character is small in frame (<15% frame height).
+
+## Multi-Shot Frame-Chaining (Research 2026-04-25)
+
+For multi-shot sequences where the same character appears across consecutive clips, frame-chaining locks identity at the shot boundary level:
+
+**Technique:** Extract the last frame of clip N (FFmpeg `ffmpeg -i clip_n.mp4 -vframes 1 -sseof -0.1 last_frame.png`), then use it as `image_url` for clip N+1 alongside the original character refs in `elements`. This creates a visual bridge between clips — the model treats the last frame as the compositional anchor for the next clip's start pose.
+
+**When to use:**
+- Character walks INTO next shot (position continuity matters)
+- Close-up → medium cut to the same character (face continuity at high scrutiny)
+
+**When NOT to use:**
+- Hard cuts to a different scene/location (frame-chaining enforces wrong lighting/background)
+- When using `guidances` multi-shot (incompatible with `tail_image_url` approach)
+- When the character changes clothing between shots
+
+**Implementation:**
+```python
+# Extract last frame of previous clip
+os.system(f"ffmpeg -i {prev_clip} -vframes 1 -sseof -0.1 {last_frame_path}")
+
+# Use last frame as start image for next clip — elements still provide identity lock
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/kling-video-v3-pro-image-to-video",
+    "image_url": last_frame_path_or_url,   # Continuity anchor
+    "elements": [                           # Identity lock (same refs as always)
+        {
+            "frontal_image_url": "https://cdn.example.com/crew_lead/front.png",
+            "reference_image_urls": ["https://cdn.example.com/crew_lead/three_quarter.png"]
+        }
+    ],
+    "prompt": "...",
+    "generate_audio": False,
+    "duration": 5,
+    "aspect_ratio": "9:16"
+}, headers=headers)
+```
+
+**Important:** `tail_image_url` (same start/end image) is a separate technique used for stationarity (truck shots). Frame-chaining uses a *different* `image_url` per shot. Do not confuse the two.
+
+## InsightFace buffalo_l Benchmarks (Confirmed 2026-04-25)
+
+buffalo_l is the correct model for QA face verification. Official accuracy metrics:
+
+| Model | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size |
+|-------|-----|--------|----------|-----------|------|
+| buffalo_l | 99.83% | 99.33% | 98.23% | 97.25% | 326MB |
+| buffalo_s (CPU fallback) | 99.70% | 98.00% | — | — | 159MB |
+
+antelopev2 (ResNet100, 407MB) is NOT recommended — InsightFace does not promote it and testing shows buffalo_l outperforms it despite being smaller (better training schedule on WebFace600K).
+
+For resource-constrained environments (e.g., pipeline CI step), buffalo_s at 159MB is acceptable fallback with minimal accuracy loss.
+
+## Kling Element Library Auto-View Generation
+
+The Kling Element Library can auto-generate additional angles from a single reference image using AI-assisted view synthesis. Workflow:
+
+1. Upload ONE good front-facing reference to the Element Library
+2. Enable "AI-generate additional views" (available in the Kling web UI)
+3. The system generates 3/4, profile, and full-body views automatically
+
+**Production use:** This accelerates Type B new character creation from 4 separate generation calls to 1. However, **verify AI-generated views before using as production refs** — auto-generated side/back angles may introduce face geometry errors. Run InsightFace similarity check on all auto-generated views against the source image before accepting.
+
+**Cost impact:** Saves ~$0.39 (3 × $0.13 NBP generation calls) per new character sheet.
+
+**Caveat:** This is a Kling web UI feature. Via AIMLAPI, ref sheet generation still requires 4 separate NBP calls — the auto-view feature is not exposed in the API as of 2026-04.
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
