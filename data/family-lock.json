@@ -1,0 +1,35 @@
+{
+  "_doc": "Active video format family. While videos_in_family count < lock_until, every new video MUST stay in this format and reuse approved components from assets/library/components.json.",
+  "current_family": "testimonial",
+  "format_specs": {
+    "duration_seconds": [16, 22],
+    "structure": [
+      "Shot 1: 0-9.33s — testimonial speaker (Avatar Pro lipsync, direct camera)",
+      "Shot 2: pan or cutaway with text overlays (VRAAG / ANTWOORD or single line)",
+      "CTA: 2-3s — logo + tagline + URL pill"
+    ],
+    "audio": "Halal nasheed bed (-13 to -16 LUFS linear) + Jolanda VO or voice-clone",
+    "captions": "Per-shot CaptionComposition with orange highlight on key words",
+    "color_grading": "Warm golden hour, +5% saturation, soft amber LUT on indoor"
+  },
+  "videos_in_family": [
+    "V3-Tarik (2026-04-16)",
+    "V4-Brother-WillemJan (2026-04-17)",
+    "V3-Tarik-v2-couple (2026-04-26)"
+  ],
+  "approved_components": [
+    "tarik",
+    "tarik_wife",
+    "brother_willemjan",
+    "warm_living_room",
+    "brother_living_room",
+    "halal_nasheed",
+    "ambient_room_tone"
+  ],
+  "next_videos_planned": [
+    "V5-testimonial-3 (TBD topic)",
+    "V6-testimonial-4 (TBD topic)"
+  ],
+  "lock_until": 6,
+  "rationale": "Lock to testimonial family for 3 more videos (total 6) so owner taste converges and component reuse compounds. After V6, evaluate switching to a different family or extending."
+}

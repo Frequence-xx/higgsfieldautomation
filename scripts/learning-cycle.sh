@@ -225,4 +225,20 @@ SQL
 fi
 
 echo "[$TS] heartbeat written, STRONG=$findings_strong WEAK=$findings_weak"
+
+# --- 7. Weekly pattern extractor — runs on Sundays only ---
+# date -u +%u: Monday=1 … Sunday=7
+VENV_PY=/opt/pipeline/venv/bin/python
+PATTERN_EXTRACTOR=/opt/pipeline/scripts/pattern-extractor.py
+if [ "$(date -u +%u)" = "7" ]; then
+    echo "[$TS] Sunday detected — running pattern extractor"
+    if "$VENV_PY" "$PATTERN_EXTRACTOR" 2>&1; then
+        echo "[$TS] pattern-extractor: OK — report at $PIPELINE/output/research/patterns/$(date -u +%Y-%m-%d).md"
+    else
+        echo "[$TS] pattern-extractor: FAILED (exit $?) — check $LOG"
+    fi
+else
+    echo "[$TS] pattern-extractor: skipped (not Sunday, day=$(date -u +%u))"
+fi
+
 echo "=== $TS learning cycle end ==="

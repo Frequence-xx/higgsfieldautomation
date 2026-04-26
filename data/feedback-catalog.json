@@ -1,0 +1,469 @@
+{
+  "prompt_constraint": [
+    {
+      "rule": "no_breathing_word_in_motion_prompt",
+      "applies_to": ["kling_v3_i2v", "video_generation"],
+      "implementation": "BANNED WORDS: 'breathing', 'breath', 'subtle natural movement', 'subtle motion', 'very subtle', 'moves', 'goes', 'emotional'. USE INSTEAD: specific micro-actions ('blinks once', 'head turns left 15 degrees'), environmental motion ('light shifts across face'), stability phrases ('preserve face structure', 'stable geometry', 'no face warp'), endpoints ('eases to stop', 'coming to rest', 'then settles')",
+      "source": ["CLAUDE.md:114-118", "feedback_v2_detailed.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "motion_prompt_minimal_and_specific",
+      "applies_to": ["kling_v3_i2v", "video_generation"],
+      "implementation": "Motion prompts must be 15-40 words, motion ONLY, with defined endpoint. Avoid over-description of natural human movement. Examples: 'steady pose, gentle golden hour light, eases to stop' rather than detailed breathing/weight-shift sequences",
+      "source": ["CLAUDE.md:77", "feedback_v2_detailed.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "stationary_truck_no_vehicle_movement",
+      "applies_to": ["kling_v3_i2v_truck", "video_generation"],
+      "implementation": "Add 'stationary truck, parked, no vehicle movement' to both positive prompt AND negative prompt for all truck shots. Prevents ghost-driving effect",
+      "source": ["CLAUDE.md:80", "feedback_v2_detailed.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "character_expression_stable_no_breathing_motion",
+      "applies_to": ["kling_v3_i2v_character", "avatar_pro"],
+      "implementation": "Use 'maintains consistent warm expression, no expression changes' in prompts. Never describe breathing or chest movement. For Avatar Pro: prompt with 'Calm neutral professional expression. Restrained controlled face. NO smiling, NO laughing, NO grinning, NO exaggerated expressions. Stays composed serious thoughtful presence.'",
+      "source": ["feedback_v2_detailed.md", "feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "no_text_logos_in_video_frame",
+      "applies_to": ["video_generation"],
+      "implementation": "NO text or logos in the animated video frame. All text, logos, URLs, phone numbers must be post-overlay via FFmpeg drawtext / Remotion / AE + Mocha tracking. Exception: static close-up of text in hero frame only (≤3s, minimal motion)",
+      "source": ["CLAUDE.md:76", "CLAUDE.md:122-124"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "subject_binding_face_adherence_80_90",
+      "applies_to": ["kling_v3_pro_i2v"],
+      "implementation": "When using Kling v3 Pro I2V with character reference images, set Subject Binding face adherence to 80-90 (NOT default 42) to maintain consistent character faces across clips",
+      "source": ["CLAUDE.md:81"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "generate_audio_false_mandatory",
+      "applies_to": ["kling_v3_pro_i2v", "aimlapi"],
+      "implementation": "EXPLICITLY set 'generate_audio: false' on ALL video generations. AIMLAPI default flipped to TRUE on Kling v3 Pro per 2026-04-16 — silent breakage if omitted",
+      "source": ["CLAUDE.md:79"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "minimal_motion_prompts_for_quality",
+      "applies_to": ["kling_v3_standard_i2v", "kling_v3_pro_i2v"],
+      "implementation": "Use minimal-motion prompts. Test Pro model for smoother motion output. Consider frame interpolation if output is choppy",
+      "source": ["feedback_video_motion_quality.md"],
+      "first_observed": "2026-04-10"
+    }
+  ],
+  "composition_rule": [
+    {
+      "rule": "native_9_16_aspect_ratio_no_black_bars",
+      "applies_to": ["hero_frames", "video_animation"],
+      "implementation": "Generate hero frames NATIVELY in 9:16 target ratio via aspect_ratio: '9:16'. NEVER crop, zoom, pad, or letterbox. Image must be composed for 9:16 from the start. If a model cannot generate in 9:16, DO NOT use it. Video animation (Kling I2V) follows input aspect ratio — getting hero frame right in 9:16 solves the video too",
+      "source": ["feedback_aspect_ratio_native.md", "CLAUDE.md:75"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "no_liftgate_mechanics",
+      "applies_to": ["truck_shots", "mechanical_objects"],
+      "implementation": "Never generate shots showing truck's hydraulic liftgate mechanism — AI renders it as detached/floating. Frame characters next to SIDE of truck, not rear. If rear is needed, show it closed. Avoid complex mechanical parts: hinges, hydraulics, latches, folding mechanisms",
+      "source": ["feedback_avoid_liftgate_mechanics.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "reference_based_generation_multi_ref",
+      "applies_to": ["character_shots", "truck_shots", "team_shots"],
+      "implementation": "Always use reference-based generation, never text-only. Pass actual reference images: character sheets, truck photos, box reference via google/nano-banana-pro-edit (up to 14 refs) or flux/kontext-max. Resize large references to ~1024px wide (JPEG q=85). Include ALL relevant brand assets, not just person. For box shots, include box reference sheet",
+      "source": ["feedback_reference_based_generation.md", "feedback_box_branding_accuracy.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "hands_out_of_frame_avatar_pro",
+      "applies_to": ["avatar_pro_lipsync"],
+      "implementation": "When using Avatar Pro for lipsync, keep hands out of frame or pre-crop input below chest. Avatar Pro struggles with hand animation that contradicts lipsync",
+      "source": ["docs/superpowers/plans/2026-04-26-self-learning-to-production.md:70"],
+      "first_observed": "2026-04-26"
+    },
+    {
+      "rule": "face_composition_30_percent_frame",
+      "applies_to": ["hero_frame_composition", "character_close_up"],
+      "implementation": "Hero frame composition: face should occupy ~30% of frame. Check brand binary pass, anatomy plausible",
+      "source": ["CLAUDE.md:45"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "word_level_caption_timestamps",
+      "applies_to": ["captions"],
+      "implementation": "Use REAL word-level timestamps from ElevenLabs speech_to_text or generation response. NEVER estimate manually. Convert timestamps to frame numbers at 30fps. Use exact frame numbers for Remotion caption rendering",
+      "source": ["feedback_caption_sync_and_design.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "caption_no_mixing_name_cards_and_vo",
+      "applies_to": ["captions"],
+      "implementation": "Choose ONE approach per shot: either name card OR voiceover captions, never both simultaneously. Name cards show ONLY during 0.5s gap before/after voiceover mentions name. Use Remotion for animated captions (spring reveal, word-by-word), NOT FFmpeg drawtext",
+      "source": ["feedback_caption_sync_and_design.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "per_shot_captions_not_global",
+      "applies_to": ["remotion_captions"],
+      "implementation": "Place ONE CaptionComposition INSIDE each Sequence with only that shot's words (LOCAL frame timing). Don't use single global caption layer which groups words into fixed-size pages spanning shot boundaries, causing future-shot captions to appear during current shot",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "fps_normalization_before_composition",
+      "applies_to": ["kling_i2v", "avatar_pro", "remotion_composition"],
+      "implementation": "Kling I2V outputs at 24fps, Avatar Pro at 30fps. Remotion renders at 30fps causing judder on 24fps clips (frame duplication). Apply motion-compensated interpolation: 'ffmpeg -vf minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1,minterpolate=fps=30:mi_mode=blend' to all Kling I2V outputs before composition",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "audio_padding_for_avatar_pro_short_clips",
+      "applies_to": ["avatar_pro_with_short_audio"],
+      "implementation": "Kling Avatar Pro on AIMLAPI bakes garbled auto-subtitles into output when audio <2 seconds. Pre-check audio duration and if <2s, pad with silence to 4+ seconds using 'ffmpeg apad=whole_dur=4'. Avoid 'speaks/says/phrase' trigger words in prompt",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "loudnorm_linear_two_pass_not_dynamic",
+      "applies_to": ["audio_normalization"],
+      "implementation": "Use LINEAR two-pass loudnorm, not single-pass dynamic. First pass measures, second pass applies single gain with 'linear=true:measured_I=X:measured_TP=Y:measured_LRA=Z:measured_thresh=W:offset=V'. Dynamic mode applies compressor that boosts quiet sections and suppresses loud ones (creates amateur ducking effect)",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "trim_source_audio_silence",
+      "applies_to": ["audio_import", "nasheed", "sourced_audio"],
+      "implementation": "Nasheeds and sourced audio often have 1-2s silence before content starts. Remotion plays from 0:00, so audio appears to start late. Detect and trim: 'ffmpeg silencedetect=noise=-40dB:duration=0.1' to find, 'ffmpeg -ss N' to trim",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "caption_vertical_position_width_relative",
+      "applies_to": ["remotion_captions"],
+      "implementation": "CSS paddingTop percentage is width-relative, not height-relative. For 1080×1920 video, verticalPosition: 0.58 = 626px from top (not 1113px). To place caption at y=1134 (3rd quarter from top), need verticalPosition = 1.05 (105% of 1080)",
+      "source": ["feedback_v3_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "cinematic_color_grading_approved_style",
+      "applies_to": ["color_grading", "all_video"],
+      "implementation": "Use approved cinematic color grading: warm golden hour lighting, cinematic color grading, slightly desaturated, lifted blacks, amber highlights, cool blue shadows, film grain, professional commercial look, shot on RED camera. Reference images: color_ref_1.png, color_ref_2.png, color_ref_3.png",
+      "source": ["feedback_cinematic_grading_approved.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "voice_clone_superior_to_text_to_voice",
+      "applies_to": ["audio_voiceover", "avatar_pro"],
+      "implementation": "Voice clone from real audio is dramatically more natural than text-to-voice design. If owner has real audio reference of desired character voice, ALWAYS clone (isolate_audio first, re-encode with 'ffmpeg -ar 44100 -ac 1 -b:a 192k'). Never design voice from prompt",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "single_layer_texture_not_dual_layer",
+      "applies_to": ["texture_overlay", "remotion_composition"],
+      "implementation": "Don't duplicate CSS effect both as backgroundImage AND Img element with same texture. Dual-layer creates 2× effect (0.05 opacity each = 0.1 visible). Pick one or the other",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "mix_blend_mode_multiply_requires_dark_content",
+      "applies_to": ["texture_overlay", "blend_mode"],
+      "implementation": "mixBlendMode: 'multiply' on white-on-white texture is invisible. Multiply only works when layer has substantially darker content than background. Either pre-darken texture or use normal blend with opacity",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "avatar_pro_restrain_expression",
+      "applies_to": ["avatar_pro_lipsync"],
+      "implementation": "Avatar Pro overdoes facial expressions by default. Prompt with: 'Calm neutral professional expression. Restrained controlled face. NO smiling, NO laughing, NO grinning, NO exaggerated expressions. Stays composed serious thoughtful presence.' Less is more for testimonial credibility",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "continuous_ambient_bed_spans_composition",
+      "applies_to": ["audio_mix", "remotion_composition"],
+      "implementation": "Continuous ambient bed must span entire composition, not just non-speech sections. Play ambient_clean from frame 0 at very low volume (0.025 = -32dB) throughout, layering under existing audio to prevent silence gaps between shot transitions",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "video_skip_rough_opening_frames",
+      "applies_to": ["kling_i2v", "video_composition"],
+      "implementation": "Kling I2V outputs have rough first 1-3s (camera settle, jitter). For pan/reveal shots, always startFrom 30-90 frames (1-3s) to skip unstable opening. Extract and verify first second frame",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "vertical_gradient_overlay_for_text_background",
+      "applies_to": ["text_overlay", "video_background"],
+      "implementation": "Use vertical gradient overlay (black bottom → transparent top) for caption-friendly background, NOT blur. Example: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 30%)' keeps image clarity in upper 70%, dark anchor for text in lower 30%. Blur destroys image content, looks degraded",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "selective_orange_word_emphasis_with_delimiters",
+      "applies_to": ["text_overlay", "brand_design"],
+      "implementation": "In text overlays, use {} delimiter for selective orange highlight. Example: 'Wil jij ook een verhuizing zonder {gedoe en stress}?' renders last words in brand orange. Use a parser to convert {} delimiters to orange styling",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "crossfade_overlap_math_in_frames",
+      "applies_to": ["video_transition", "remotion_composition"],
+      "implementation": "For 2-second crossfade at 9-11s window: shot 1 plays 0-330 (ends at 11s) with outFrames=60. Shot 2 starts at frame 270 (9s) with inFrames=60. Both clips visible with fading opacity 9-11s = real crossfade. Common mistake: inFrames/outFrames=0 results in hard cut",
+      "source": ["feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "stereo_audio_mandatory",
+      "applies_to": ["audio_output", "final_delivery"],
+      "implementation": "Mono audio is noticeable on social media. Always output stereo. Add '-ac 2' to every FFmpeg audio output command. Verify with ffprobe (channels=2, channel_layout=stereo) before delivery",
+      "source": ["feedback_v14_final_lessons.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "warm_lut_on_indoor_shots",
+      "applies_to": ["color_grading", "indoor_video"],
+      "implementation": "Indoor AI-generated shots are bright/neutral. Apply subtle warm curve: 'curves=r=0/0 0.5/0.58 1/1:g=0/0 0.5/0.52 1/1:b=0/0 0.5/0.44 1/1'",
+      "source": ["feedback_v14_final_lessons.md"],
+      "first_observed": "2026-04-17"
+    }
+  ],
+  "brand_compliance": [
+    {
+      "rule": "logo_color_orange_fc8434",
+      "applies_to": ["truck_logo", "brand_assets", "hero_frames"],
+      "implementation": "Logo color MUST be orange #FC8434 (NOT white, NOT yellow/gold). In prompts: specify 'orange SNELVERHUIZEN logo on front panel of truck'. QA check: verify logo color matches reference. Reference: assets/truck/truck_front.png",
+      "source": ["CLAUDE.md:105", "feedback_truck_logo_orange.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "truck_cargo_box_no_side_door",
+      "applies_to": ["truck_shots", "cargo_box"],
+      "implementation": "Cargo box has NO side door — it's a sealed unit. Add 'no side door on cargo box' to negative prompts and QA checks. Only the white cab (front section) has doors (driver + passenger). Reference: assets/truck/truck_left_side_view.png, truck_right_side_view.png",
+      "source": ["CLAUDE.md:106", "feedback_truck_no_side_door.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "crew_uniform_black_crewneck_orange_logo_blue_jeans_white_sneakers",
+      "applies_to": ["character_costume", "team_video"],
+      "implementation": "Crew uniform: black crewneck, orange logo on left chest, blue jeans, white sneakers. QA check each shot",
+      "source": ["CLAUDE.md:107"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "truck_text_snelverhuizen_not_garbled",
+      "applies_to": ["truck_shots", "text_render"],
+      "implementation": "Truck text must be 'SNELVERHUIZEN' clearly readable (not garbled/misspelled). When text appears in video, use post-overlay only (FFmpeg/Remotion/AE) to ensure correctness",
+      "source": ["CLAUDE.md:108"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "box_material_white_cardboard_orange_text",
+      "applies_to": ["moving_box", "brand_asset"],
+      "implementation": "Box material: white cardboard, orange text #FC8434 (NOT brown/kraft, NOT yellow). When generating box shots, include box reference sheet as image reference. Frame box so only one face is prominent",
+      "source": ["CLAUDE.md:109", "feedback_box_branding_accuracy.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "box_text_snelverhuizen_nl_phone_slogan",
+      "applies_to": ["moving_box", "brand_asset"],
+      "implementation": "Box text must include: SNELVERHUIZEN.NL, 085 3331133, VERHUIZEN ZONDER ZORGEN. When text appears in video, use post-overlay (NOT generated in video frame). Reference: assets/brand/snelverhuizen_boxes_reference_sheet.png",
+      "source": ["CLAUDE.md:110", "feedback_box_branding_accuracy.md"],
+      "first_observed": "2026-04-10"
+    }
+  ],
+  "shariah_compliance": [
+    {
+      "rule": "no_music_instruments_ever",
+      "applies_to": ["audio", "all_video"],
+      "implementation": "No music or instruments — ever. Only voiceover, ambient SFX, vocal nasheeds (owner approval required). Nasheeds must be a cappella (no instruments, no singing with lyrics, only vocal sounds without words)",
+      "source": ["CLAUDE.md:130", "feedback_halal_audio_nasheeds.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "halal_audio_and_nasheeds_owner_approval",
+      "applies_to": ["audio", "nasheed"],
+      "implementation": "Use richer halal SFX and vocal nasheeds (no instruments). Layer multiple halal SFX: footsteps, door sounds, truck engine, box handling, ambient nature. Source vocal nasheeds (a cappella) for background — search Freesound or dedicated nasheed libraries. ALWAYS send audio selections to owner via Telegram for approval BEFORE adding to final video. Never auto-approve audio — this is a manual gate",
+      "source": ["feedback_halal_audio_nasheeds.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "no_elevenlabs_nasheed_generation",
+      "applies_to": ["nasheed_audio"],
+      "implementation": "ElevenLabs compose_music CANNOT produce halal-compliant nasheeds. Output sounds generic, not authentic a cappella. Do NOT attempt nasheed generation via ElevenLabs — use externally sourced nasheeds only",
+      "source": ["feedback_nasheed_elevenlabs.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "modest_dress_all_people",
+      "applies_to": ["character_design", "costume"],
+      "implementation": "Modest dress in all people. QA hard gate: shariah_compliance = 10/10 or instant reject. No free-mixing, no haram imagery, no deceptive advertising. Maximum 3 retries per clip, then escalate to owner",
+      "source": ["CLAUDE.md:131-133"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "female_character_full_hair_coverage",
+      "applies_to": ["female_character", "shariah_modest_dress"],
+      "implementation": "Female characters must have full hair coverage without exposing a single strand. Implementation: beanie pulled to eyebrows + fully covering hairline, ears, and every strand of hair. Cowl wrapped to chin. Oversized poncho top covering body shape. No makeup. Pre-check prompt for explicit hair-coverage instruction before generation",
+      "source": ["docs/superpowers/plans/2026-04-26-self-learning-to-production.md:58-75"],
+      "first_observed": "2026-04-26"
+    }
+  ],
+  "model_routing": [
+    {
+      "rule": "character_close_up_routing",
+      "applies_to": ["character_close_up_shot"],
+      "implementation": "Primary model: Kling v3 Pro I2V with Subject Binding 80-90. No fallback specified",
+      "source": ["CLAUDE.md:57"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "truck_vehicle_routing",
+      "applies_to": ["truck_shot", "vehicle_shot"],
+      "implementation": "Primary model: Kling v3 Pro I2V with camera_fixed and anti-ghost-driving settings. No fallback specified",
+      "source": ["CLAUDE.md:58"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "wide_establishing_routing",
+      "applies_to": ["wide_establishing_shot"],
+      "implementation": "Primary model: Veo 3.1 Lite (google/veo-3-1-lite-generate-preview). Fallback: Kling v3 Standard / Wan 2.5 Preview",
+      "source": ["CLAUDE.md:59"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "broll_transitions_routing",
+      "applies_to": ["broll", "transition"],
+      "implementation": "Primary model: Veo 3.1 Lite or Wan 2.5 Preview (wan-2-5-image-to-video). Fallback: Kling Standard",
+      "source": ["CLAUDE.md:60"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "hero_frame_still_routing",
+      "applies_to": ["hero_frame_still"],
+      "implementation": "Primary: NBP Edit with character+refs ($0.195/img) or Soul Cinema. Fallback: Flux Kontext Max",
+      "source": ["CLAUDE.md:61"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "brand_color_fc8434_stills_routing",
+      "applies_to": ["brand_color_still"],
+      "implementation": "Primary: FLUX.2 Pro (blackforestlabs/flux-2-pro) with native HEX support for #FC8434. Fallback: Flux Kontext Max",
+      "source": ["CLAUDE.md:62"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "snelverhuizen_text_stills_routing",
+      "applies_to": ["text_still_with_typography"],
+      "implementation": "Primary: Flux Kontext Max (best typography). Fallback: NBP Edit + post-processing",
+      "source": ["CLAUDE.md:63"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "text_brand_in_video_post_overlay_only",
+      "applies_to": ["text_in_video", "brand_overlay"],
+      "implementation": "Text + brand in video: Post-overlay ONLY (FFmpeg/Remotion/AE). NEVER in video generation. No current video model renders text reliably",
+      "source": ["CLAUDE.md:64"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "aimlapi_only_no_alternative_providers",
+      "applies_to": ["api_provider"],
+      "implementation": "AIMLAPI-only pipeline per Farouq directive 2026-04-16. Do NOT research alternative providers (Atlas Cloud, fal.ai, Replicate, etc.). Seedance 2.0 on AIMLAPI not used (720p cap, $0.316/sec expensive vs Kling v3 Pro $0.291/sec, plus face content-policy risk)",
+      "source": ["CLAUDE.md:66", "MEMORY.md:14"],
+      "first_observed": "2026-04-16"
+    },
+    {
+      "rule": "avatar_pro_lipsync_choice",
+      "applies_to": ["testimonial_video", "character_lipsync"],
+      "implementation": "Avatar Pro on AIMLAPI suitable for character lipsync in testimonial format. Must handle audio <2s padding. Pre-restrain expression in prompt. Supports multiple character faces (use Tarik + wife approach: Tarik back-only to prevent dual-face lipsync artifact)",
+      "source": ["feedback_v3_production_lessons.md", "feedback_v4_production_lessons.md"],
+      "first_observed": "2026-04-16"
+    }
+  ],
+  "operational_constraint": [
+    {
+      "rule": "one_generation_at_a_time",
+      "applies_to": ["workflow", "generation"],
+      "implementation": "Generate only 1 video/image at a time. Each generation costs credits. Maximum 1 generation per task. If it fails, STOP and diagnose — do not blindly retry. Before clicking GENERATE: verify correct image selected by checking image URL or visual content",
+      "source": ["CLAUDE.md:156", "feedback_generation_limit.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "sequential_ffmpeg_then_remotion",
+      "applies_to": ["workflow", "composition"],
+      "implementation": "Sequential: FFmpeg then Remotion, never simultaneous",
+      "source": ["CLAUDE.md:157"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "qa_every_clip_before_assembly",
+      "applies_to": ["qa_gate", "video_assembly"],
+      "implementation": "QA every animated clip (extract frames t=0, 2.5, 5 — READ each frame) before assembly. Owner approval on each clip before assembly. NEVER assemble from unreviewed clips. Extract frames and verify visually against acceptance criteria",
+      "source": ["CLAUDE.md:92-93, 97-98"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "cost_ceiling_and_warnings",
+      "applies_to": ["budget", "cost_tracking"],
+      "implementation": "Cost ceiling: $15/video, $50/session. At 80% → Telegram warning. At 100% → STOP. Log cost BEFORE every API call",
+      "source": ["CLAUDE.md:96", "CLAUDE.md:82"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "final_video_frame_by_frame_review",
+      "applies_to": ["qa_gate", "final_delivery"],
+      "implementation": "Review final assembled video frame-by-frame before delivery. NEVER deliver without watching output. Flag issues BEFORE owner asks — never send marginal quality",
+      "source": ["CLAUDE.md:94-95, 99-100"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "never_compress_final_video",
+      "applies_to": ["delivery", "final_output"],
+      "implementation": "Always deliver final video at full quality (Remotion render output as-is). Never apply post-render FFmpeg compression for delivery. Compression loses subtle detail (grain, gradients, edges) that owner uses to judge work. If file exceeds Telegram 50MB limit, split into parts or upload to file-sharing path",
+      "source": ["feedback_no_compressed_finals.md"],
+      "first_observed": "2026-04-17"
+    },
+    {
+      "rule": "read_all_feedback_before_production",
+      "applies_to": ["pre_flight_check", "production"],
+      "implementation": "Read ALL relevant memory entries before production. Query all feedback_*.md memories + hindsight before finalizing production plan",
+      "source": ["CLAUDE.md:90-91"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "be_brutally_honest_not_sycophant",
+      "applies_to": ["communication", "quality_gate"],
+      "implementation": "Stop being a yes-man. Give honest assessments, push back when needed, admit incomplete work, never send marginal quality, never claim research is deep when shallow. Before sending ANY deliverable: 'Would a professional accept this? Would I be embarrassed if competitor saw this?' Before claiming research complete: actually read every source. Before agreeing: am I right or just agreeable?",
+      "source": ["feedback_anti_sycophancy.md"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "respond_before_long_tasks",
+      "applies_to": ["communication"],
+      "implementation": "Always send quick 'even bezig' reply before tasks >30 seconds. Never leave owner waiting without acknowledgment",
+      "source": ["MEMORY.md:15"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "sqlite_source_of_truth",
+      "applies_to": ["database", "state_management"],
+      "implementation": "SQLite is source of truth. Resume from last completed step on crash. Log all feedback to SQLite",
+      "source": ["CLAUDE.md:159-160"],
+      "first_observed": "2026-04-10"
+    },
+    {
+      "rule": "subagent_verification_required",
+      "applies_to": ["delegation", "qa_gate"],
+      "implementation": "Subagents don't have conversation context and can re-introduce fixed bugs. Always verify subagent output before delivering. For video assembly, prefer doing it yourself — FFmpeg commands are fast and context is critical. Verify every piece of subagent work",
+      "source": ["feedback_v14_final_lessons.md"],
+      "first_observed": "2026-04-17"
+    }
+  ]
+}

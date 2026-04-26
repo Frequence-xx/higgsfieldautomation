@@ -10,6 +10,16 @@ You are the AI operator for **Snel Verhuizen**, a Muslim-owned Dutch moving comp
 
 ---
 
+## FAMILY LOCK-IN (mandatory before new video)
+
+Before producing a new video: read `data/family-lock.json`. If `videos_in_family` count < `lock_until`, the new video MUST stay in `current_family` format and reuse approved components from `assets/library/components.json`. Switching families requires owner approval.
+
+Use `scripts/library.py` to look up approved characters, scenes, and audio beds by name. Reference existing files instead of regenerating. Family lock + component reuse is how we converge on owner taste and ramp from 1 → 2-3 flawless videos per session.
+
+Every API call goes through `scripts/pre_flight_gate.py` (already wired in all `gen_*.py` scripts). The gate blocks payloads that violate constraints in `data/feedback-catalog.json`. Update the catalog when new feedback patterns emerge — pattern-extractor.py runs Sundays via learning-cycle.sh.
+
+---
+
 ## THREE-AGENT PATTERN (Non-Negotiable)
 
 **Generator and Evaluator MUST be separate contexts. The Generator NEVER self-approves.**

@@ -1,0 +1,216 @@
+{
+  "characters": {
+    "tarik": {
+      "approved_at": "2026-04-16",
+      "approved_in": ["V3-Tarik"],
+      "ref_files": [
+        "assets/library/characters/tarik/tarik_v2_full_sheet.png",
+        "assets/library/characters/tarik/tarik_v1.png",
+        "assets/library/characters/tarik/tarik_sheet_small.jpg"
+      ],
+      "primary_ref": "assets/library/characters/tarik/tarik_v2_full_sheet.png",
+      "api_ref": "assets/library/characters/tarik/tarik_sheet_small.jpg",
+      "voice": null,
+      "voice_notes": "Tarik on-screen is silent in V3 v2; uses Jolanda VO",
+      "avatar_pro_compatible": true,
+      "outfit_description": "navy crewneck, dark jeans",
+      "approved_outfits": ["navy_crewneck_dark_jeans"],
+      "constraints": [
+        "never lipsync simultaneously with another character",
+        "Subject Binding face adherence 80-90 (NOT default 42)",
+        "navy crewneck + dark jeans outfit — no substitutions without new hero frame approval"
+      ]
+    },
+    "tarik_wife": {
+      "approved_at": "2026-04-26",
+      "approved_in": ["V3-Tarik-v2-couple"],
+      "ref_files": [
+        "assets/library/characters/tarik_wife/s3_couple_hero_v11.png",
+        "assets/library/characters/tarik_wife/s3_couple_hero_v11.jpg",
+        "assets/library/characters/tarik_wife/s3_couple_hero_v11_crop.jpg"
+      ],
+      "primary_ref": "assets/library/characters/tarik_wife/s3_couple_hero_v11.png",
+      "api_ref": "assets/library/characters/tarik_wife/s3_couple_hero_v11.jpg",
+      "avatar_pro_ref": "assets/library/characters/tarik_wife/s3_couple_hero_v11_crop.jpg",
+      "avatar_pro_ref_notes": "head-shoulders crop, no hand area — use for Avatar Pro lipsync input",
+      "voice": "jolanda_elevenlabs",
+      "voice_notes": "Jolanda ElevenLabs voice (female VO), voice-only — never on-screen lipsync without crop",
+      "avatar_pro_compatible": true,
+      "outfit_description": "cream cable-knit beanie covering all hair + ears to eyebrows, cream knit cowl wrapped to chin, oversized olive-sage linen tunic hiding body shape",
+      "approved_outfits": ["cream_beanie_cowl_olive_tunic"],
+      "constraints": [
+        "shari'ah-compliant: beanie MUST cover all hair and ears — pulled to eyebrows",
+        "cowl MUST wrap to chin — no neck skin visible",
+        "oversized poncho-style top — no body shape visible",
+        "NO makeup of any kind",
+        "compliance is NOT via Islamic dress codes (no hijab/jilbab terminology in prompts) — achieved via winter layers",
+        "Avatar Pro input: use crop ref (no hands), not full-body ref",
+        "shariah_compliance QA gate: 10/10 required or instant reject"
+      ]
+    },
+    "karel": {
+      "approved_at": "2026-04-12",
+      "approved_in": ["V2-Proces"],
+      "ref_files": [
+        "assets/library/characters/karel/flits_karel_keuken.png",
+        "assets/library/characters/karel/flits_karel_clipboard_v4.png",
+        "assets/library/characters/karel/shot1_hook_hands_v2.png"
+      ],
+      "primary_ref": "assets/library/characters/karel/flits_karel_clipboard_v4.png",
+      "api_ref": "assets/library/characters/karel/flits_karel_clipboard_v4.png",
+      "voice": null,
+      "voice_notes": "Karel is a crew character — no VO/lipsync in approved videos",
+      "avatar_pro_compatible": false,
+      "outfit_description": "bald head, full beard, black crewneck with orange Snel Verhuizen logo on left chest, blue jeans, white sneakers",
+      "approved_outfits": ["black_crewneck_orange_logo_blue_jeans_white_sneakers"],
+      "shot_context": {
+        "flits_karel_keuken.png": "kitchen inspection — Karel with clipboard in kitchen",
+        "flits_karel_clipboard_v4.png": "living room with clipboard — primary establishing shot",
+        "shot1_hook_hands_v2.png": "close-up hands shot for hook"
+      },
+      "constraints": [
+        "bald head, full beard — both required, no variations",
+        "orange logo MUST be on left chest, NOT front center, NOT white",
+        "black crewneck — not hoodie, not t-shirt",
+        "white sneakers mandatory",
+        "logo color: #FC8434 (orange) — brand binary gate"
+      ]
+    },
+    "brother_willemjan": {
+      "approved_at": "2026-04-17",
+      "approved_in": ["V4-Brother"],
+      "ref_files": [
+        "assets/library/characters/brother_willemjan/brother_eyecontact.jpg",
+        "assets/library/characters/brother_willemjan/brother2_tv.jpg",
+        "assets/library/characters/brother_willemjan/brother_clean.jpg",
+        "assets/library/characters/brother_willemjan/ref_sheet_small.jpg",
+        "assets/library/characters/brother_willemjan/brother2_sofa_wide_9x16.png"
+      ],
+      "primary_ref": "assets/library/characters/brother_willemjan/brother_eyecontact.jpg",
+      "api_ref": "assets/library/characters/brother_willemjan/ref_sheet_small.jpg",
+      "avatar_pro_ref": "assets/library/characters/brother_willemjan/brother_clean.jpg",
+      "avatar_pro_ref_notes": "clean speak ref — frontal, no hands obstructing face",
+      "end_keyframe_ref": "assets/library/characters/brother_willemjan/brother2_sofa_wide_9x16.png",
+      "end_keyframe_notes": "NBP-edited wider end keyframe — use as I2V end frame for wide room shots",
+      "voice": "44qL1A8Rf7MFQ8SerN2Q",
+      "voice_provider": "elevenlabs",
+      "voice_notes": "WillemJan voice clone — cloned from real audio reference. MUST use clone, NOT text-to-voice design. Using TTS voice = rejected.",
+      "avatar_pro_compatible": true,
+      "outfit_description": "bald head, glasses, light blue button-up shirt, dark trousers, brown shoes",
+      "approved_outfits": ["light_blue_button_shirt_dark_trousers_brown_shoes"],
+      "shot_context": {
+        "brother_eyecontact.jpg": "frontal speaking ref — direct camera eye contact",
+        "brother2_tv.jpg": "action ref — mounting TV on wall",
+        "brother_clean.jpg": "clean speak ref — for Avatar Pro lipsync input",
+        "ref_sheet_small.jpg": "compressed room reference sheet — use for API multi-ref calls",
+        "brother2_sofa_wide_9x16.png": "wider living room end keyframe, NBP-edited 9:16"
+      },
+      "constraints": [
+        "bald head + glasses — both required, no variations",
+        "voice MUST be WillemJan clone (voice_id: 44qL1A8Rf7MFQ8SerN2Q) — never substitute TTS",
+        "Avatar Pro: use brother_clean.jpg (no hands obstructing face)",
+        "Avatar Pro: restrain expression in prompt — Avatar Pro overdoes expression by default",
+        "Subject Binding face adherence 80-90 (NOT default 42)"
+      ]
+    }
+  },
+  "scenes": {
+    "warm_living_room": {
+      "approved_at": "2026-04-26",
+      "approved_in": ["V3-Tarik-v2-couple"],
+      "ref_files": [
+        "assets/library/characters/tarik_wife/s3_couple_hero_v11.png"
+      ],
+      "ref_notes": "Scene inferred from s3_couple_hero_v11.png — no standalone scene file. Use couple hero frame as scene reference.",
+      "key_features": [
+        "beige fabric sofa",
+        "hanging plants on window",
+        "warm afternoon sunlight streaming in",
+        "light wood floor",
+        "soft white walls",
+        "cozy domestic interior — no brand boxes visible in this scene"
+      ],
+      "constraints": [
+        "warm amber color grade — golden hour tone",
+        "cool blue in shadows for cinematic contrast",
+        "film grain approved",
+        "no SNELVERHUIZEN brand boxes visible (different from brother living room)"
+      ]
+    },
+    "brother_living_room": {
+      "approved_at": "2026-04-17",
+      "approved_in": ["V4-Brother"],
+      "ref_files": [
+        "assets/library/characters/brother_willemjan/brother_eyecontact.jpg",
+        "assets/library/characters/brother_willemjan/brother2_sofa_wide_9x16.png"
+      ],
+      "ref_notes": "Same base room as warm_living_room but with blue curtains, brand boxes, and darker furniture.",
+      "key_features": [
+        "blue curtains",
+        "orange SNELVERHUIZEN moving boxes stacked",
+        "dark wood furniture",
+        "glass coffee table",
+        "beige sofa (same as warm_living_room base)"
+      ],
+      "constraints": [
+        "brand boxes MUST be white cardboard with orange #FC8434 text",
+        "brand box text: SNELVERHUIZEN.NL, 085 3331133, VERHUIZEN ZONDER ZORGEN",
+        "no side door on cargo box",
+        "warm indoor lighting — continuous ambient bed from ambient_room_tone"
+      ]
+    }
+  },
+  "audio_beds": {
+    "halal_nasheed": {
+      "approved_at": "2026-04-16",
+      "approved_in": ["V3-Tarik", "V3-Tarik-v2-couple"],
+      "file": "assets/library/audio_beds/halal_nasheed/nasheed2_trimmed.mp3",
+      "source_file": "captions/public/video3/nasheed2_trimmed.mp3",
+      "type": "vocal_nasheed",
+      "instruments": false,
+      "loudnorm_target": "-16 LUFS",
+      "loudnorm_method": "linear two-pass (NOT auto-ducking)",
+      "volume": 0.22,
+      "fade_settings": {
+        "fade_out_duration_seconds": 3,
+        "fade_out_position": "end of composition"
+      },
+      "constraints": [
+        "NO instruments — vocal only",
+        "owner approval required before any nasheed change",
+        "ElevenLabs cannot produce authentic nasheeds — external source only",
+        "loudnorm MUST be linear two-pass — auto-ducking causes uneven volume",
+        "volume: 0.22 steady throughout"
+      ]
+    },
+    "ambient_room_tone": {
+      "approved_at": "2026-04-16",
+      "approved_in": ["V3-Tarik", "V4-Brother"],
+      "file": "assets/library/audio_beds/ambient_room_tone/ambient_clean.mp3",
+      "source_file": "captions/public/video3/ambient_clean.mp3",
+      "type": "ambient_sfx",
+      "instruments": false,
+      "volume": 0.025,
+      "play_range": "frame 0 to end of composition",
+      "fade_settings": {
+        "fade_out_duration_seconds": 0,
+        "fade_out_position": null
+      },
+      "constraints": [
+        "very low volume: 0.025 — bed layer only, never audible over VO",
+        "plays continuously from frame 0 — never start late",
+        "layers under nasheed + VO without competing",
+        "stereo output mandatory — mono source padded to stereo if needed"
+      ]
+    }
+  },
+  "_meta": {
+    "schema_version": "1.0",
+    "created_at": "2026-04-17",
+    "last_updated": "2026-04-17",
+    "total_characters": 4,
+    "total_scenes": 2,
+    "total_audio_beds": 2,
+    "lookup_script": "scripts/library.py"
+  }
+}
