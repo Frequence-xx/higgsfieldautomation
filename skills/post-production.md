@@ -137,21 +137,26 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 ### 3a. rife-ncnn-vulkan (Linux, free, GPU-accelerated)
 
-Install:
+**Use TNTwise fork** — supports up to rife-v4.25 (original nihui repo capped at v4.6):
+
 ```bash
-# Download from GitHub releases (free, no license required)
-# https://github.com/nihui/rife-ncnn-vulkan/releases
-wget https://github.com/nihui/rife-ncnn-vulkan/releases/latest/download/rife-ncnn-vulkan-linux.zip
+# TNTwise fork: https://github.com/TNTwise/rife-ncnn-vulkan/releases
+# Download the Linux binary from releases page
+wget <latest-release-linux.zip-from-TNTwise-releases>
 unzip rife-ncnn-vulkan-linux.zip
 ```
+
+Model selection:
+- **rife-v4.25** — latest, best quality, TTA mode deprecated (no longer needed)
+- **rife-v4.6** — still fine if using nihui's original binary
 
 Usage — 24fps to 30fps (1.25x speed):
 ```bash
 # Extract frames
 ffmpeg -i clip.mp4 -r 24 frames/%08d.png
 
-# Interpolate (multiply=2 doubles frame count from 24→48, then we output at 30fps)
-./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.6 -x -j 1:2:2
+# Interpolate with v4.25 (no -x TTA flag — deprecated in v4.25)
+./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.25 -j 1:2:2
 
 # Reassemble at target fps
 ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
@@ -160,6 +165,8 @@ ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
   -pix_fmt yuv420p -c:a copy \
   -r 30 clip_smooth.mp4
 ```
+
+**Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.25? Drop it.
 
 ### 3b. Expected Quality Risks
 
@@ -244,11 +251,35 @@ ffmpeg -i normalized.mp4 \
 | Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 1 GB |
 | TikTok | 1080×1920 | 30 | H.264 | AAC 192k 44.1kHz | 287.6 MB |
 | YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 15 min |
-| WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | 16 MB |
+| WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) |
 
 **-pix_fmt yuv420p is MANDATORY** for all platform uploads. Without it, Instagram and some players reject the file silently.
 
 **-movflags +faststart** moves the moov atom to the front — required for web streaming and Instagram playback.
+
+**H.265/HEVC:** TikTok accepts HEVC but H.264 re-compresses it anyway. Instagram does NOT reliably accept H.265. Use H.264 for all platforms.
+
+**WhatsApp delivery to owner:** Regular video message = 16 MB limit (lossy auto-compression). To send the full-quality master file: use **Document share** (paperclip → Document) — supports up to **2 GB** with no recompression. Always deliver the master via document share, not as a video message.
+
+### 5e. File-Size-Constrained Export (WhatsApp 16 MB video message)
+
+Use only when the owner specifically wants a standard video message (not document). Two-pass encoding for exact file size target:
+
+```bash
+# Formula: target_bitrate_kbps = (target_MB × 8 × 1024 / duration_sec) - audio_kbps
+# For 30s video → 15MB target (leaving 1MB headroom): (15 × 8 × 1024 / 30) - 128 = 3966 kbps ≈ 3900k
+
+# Pass 1 (analysis only)
+ffmpeg -i normalized.mp4 \
+  -c:v libx264 -b:v 3900k -pass 1 -an -f null /dev/null
+
+# Pass 2 (encode)
+ffmpeg -i normalized.mp4 \
+  -c:v libx264 -b:v 3900k -pass 2 \
+  -c:a aac -b:a 128k -ar 44100 \
+  -vf scale=1080:1920 -pix_fmt yuv420p -movflags +faststart \
+  upload_whatsapp_video.mp4
+```
 
 ### 5d. Quality Check After Export
 
@@ -269,6 +300,72 @@ audio: aac - - 256000bps
 
 ---
 
+## 6. VMAF Quality Scoring (Optional QA)
+
+Objective quality scoring of the exported file vs. the assembled pre-export reference. Requires FFmpeg built with `--enable-libvmaf` (check: `ffmpeg -filters 2>/dev/null | grep vmaf`).
+
+```bash
+# Score encoded output against pre-export reference
+# n_subsample=5 = analyze 1 in 5 frames → ~4x faster, negligible score difference
+ffmpeg -i assembled_pre_export.mp4 -i delivery_master.mp4 \
+  -lavfi "libvmaf=log_fmt=json:log_path=vmaf_score.json:n_subsample=5" \
+  -f null -
+```
+
+VMAF score interpretation:
+
+| Score | Quality |
+|-------|---------|
+| ≥ 95 | Excellent — imperceptible loss |
+| 85–94 | Good — minor compression visible only on close inspection |
+| 70–84 | Acceptable — visible compression, borderline for delivery |
+| < 70 | Reject — re-export at higher bitrate |
+
+**Snelverhuizen threshold: ≥ 90 required before delivery.** If score < 90, increase CRF by -2 (lower = better) and re-export.
+
+---
+
+## 7. Hardware-Accelerated Export (Speed Optimization)
+
+For faster export on long or repeated encodes. Output quality matches libx264 at equivalent settings.
+
+### 7a. NVIDIA NVENC (NVIDIA GPU)
+
+```bash
+# Check availability
+ffmpeg -encoders 2>/dev/null | grep nvenc
+
+# Encode (equivalent to libx264 CRF 18 quality)
+ffmpeg -i normalized.mp4 \
+  -c:v h264_nvenc -preset p7 -tune hq -cq 20 \
+  -profile:v high -level:v 4.1 \
+  -pix_fmt yuv420p -movflags +faststart \
+  -c:a aac -ar 48000 -b:a 256k -ac 2 \
+  delivery_fast.mp4
+```
+
+Speed: ~3-5x faster than `libx264 -preset slow`.
+
+### 7b. VAAPI (Intel/AMD GPU, Linux)
+
+```bash
+# Check device
+ls /dev/dri/renderD*
+
+# Encode
+ffmpeg -vaapi_device /dev/dri/renderD128 \
+  -i normalized.mp4 \
+  -vf 'format=nv12,hwupload' \
+  -c:v h264_vaapi -qp 19 \
+  -movflags +faststart \
+  -c:a aac -ar 48000 -b:a 256k -ac 2 \
+  delivery_fast.mp4
+```
+
+**Note:** Hardware encoders are for speed only. For archive master use `libx264 -preset slow -crf 18` — it produces better quality/size ratio. Use NVENC/VAAPI for review copies or when time is tight.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -281,4 +378,6 @@ Before marking video as delivered:
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
 - [ ] Export: H.264, -pix_fmt yuv420p, -movflags +faststart, AAC 48kHz 256kbps
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
+- [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available)
+- [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
