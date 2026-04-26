@@ -58,31 +58,64 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 
 Use this funnel for every character or truck shot to minimize cost:
 
-1. **Draft iterations:** Kling v3 Standard I2V (`klingai/video-v3-standard-image-to-video`) at $1.09/5sec
+1. **Draft iterations:** Kling v3 Standard I2V (`klingai/video-v3-standard-image-to-video`) at $1.09/5sec — **use 3s clips for drafts (see below)**
 2. **Final output:** Kling v3 Pro I2V (`klingai/video-v3-pro-image-to-video`) at $1.46/5sec — ONLY after prompt is approved by owner
-3. **Savings:** Each avoided Pro iteration saves $0.37. Two Standard drafts + one Pro final = $2.64 vs three Pro passes = $4.38 — saves $1.74/clip (40%)
+3. **Savings (5s drafts):** Two Standard drafts + one Pro final = $3.64 vs three Pro passes = $4.38 — saves $0.74/clip (17%)
+4. **Savings (3s drafts):** Two 3s Standard drafts + one Pro final = $2.76 vs three Pro passes = $4.38 — saves $1.62/clip (37%)
 
 For Veo 3.1 Lite (B-roll/establishing): no tiering needed. Lite IS the final model — quality is sufficient at $0.52/5sec.
+
+## Short-Duration Drafts (Kling Standard) — Updated 2026-04-26
+
+**Use 3-second clips for ALL Standard draft iterations. Use 5s only for Pro finals.**
+
+- Standard 3s clip cost: $0.218/sec × 3s = **$0.65** (vs $1.09 at 5s — saves $0.44/draft)
+- 3 seconds is sufficient to evaluate: motion type, composition validity, identity drift, ghost-driving presence
+- 3s clips reveal all failure modes that would cause a retry — no need to pay for 5 full seconds of drift
+- After 2 Standard drafts confirm the prompt works → generate one 5s Pro final
+
+**Duration rule by pass type:**
+
+| Pass | Model | Duration | Cost | Purpose |
+|------|-------|----------|------|---------|
+| Draft 1 | Standard | **3s** | $0.65 | Evaluate motion direction and identity lock |
+| Draft 2 (if needed) | Standard | **3s** | $0.65 | Confirm prompt fix worked |
+| Final | Pro | **5s** | $1.46 | Owner delivery |
+
+**Kling `duration` parameter accepts int 3-15 (seconds). Linear cost scaling confirmed.**
+
+Exception: if the shot's key motion event occurs after 3s (e.g., character completes a multi-step action), use 5s Standard. This is rare — most motion assessment is visible in the first 3 seconds.
 
 ## Model Strings and Pricing (AIMLAPI, verified 2026-04-20)
 
 ### Video Models
 
-| Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) |
-|-------|---------------|-----------|---------------------|
-| Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) |
-| Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) |
-| Veo 3.1 Lite T2V | `google/veo-3-1-lite-generate-preview` | up to 1080p | **~$0.52** ($0.104/sec) |
+| Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) | Cost (3s) |
+|-------|---------------|-----------|---------------------|-----------|
+| Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
+| Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
+| Veo 3.1 Lite T2V | `google/veo-3-1-lite-generate-preview` | up to 1080p | **~$0.52** ($0.104/sec) | ~$0.31 |
+| Wan 2.6 I2V (fallback) | `alibaba/wan-2-6-i2v` | TBD | **~$0.65** ($0.13/sec, min 5s) | — |
+| Kling 2.6 Pro I2V (canary) | `klingai/video-v2-6-pro-image-to-video` | TBD | **~$0.46** ($0.091/sec) | ~$0.27 |
+
+**Wan 2.6 note (web research 2026-04-26, medium confidence):** $0.13/sec confirmed from AIMLAPI pricing page snippet. Minimum clip is 5 seconds — no 3s option. Slightly more expensive than Veo 3.1 Lite ($0.52/5s) but provides I2V capability (Veo is T2V only). Use as fallback when Veo is unavailable.
+
+**Kling 2.6 Pro I2V (CANARY REQUIRED):** At $0.091/sec it is 58% cheaper than Kling v3 Standard and 69% cheaper than Kling v3 Pro. Older model generation — quality vs. v3 unverified for character identity retention. Do NOT use on character shots without canary validation. May be appropriate for truck-only shots where identity drift is not a concern.
+
+**Veo 3.1 Lite pricing discrepancy:** A third-party blog (2026-04-26) cited $0.05/sec ($0.26/5s). Our production-verified rate from AIMLAPI is $0.104/sec ($0.52/5s). Keep $0.104/sec for budget planning until re-verified directly on AIMLAPI pricing page. Do NOT adjust budgets based on unverified third-party figures.
 
 ### Image Models
 
 | Model | AIMLAPI String | Cost/gen | Best For |
 |-------|---------------|---------|---------|
+| NB2 Edit (DRAFT) | `google/nano-banana-2` | **~$0.07*** | Character draft iterations — CANARY REQUIRED |
 | NBP Edit | `google/nano-banana-pro-edit` | **$0.195** (flat) | Character + brand refs (up to 14 refs) |
 | NBP (T2I) | `google/nano-banana-pro` | **~$0.13** | Pure scenery, no refs |
 | Flux Kontext Max | `flux/kontext-max/image-to-image` | **$0.10** | Typography, character lock |
 | FLUX.2 Pro | `blackforestlabs/flux-2-pro` | **$0.07** | Brand color #FC8434 matching |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | **$0.10** | Money shots / CTA |
+
+*NB2: Google's official starting rate is **$0.067/image at 1K**, scaling to $0.151 at 4K. AIMLAPI pricing may differ — run canary test before production use (see "Unverified Models" section below). For 1K hero frames, expected AIMLAPI cost ~$0.067-0.10.
 
 ## Veo 3.1 Lite API Template (T2V, no character)
 
@@ -142,38 +175,96 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 }, headers=headers, timeout=30)
 ```
 
-## Budget Math — Updated 2026-04-20
+## Budget Math — Updated 2026-04-26
 
 ### Per-clip costs (production ready, audio OFF):
 
 | Clip type | Image | Video | Total |
 |-----------|-------|-------|-------|
-| Character shot (final) | $0.195 | $1.46 (Pro) | **$1.66** |
-| Character shot (draft) | $0.195 | $1.09 (Std) | **$1.29** |
-| Establishing/B-roll (Veo) | $0.13 | $0.52 (Lite) | **$0.65** |
-| Truck shot (final) | $0.195 | $1.46 (Pro) | **$1.66** |
+| Character shot (final) | $0.195 | $1.46 (Pro 5s) | **$1.66** |
+| Character shot (draft 3s) | $0.195 | $0.65 (Std 3s) | **$0.85** |
+| Character shot (draft 5s) | $0.195 | $1.09 (Std 5s) | **$1.29** |
+| Establishing/B-roll (Veo) | $0.13 | $0.52 (Lite 5s) | **$0.65** |
+| Truck shot (final) | $0.195 | $1.46 (Pro 5s) | **$1.66** |
 
 ### Typical video (4 clips: 1 character + 2 establishing + 1 truck):
 
 | Phase | Clips | Cost |
 |-------|-------|------|
 | Hero frames (4×$0.195 avg) | 4 | $0.78 |
-| Character: 1 Standard draft + 1 Pro final | 2 | $2.55 |
+| Character: 2 Standard 3s drafts + 1 Pro 5s final | 3 | $2.76 |
 | 2 Establishing shots (Veo Lite, 1 pass each) | 2 | $1.04 |
-| Truck: 1 Standard draft + 1 Pro final | 2 | $2.55 |
-| **Total** | | **~$6.92** |
+| Truck: 2 Standard 3s drafts + 1 Pro 5s final | 3 | $2.76 |
+| **Total** | | **~$7.34** |
 
-**Previous estimate was ~$13-15/video. New target: $6-8/video — 50% reduction.**
-**$15 ceiling now covers ~2 retries per clip, not 1.**
+*Previous estimate used 5s Standard drafts ($3.64 per char/truck 2+1 path). 3s draft strategy saves $0.88/clip ($1.76 total for char + truck clips).*
+
+**Target: $6-8/video with 3s draft tiering. $15 ceiling covers ~2 retry passes per clip.**
 
 ### Monthly (50 videos):
 
-| Scenario | Old estimate | New estimate |
+| Scenario | Old estimate (5s drafts) | New (3s drafts) |
 |----------|-------------|-------------|
-| 50 videos at 1× (no waste) | ~$260 | ~$346 |
-| 50 videos at 1.3× (iterations) | ~$338 | ~$450 |
+| 50 videos at 1× (no waste) | ~$346 | ~$292 |
+| 50 videos at 1.3× (iterations) | ~$450 | ~$380 |
 
-Note: Veo 3.1 Lite adds cost for establishing shots (previously not in budget because routing was all-Kling). Net effect depends on mix.
+Note: savings increase proportionally with iteration count — more drafts per clip = larger 3s-vs-5s gains.
+
+## Veo Seed Logging — Added 2026-04-26
+
+**Log the `seed` value from every successful Veo 3.1 Lite shot. Reuse on retry to reduce variance.**
+
+Veo 3.1 Lite supports a `seed` parameter (int, 0-4294967295). When a shot is 90% correct but needs a minor prompt tweak, reusing the same seed narrows the output space and typically delivers the variation in 1 pass rather than 2-3 random explorations.
+
+```python
+# After a successful Veo generation, extract and log the seed:
+result = sr.json()
+seed_used = result.get("seed")   # capture from response if returned
+# Log to SQLite: shot_id, model, seed, prompt, cost, qa_score
+
+# On retry with minor prompt change, reuse the seed:
+"seed": seed_used,   # add to the submission payload
+```
+
+**Seed strategy:**
+- Seed confirmed in approved shot → log it as the "golden seed" for that scene type
+- Minor prompt revision (fix a word, add "eases to stop") → reuse golden seed
+- Significant prompt change (different motion or camera) → omit seed, let model explore freely
+- If Veo API doesn't return seed in response, record the submission seed from your payload
+
+## Unverified Fallback Models — Canary Required
+
+### Wan 2.6 I2V (`alibaba/wan-2-6-i2v`)
+
+Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.13/sec ($0.65/5s), medium confidence.** Minimum clip is 5 seconds — no 3s option. Useful as a fallback when Veo 3.1 Lite is unavailable: provides I2V capability that Veo lacks, at cost between Veo ($0.52) and Kling Standard ($1.09).
+
+**Canary test before first production use:**
+1. Submit one 5s I2V call with a simple scenery prompt, no characters, `"aspect_ratio": "9:16"`
+2. Record actual cost and resolution from AIMLAPI response
+3. If cost ≤ $0.75/5s and 9:16 confirmed → document as verified
+
+### Kling 2.6 Pro I2V (CANARY REQUIRED)
+
+Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard. Not yet in routing matrix.
+
+**Potential use:** Truck shots and product-only shots where character identity retention is not needed. NOT recommended for character face shots without validation.
+
+**Canary test:**
+1. Generate one 5s truck I2V using the standard truck hero frame
+2. Run brand binary checklist: cargo box sealed? logo color correct? no ghost driving?
+3. If all pass → route truck-only shots to Kling 2.6 Pro during draft phase
+4. Savings: $0.63/truck draft (vs $1.09 Kling v3 Standard)
+
+### NB2 Edit (`google/nano-banana-2`)
+
+Draft-tier image model. Google official rate: **$0.067/image at 1K** (confirmed via web research 2026-04-26). AIMLAPI may charge flat or tiered — canary test to verify.
+
+**Canary test (3 steps, one API call):**
+1. Call `google/nano-banana-2` with 1 ref image, 9:16, simple prompt
+2. Verify: response has `data[0].url`, aspect ratio is 9:16, cost logged from AIMLAPI dashboard
+3. If cost ≤ $0.10 → unlock as draft tier for prompt iteration before NBP Edit finals
+
+**Expected savings if canary passes:** $0.125/iteration image ($0.195 NBP → ~$0.07 NB2). Over 5 hero frame iterations = $0.63 saved per shot's iteration phase.
 
 ## Rules
 
@@ -183,7 +274,9 @@ Note: Veo 3.1 Lite adds cost for establishing shots (previously not in budget be
 4. Verify correct image is selected before ANY Kling I2V generation
 5. Always use Kling I2V (not T2V) for character and truck shots — preserves hero frame
 6. Use Veo 3.1 Lite T2V for wide shots with NO characters — 2.8x cheaper than Kling Pro
-7. Draft with Kling Standard, final with Kling Pro — never use Pro for iteration passes
+7. Draft with Kling Standard **at 3s**, final with Kling Pro at 5s — never use Pro for iteration passes
 8. Track per-model success rates in learned_preferences — route future shots to most efficient model
 9. AIMLAPI defaults `generate_audio: true` for Kling v3 Pro — **ALWAYS explicitly pass `generate_audio: false`**
 10. Veo 3.1 Lite: **ALWAYS** set `enhancePrompt: false` — AI enhancement overrides brand prompt details
+11. **Polling status checks are FREE on AIMLAPI** — tokens consumed only on generation submission. Poll every 10s without cost concern.
+12. **No batch discount exists on AIMLAPI.** All cost savings come from model selection and clip duration management only.
