@@ -465,9 +465,9 @@ export const Video3Main: React.FC = () => {
 				<CaptionComposition words={s2Words} style={captionStyle} />
 			</Sequence>
 
-			{/* S3 Jolanda cutaway 196-294 (3.24s) */}
+			{/* S3 Jolanda cutaway 196-294 (3.24s) — woman lipsync (Tarik back-only) */}
 			<Sequence from={196} durationInFrames={98}>
-				<OffthreadVideo src={staticFile('video3/s3.mp4')} muted />
+				<OffthreadVideo src={staticFile('video3/s3_couple.mp4')} muted />
 				<Audio src={staticFile('video3/s3_audio.mp3')} />
 				<CaptionComposition words={s3Words} style={captionStyle} />
 			</Sequence>

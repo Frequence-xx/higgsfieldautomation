@@ -185,11 +185,10 @@ const CTAEndCard: React.FC = () => {
 	);
 };
 
-// Shot 2 — skip ~2.3s of source (startFrom=70). 210-70=140f available (4.67s) — needed to fit ANTWOORD 1s longer + no CTA overlap. Strict 3s skip would force black gap.
 const Shot2WithGradient: React.FC = () => {
 	return (
 		<AbsoluteFill style={{overflow: 'hidden'}}>
-			<OffthreadVideo src={staticFile('video3/brother_pan.mp4')} muted startFrom={70} />
+			<OffthreadVideo src={staticFile('video3/brother_pan_10s.mp4')} muted startFrom={75} />
 			<div
 				style={{
 					position: 'absolute',
@@ -201,49 +200,46 @@ const Shot2WithGradient: React.FC = () => {
 	);
 };
 
-// =============================================================
-// Main 20s composition (per Farouq clarification)
-// 0-300 (0-10s):    Shot 1 brother speaks (video has audio + ambient)
-// 300-330 (10-11s): brief crossfade transition (still on shot 1 video tail)
-// 330-495 (11-16.5s): BLURRED shot 2 as bg + VRAAG (330-405) + ANTWOORD (420-495) overlays
-// 495-510 (16.5-17s): crossfade
-// 510-600 (17-20s): CTA end card
-// Ambient bed: continues throughout (already in shot 1 video, plus extend with file)
-// =============================================================
+// Layout (510f total, 30fps = 17s):
+// 0-280   (0-9.33s):   Shot 1 brother speaks (fade-out 30f = 1s)
+// 250-450 (8.33-15s):  Shot 2 pan (200f = 6.67s, startFrom=75, fade-in 30f = 1s crossfade)
+//   330-390 (11-13s):  Text 1 "Geen stress."
+//   390-450 (13-15s):  Text 2 "Snel klaar. Rust."
+// 450-510 (15-17s):    CTA (60f = 2s) — Logo + "Geen gedoe. Gewoon geregeld." + subtitle + pill
 export const BrotherTestimonial: React.FC = () => {
 	return (
 		<AbsoluteFill style={{backgroundColor: '#000000'}}>
-			{/* 0-280: shot 1 (9.33s) with QUICK 10f fade-out at end */}
+			{/* Shot 1: 0-280f (9.33s), 30f fade-out */}
 			<Sequence from={0} durationInFrames={280}>
-				<FadeTransition inFrames={0} outFrames={10}>
+				<FadeTransition inFrames={0} outFrames={30}>
 					<OffthreadVideo src={staticFile('video3/brother15_v15.mp4')} />
 				</FadeTransition>
 				<CaptionComposition words={brotherWords as any} style={captionStyle} />
 			</Sequence>
 
-			{/* 270-410: shot 2 (140f, startFrom=70). 10f crossfade with shot 1 ending */}
-			<Sequence from={270} durationInFrames={140}>
-				<FadeTransition inFrames={10} outFrames={0}>
+			{/* Shot 2: 250-450f (200f = 6.67s), 30f fade-in, startFrom=75 */}
+			<Sequence from={250} durationInFrames={200}>
+				<FadeTransition inFrames={30} outFrames={0}>
 					<Shot2WithGradient />
 				</FadeTransition>
 			</Sequence>
 
-			{/* VRAAG 9-11s (60f) — 1s earlier */}
-			<Sequence from={270} durationInFrames={60}>
-				<TextOverlay text="Wil jij ook een verhuizing zonder {gedoe en stress}?" />
+			{/* Text 1: 330-390f (11-13s, 2s) */}
+			<Sequence from={330} durationInFrames={60}>
+				<TextOverlay text="Geen stress." />
 			</Sequence>
 
-			{/* ANTWOORD 11-13.67s (80f) — 1s earlier + 1s longer */}
-			<Sequence from={330} durationInFrames={80}>
-				<TextOverlay text="Dan wil je dat het {gewoon goed geregeld} is." />
+			{/* Text 2: 390-450f (13-15s, 2s) */}
+			<Sequence from={390} durationInFrames={60}>
+				<TextOverlay text="Snel klaar. Rust." />
 			</Sequence>
 
-			{/* Continuous ambient — plays from frame 0 throughout entire composition for seamless audio bed (no gap when shot 1 audio ends). Very low volume to layer subtly under shot 1's existing ambient. */}
+			{/* Continuous ambient throughout */}
 			<Audio src={staticFile('video3/ambient_clean.mp3')} volume={0.025} loop />
 
-			{/* CTA starts direct after shot 2 ends at 410. Duration 3s (90f) */}
-			<Sequence from={410} durationInFrames={90}>
-				<FadeTransition inFrames={0} outFrames={15}>
+			{/* CTA: 450-510f (15-17s, 60f = 2s) */}
+			<Sequence from={450} durationInFrames={60}>
+				<FadeTransition inFrames={0} outFrames={10}>
 					<CTAEndCard />
 				</FadeTransition>
 			</Sequence>
