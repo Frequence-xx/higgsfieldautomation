@@ -136,12 +136,60 @@ hero_url = resp.json()["data"][0]["url"]
 
 NBP is a "Thinking" model. Natural language outperforms tag soup.
 
-- Write 3-6 sentences in creative-director voice
-- Include camera specs: "50mm f/2.8, shallow depth of field"
+### 6-Component Structure (2026-04-27)
+
+Structure every NBP prompt using these six components — each adds ~15-20% more control:
+
+1. **Subject** — who or what is the main focus ("Mourad, mid-30s man, warm olive skin, strong jawline, short black beard")
+2. **Action** — what the subject is doing and pose ("standing at the rear of the truck, three-quarter left profile, lifting a box")
+3. **Environment** — specific spatial placement ("positioned at the left third of the frame, next to the open truck on a quiet Dutch residential street")
+4. **Art Style** — render approach ("cinematic photorealistic, golden hour color grading")
+5. **Lighting** — direction and quality ("warm backlight from upper left, soft fill on face, shallow depth of field")
+6. **Camera** — lens and framing ("85mm portrait lens, f/2.2, vertical composition, face occupying 30-40% of frame height")
+
+### Spatial Reasoning — Be Precise (2026-04-27)
+
+Use specific positional language rather than vague placement:
+
+| WEAK | STRONG |
+|------|--------|
+| "Person standing near a window" | "Person standing at a floor-to-ceiling window, positioned at the left third of the frame, facing right, three-quarter profile view" |
+| "Next to the truck" | "Standing at the rear left corner of the truck cab, facing camera, truck filling right 40% of frame" |
+| "Holding a box" | "Both hands gripping the base of a white cardboard box at waist height, box tilted 15° toward camera" |
+
+### Explicit Exclusions — Embed in Natural Language (2026-04-27)
+
+No negative prompt parameter exists. Embed exclusions directly in the prompt:
+
+```
+"No side door on the cargo box — smooth sealed white panels only.
+No additional people in the scene.
+No text overlays or watermarks.
+No extra props not listed above.
+No hyper-saturation or heavy vignetting."
+```
+
+Place exclusions at the END of the prompt after the positive description.
+
+### Visual Anchors — Multi-Shot Consistency (2026-04-27)
+
+For productions requiring 4+ hero frames of the same character, define a Visual Anchors block at the START of every prompt. List 3-6 invariant traits that must stay constant across all shots:
+
+```
+VISUAL ANCHORS (maintain across all shots):
+- Color palette: warm golden hour, Dutch soft light, #FC8434 brand orange
+- Mourad: olive skin, strong jawline, dark brown eyes, short black beard, black crewneck, orange chest logo
+- Truck: white cargo box, sealed panels (no side door), SNELVERHUIZEN text
+- Environment: quiet Dutch residential street, red-brick facades, clean pavement
+- Camera: 85mm portrait, shallow DOF, 9:16 vertical
+```
+
+This reduces iteration cycles from 15-20 to 3-5 attempts for multi-shot batches.
+
+### Other Rules
+
 - Wrap text in quotes: `displaying "SNELVERHUIZEN" in bold white sans-serif`
-- Use positive framing ("empty street" not "no cars")
 - Prompts over ~200 words trigger internal summarization — keep concise
-- NO negative prompt parameter — all control via natural language
 - NO seed, guidance scale, or CFG parameters
 
 ### Reference Image Rules (NBP Edit)
@@ -152,9 +200,25 @@ NBP is a "Thinking" model. Natural language outperforms tag soup.
 - **Add text description of distinctive features** alongside the image ref: e.g., "Mourad: warm olive skin, strong jawline, dark brown eyes, short black beard" — text reinforces the visual anchor
 - Explicitly remove objects from previous scenes ("No longer holding the clipboard")
 - Character sheet MUST be Image 1 in every call for character shots
-- **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades.
+- **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades. For strict structural accuracy, cap total uploads at 6 high-quality refs even if quota allows more.
 - **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
+
+### Multi-Reference Role Assignment (2026-04-27)
+
+Assign a ROLE to each reference image, not just a name. The model reads role assignments and applies refs selectively:
+
+```
+Image 1: Mourad character reference sheet — use as strict IDENTITY reference.
+  Maintain 100% of facial features, bone structure, skin tone.
+Image 2: Lighting/color reference — use ONLY for lighting angle and color grading.
+  Do NOT copy clothing or environment from this image.
+Image 3: Truck brand reference — use for truck design, box color, and text styling.
+  Do NOT use for character identity.
+Image 4: Background environment reference — use for street architecture and pavement texture.
+```
+
+Role-assigned refs prevent bleed between identity and style references, which is the main cause of character drift when mixing person + vehicle + environment refs.
 
 ### 3-View Character Sheet Workflow (2026-04-23)
 
@@ -193,8 +257,36 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 - **ONE change per call** — progressive editing only. Change background first → then lighting → then details. Stacking multiple changes in one prompt degrades quality.
 - Refer to subjects by description, not pronouns: "the man with the black crewneck" not "him"
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
-- `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Optimal 2.5–3.5 for editing (higher = more prompt-literal, lower = more image-preserving). Do not exceed 5 for character editing — face structure distorts.
+- `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Optimal 2.5–3.5 for editing (higher = more prompt-literal, lower = more image-preserving). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
 - `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
+
+### Max vs Pro — When to Use Which (2026-04-27)
+
+| Capability | Kontext Max | Kontext Pro |
+|-----------|-------------|-------------|
+| Typography / text rendering | **Max wins** — cleaner letterforms | Competent but slightly less refined |
+| Style transfers (global) | **Max wins** — more believable | Sometimes inconsistent |
+| Character identity across ≥4 chain edits | Pro more reliable | **Pro wins** — fewer subtle face drifts |
+| Complex multi-attribute edits | **Max wins** — handles priority better | Sometimes deprioritizes elements |
+
+**Pipeline routing:** Use Max for all text/typography shots (SNELVERHUIZEN.NL renders). For pure character edits requiring 4+ iterations from one ref, Kontext Pro may yield more stable face identity — but Max remains default on AIMLAPI per current model string.
+
+### Chain Edit Checkpoint Workflow (2026-04-27)
+
+After 6 successive edits, artifacts accumulate and identity drifts. Follow this workflow:
+
+```
+Edit 1 → Save intermediate (checkpoint A)
+Edit 2 → Save intermediate (checkpoint B)
+Edit 3 → SAVE CHECKPOINT — this is your recovery point
+Edit 4 → ...
+Edit 5 → ...
+Edit 6 → Final. If quality insufficient, restart chain from checkpoint A or B (NOT from Edit 6).
+```
+
+- Save every intermediate URL to SQLite before the next edit call
+- Never use the step-6 output as the input for a new chain — restart from original ref or checkpoint A
+- Planning the edit order before starting reduces backtracking: background → lighting → costume details → text
 
 ## Post-Generation Checklist
 
