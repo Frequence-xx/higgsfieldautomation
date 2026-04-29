@@ -127,8 +127,31 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 | motion_strength | **0.3-0.4** (optional, 0-1 range) | Low motion prevents physics artifacts on rigid objects. Omit to use model default. |
 | duration | **5s** | Minimize time for artifacts to accumulate |
 | generate_audio | **false** | Always — add audio in post |
+| face_consistency | **false** | No character face binding needed for truck-primary shots |
 
 **motion_strength range guide:** 0.1-0.3 = nearly frozen (good for stationary truck), 0.4-0.6 = moderate (walking crew), 0.7-1.0 = aggressive action (not for truck shots).
+
+## Camera Control Presets — Complete List (verified 2026-04-29)
+
+Use `camera_control.type` to choose camera movement. For truck shots prefer `simple` with low values (2–5) or all-zero lock.
+
+| Type | Motion | Best for truck shot |
+|------|--------|---------------------|
+| `simple` | Custom via sub-params (range −10 to +10) | ✅ Preferred — full control |
+| `down_back` | Camera descends + moves backward | ❌ Reveals top, not recommended |
+| `forward_up` | Camera moves forward + tilts up | ❌ Creates approach illusion |
+| `right_turn_forward` | Rotate right + move forward | ⚠️ Use only for reveal approach |
+| `left_turn_forward` | Rotate left + move forward | ⚠️ Use only for reveal approach |
+
+`simple` sub-params meaning:
+- `horizontal` — side-to-side dolly (±)
+- `vertical` — up/down movement (±)
+- `pan` — horizontal scan/rotation (x-axis)
+- `tilt` — vertical angle change (y-axis)
+- `roll` — z-axis tilt (rarely useful)
+- `zoom` — zoom in (+) / out (−)
+
+**Gentle cinematic orbit:** `tilt: 2–3, pan: 2–3` — enough movement to feel alive, low enough to avoid physics artifacts.
 
 ## What Motion IS Allowed in Truck Scenes
 

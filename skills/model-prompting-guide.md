@@ -26,7 +26,7 @@ negatives:
 
 # Model Prompting Guide — Snelverhuizen Pipeline
 
-Single reference document covering every model in the routing matrix. Replaces all prior prompting research. Last updated 2026-04-16 (4-agent verification sweep of Kling v3 Pro, NBP Edit, Flux Kontext + FLUX.2, Wan/Veo/Higgsfield/ElevenLabs).
+Single reference document covering every model in the routing matrix. Replaces all prior prompting research. Last updated 2026-04-29 (Study cycle 16: Kling v3 Pro pass 3 — cfg_scale resolved, motion_strength character ranges, face_consistency param, camera preset full list).
 
 ---
 
@@ -188,11 +188,19 @@ Formula: [Shot type], [focal length], [camera motion]. Subject [does specific mo
 
 | Parameter | Character shots | Branded/truck shots | B-roll |
 |-----------|----------------|---------------------|--------|
-| cfg_scale | 0.5 (Atlas Cloud uses 0.8 for face-lock — A/B test on next character shot) | 0.7 | 0.4 |
+| cfg_scale | 0.5 (confirmed optimal — 0.8 over-constrains motion) | 0.7 | 0.4 |
+| motion_strength | 0.3 (face close-up) / 0.5 (walking) | 0.3-0.4 | 0.5-0.6 |
 | Duration | 5 sec max | 5 sec | 5-10 sec |
 | generate_audio | false ALWAYS | false ALWAYS | false ALWAYS |
 | aspect_ratio | "9:16" | "9:16" | "9:16" |
 | Face adherence (Subject Binding) | 80-90 | N/A | N/A |
+| face_consistency | true | false | false |
+
+**cfg_scale resolved (2026-04-29):** 0.5 is confirmed optimal for character shots. CFG 0 = maximum creative freedom, CFG 1 = rigid prompt adherence. 0.8 over-constrains natural motion for close-ups. 0.7 stays correct for truck shots where position fidelity is critical.
+
+**motion_strength range 0.0–1.0 (2026-04-29):** Controls how much motion is injected from the base. 0.1–0.3 = nearly frozen (face close-ups), 0.4–0.6 = moderate (walking scenes), 0.7–1.0 = aggressive action. Use explicit values — default behavior is unpredictable.
+
+**face_consistency: true (2026-04-29):** Forces Kling to refer back to the Element Binding reference to reconstruct the face even when partially occluded. Set `true` for character shots with Subject Binding active. Not needed for truck or B-roll.
 
 **⚠️ CRITICAL (verified 2026-04-16):** AIMLAPI now defaults `generate_audio: true` for Kling v3 Pro I2V. **Every API call MUST explicitly pass `"generate_audio": false`** — silent breakage risk if a code path omits this. Audio in our character clips destroys Shari'ah compliance.
 
@@ -207,6 +215,28 @@ Default face adherence of 42 is FAR too low for Mourad/Karel — MUST bump to 80
 **Endpoints (both still work, verified 2026-04-16):**
 - Universal: `https://api.aimlapi.com/v2/video/generations`
 - Legacy: `https://api.aimlapi.com/v2/generate/video/kling/generation`
+
+**Camera control — named presets (verified 2026-04-29):**
+
+Five `camera_control.type` presets. Use named presets for cinematic movement; use `simple` for fine-grained numeric control.
+
+| Preset | Motion | Use case |
+|--------|--------|----------|
+| `simple` | Custom via sub-params | Orbit, gentle tilt, subtle zoom |
+| `down_back` | Camera descends + moves backward | Reveal from above, pull-out |
+| `forward_up` | Camera moves forward + tilts up | Approach, hero reveal |
+| `right_turn_forward` | Rotate right + move forward | Drive-by from left |
+| `left_turn_forward` | Rotate left + move forward | Drive-by from right |
+
+`simple` sub-params (all range **−10 to +10**, default 0):
+- `horizontal` — side-to-side dolly
+- `vertical` — up/down dolly
+- `pan` — horizontal rotation (x-axis)
+- `tilt` — vertical angle (y-axis)
+- `roll` — z-axis rotation (rare)
+- `zoom` — zoom in/out
+
+Gentle cinematic values: 2–5. Values >7 produce jarring motion. For stationary truck shots use `simple` with all zeros (pure camera lock) rather than omitting camera_control entirely.
 
 **Anti-ghost-driving for trucks:**
 - Prompt MUST contain: "stationary truck, parked, no vehicle movement, no forward creep"
@@ -226,16 +256,18 @@ chest expansion, body sway, expression change
 
 **v3 vs v2 for character work** — v3 Unified Spatial Anchor: identity drift dropped from 50%+ (v2.6) to <10% (v3). Also: 15s clips, multi-shot up to 6 scenes, native 4K, advanced physics. Subject Binding improvement is the single biggest reason to use v3.
 
-**API call (AIMLAPI):**
+**API call (AIMLAPI) — character shot:**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", json={
     "model": "klingai/video-v3-pro-image-to-video",
     "image_url": hero_frame_url,
-    "prompt": "Locked-off camera, subject maintains warm expression, gentle golden hour light plays across face, eases to stop",
+    "prompt": "Locked-off camera, subject blinks once, gentle golden hour light plays across face, eases to stop",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,
-    "cfg_scale": 0.5,
+    "cfg_scale": 0.5,           # 0.5 confirmed optimal for characters; do NOT raise to 0.8
+    "motion_strength": 0.3,     # 0.3 for face close-up; 0.5 for walking
+    "face_consistency": True,   # forces face reconstruction from Element Binding refs
     "negative_prompt": "morphing, shifting jawline, extra fingers, text morphing, garbled text, blurry, flickering, jittery, vehicle movement, ghost driving, breathing motion, expression change",
 }, headers=headers, timeout=60)
 ```
