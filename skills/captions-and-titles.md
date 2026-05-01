@@ -70,6 +70,9 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // captions → Caption[] ready for createTikTokStyleCaptions()
+   // timestampMs field uses t_dtw (DTW-derived) when tokenLevelTimestamps: true —
+   // this is the most accurate single-point timestamp available from whisper.cpp.
+   // Without tokenLevelTimestamps, timestampMs falls back to (startMs + endMs) / 2.
    ```
    Choose Option C when: no Python env available, CPU-only server (avoids loading second neural network), or pure TypeScript pipeline.
 
@@ -265,6 +268,8 @@ Three mutually exclusive vertical zones prevent spatial overlap:
 | Maximum display | MUST NOT exceed 6 seconds per block |
 | Ideal display | 2–3 seconds per block |
 
+**WhisperX drift:** wav2vec2 alignment has inherent ±50–100ms timing drift. The 50ms pre-roll in this table exists specifically to compensate. Do not reduce it. With whisper.cpp Option C + `tokenLevelTimestamps: true`, drift is lower because `t_dtw` is used directly — but keep 50ms pre-roll as minimum regardless.
+
 ### Choreography Template (15–30s Ad)
 
 ```
@@ -369,9 +374,10 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight |
 | `parseSrt()` | Parses SRT → `Caption[]` — **block-level only, NO word timestamps** |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
+| `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
 | `Caption` | Type: `{ text, startMs, endMs, timestampMs, confidence }` |
 
-No `parseWebVtt()` exists in this package.
+No `parseWebVtt()` exists in this package. No `convertToCaptions()` either — that was deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
 ### CRITICAL: parseSrt() does NOT give word-level timestamps
 
@@ -412,23 +418,25 @@ const { pages } = createTikTokStyleCaptions({
 })}
 ```
 
-### Rounded Corner Caption Background (Remotion Only)
+### Enforcing 42-char Line Limit with ensureMaxCharactersPerLine
 
-**FFmpeg `drawtext`/`drawbox` cannot produce rounded corners.** The `box=1` parameter draws a hard rectangle only. The only correct path for rounded caption pills is Remotion CSS `borderRadius`:
+The skill file specifies max 42 characters per line. Enforce this automatically with the built-in utility — do not hand-count:
 
-```tsx
-<div style={{
-  backgroundColor: 'rgba(0,0,0,0.72)',
-  borderRadius: 12,      // subtle pill for voiceover captions
-  padding: '8px 20px',
-  display: 'inline-block',
-}}>
-  {/* tokens mapped above */}
-</div>
+```typescript
+import { CaptionsInternals } from '@remotion/captions';
+
+const { segments } = CaptionsInternals.ensureMaxCharactersPerLine({
+  captions,          // Caption[] from WhisperX JSON or toCaptions()
+  maxCharsPerLine: 42,
+});
+
+// segments: Caption[][] — each inner array is one display line
+// Orphan prevention built-in: if <4 words remain and line is >50% full,
+// forces an early break to avoid stranded 1-2 word tails.
+// Feed each segment into createTikTokStyleCaptions() as its own Caption[].
 ```
-`borderRadius` values: voiceover pill `12`, name card `8`, CTA button `24`.
 
-If FFmpeg compositing without Remotion is required, pre-generate rounded-rect PNG with ImageMagick/Pillow then overlay with `ffmpeg overlay` filter.
+Use this BEFORE `createTikTokStyleCaptions()` when you have long Dutch phrases that would otherwise overflow the 1080px canvas width.
 
 ### Key Parameter: combineTokensWithinMilliseconds
 
