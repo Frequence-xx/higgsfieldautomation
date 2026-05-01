@@ -101,6 +101,54 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 # ASYNC — poll for completion
 ```
 
+**Important:** Elements extract face + posture + clothing together. The model uses the reference image's clothing to understand the character's appearance, not just their face. Clothing description in the prompt reinforces what the element already defines — both are needed.
+
+**No face_weight API parameter exists on AIMLAPI.** "Subject Binding 80-90" in CLAUDE.md is a quality target, not a parameter. Adherence is driven entirely by reference image quality and count.
+
+### Step 3b: Multi-Character Scene (Two People in Same Frame)
+When two named characters appear together, define separate elements and reference both in prompt. Max 3 elements per call.
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/video-o1-reference-to-video",
+    "prompt": "@Element1 and @Element2 carry boxes together towards the truck, natural collaboration, golden hour",
+    "elements": [
+        {
+            "frontal_image_url": "https://cdn.example.com/characters/mourad/front.png",
+            "reference_image_urls": [
+                "https://cdn.example.com/characters/mourad/three_quarter.png",
+                "https://cdn.example.com/characters/mourad/profile.png"
+            ]
+        },
+        {
+            "frontal_image_url": "https://cdn.example.com/characters/karel/front.png",
+            "reference_image_urls": [
+                "https://cdn.example.com/characters/karel/three_quarter.png",
+                "https://cdn.example.com/characters/karel/profile.png"
+            ]
+        }
+    ],
+    "generate_audio": False,
+    "duration": 5,
+    "aspect_ratio": "9:16"
+}, headers=headers)
+```
+
+**Multi-character known failure mode:** Feature swapping (Element1's face appears on Element2's body) when characters physically touch, embrace, or overlap. Mitigation: keep characters spatially separated in the prompt ("standing 1 metre apart"), and run InsightFace QA on BOTH character identities in the output.
+
+### Step 3c: Video-Based Element (Stronger Identity Lock)
+If a prior approved clip of the character exists, use it as a video element instead of static photos — the model sees motion and 3D structure, yielding stronger consistency:
+
+```python
+"elements": [
+    {
+        "video_url": "https://cdn.example.com/characters/mourad/reference_clip.mp4"
+    }
+]
+```
+
+Best for: carrying consistency forward from clip N to clip N+1 in a multi-clip sequence.
+
 ### Step 4: Alternative — Nano Banana Pro Edit for Compositing
 For placing a character into a specific background scene (max 14 reference images).
 **Always use `aspect_ratio: "9:16"` for vertical hero frames.**
@@ -178,9 +226,11 @@ ref_score = face_similarity("assets/characters/mourad/front.png", "frame_t0.png"
 | ≥ 0.68 | Strong identity match | PASS |
 | 0.60 – 0.67 | Acceptable drift (pose/lighting variation) | PASS with note |
 | 0.50 – 0.59 | Marginal — borderline drift | RETRY with more refs or higher face adherence |
-| < 0.50 | Identity failure | REJECT, regenerate |
+| < 0.50 | Identity failure | REJECT — try FaceFusion fallback (see below) before full regenerate |
 
 > **Note:** The prior threshold of `<0.80 = drift` in model-prompting-guide.md was too strict for cross-pose/lighting comparison. 0.80+ is correct for strict same-photo identity verification; 0.65 is the practical production threshold for I2V character consistency across different angles.
+
+**Why buffalo_l (not antelopev2):** Benchmarks — buffalo_l: LFW 99.83%, CFP-FP 99.33%, AgeDB-30 98.23%, IJB-C 97.25%, 326MB, auto-downloads. antelopev2: LFW ~99.80%, IJB-C ~97.13%, 407MB, requires manual download. buffalo_l is marginally more accurate AND easier to install. Do not switch.
 
 **Manual QA checklist (visual):**
 - Face geometry: same jaw shape, nose, eye spacing
@@ -189,6 +239,38 @@ ref_score = face_similarity("assets/characters/mourad/front.png", "frame_t0.png"
 - Build/proportions: no height or weight changes
 
 Score character consistency 1-10. Below 7 = reject and regenerate with stronger reference anchoring.
+
+### FaceFusion Fallback (identity score < 0.50)
+
+When a clip fails InsightFace QA and a full regenerate still fails (max 3 retries), use FaceFusion as a last-resort face-swap fix. Free, open-source, local — no API cost.
+
+**Setup (one-time):**
+```bash
+# Python 3.12 via conda
+conda create -n facefusion python=3.12 -y
+conda activate facefusion
+git clone https://github.com/facefusion/facefusion
+cd facefusion
+python install.py
+```
+
+**Headless CLI usage (scriptable):**
+```bash
+python facefusion.py run \
+  --source-paths /path/to/approved_character_front.png \
+  --target-path /path/to/failed_clip.mp4 \
+  --output-path /path/to/fixed_clip.mp4 \
+  --processors face_swapper face_enhancer \
+  --face-selector-mode reference \
+  --reference-face-position 0 \
+  --face-enhancer-model gfpgan_1.4 \
+  --face-enhancer-blend 80 \
+  --headless
+```
+
+**When to use:** Score < 0.50 AND clip motion/composition is good AND max retries exhausted. If the motion itself is wrong, regenerate instead — FaceFusion fixes face only, not body/pose.
+
+**Re-run InsightFace QA after FaceFusion.** Score should now be ≥ 0.65. If still < 0.60, escalate to owner.
 
 ## Model Selection for Character Shots
 
@@ -278,6 +360,8 @@ These requirements apply to ALL reference images — both existing Karel/Mourad 
 **Do NOT feed generated frames back as references.** Re-anchor ALWAYS from original approved reference photos. Generated frames accumulate drift because each generation round-trips through the 3D latent, compounding small errors in face geometry. By shot 3-4 using generated frames as refs, identity coherence collapses.
 
 **Use the SAME reference images for every shot.** Switching to a "better" hero frame from a previous shot as the new ref is counterproductive — it introduces subtle pose/lighting biases from that generation's specific motion. The original clean studio-lit 4-angle refs are the permanent anchor for all shots in all future videos.
+
+**Temporal re-anchoring rule (multi-clip productions):** Each clip in a video sequence MUST independently derive character identity from the original approved reference photos. Never chain: use clip1_output_frame as the reference for clip2. The correct pattern is: every clip → original ref photos in elements. Use video-based elements (Step 3c) only when you want to carry specific motion characteristics forward, never to compensate for a drifted clip.
 
 **10% expected failure zone:** Kling v3 achieves ~90% identity consistency with good refs. The remaining 10% fail predictably at: extreme angles (profile beyond 90°), very dark or heavily shadowed lighting in the scene, and when the character is small in frame (<15% frame height).
 
