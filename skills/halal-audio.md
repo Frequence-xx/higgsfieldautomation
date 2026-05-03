@@ -40,9 +40,9 @@ No music. No instruments. Ever. Audio is restricted to:
 
 | Model | Model ID | Dutch? | Cost/1K chars | Use case |
 |-------|----------|--------|---------------|----------|
-| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | Check ElevenLabs pricing | **Production** — most expressive, audio tag support |
-| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.03 | Fallback if v3 unavailable |
-| Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.015 | **Draft/iteration** — 75ms latency, 50% cheaper |
+| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support |
+| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.12/1K chars | Fallback if v3 unavailable (same cost tier) |
+| Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.06/1K chars | **Draft/iteration** — 75ms latency, 50% cheaper |
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
@@ -59,16 +59,21 @@ No music. No instruments. Ever. Audio is restricted to:
 
 Audio tags are inline `[tag]` markers in the text that direct delivery. They are voice- and context-dependent — test on the actual voice first.
 
+eleven_v3 has a community-documented library of ~1806 tags across 15 categories (emotions, delivery styles, accents, pacing, reactions, etc.). The tags below are the verified useful subset for Snelverhuizen brand ads. Anything in brackets is interpreted as a tag, not spoken — so typos or unknown tags silently fail.
+
 **Appropriate for Snelverhuizen ads:**
 - `[sincere]` — honest, direct delivery; use for brand promise lines
 - `[warm]` — approachable, friendly; use for customer-benefit lines
 - `[confident]` — authoritative, trust-building; use for CTA
 - `[calm]` — composed, professional; use for contact info
+- `[conversational]` — natural, unhurried pace; use for longer copy
+- `[newsreader]` — clean broadcast delivery; use for factual claims
 
 **Avoid for Snelverhuizen brand:**
 - `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
 - `[mischievously]`, `[laughs]`, `[crying]` — unprofessional
 - `[whispers]` — inaudible on phone speakers
+- `[sings]`, `[strong X accent]` — experimental; output is unreliable
 
 **Usage in text (eleven_v3 only):**
 ```
@@ -275,6 +280,32 @@ ffmpeg -i video_silent.mp4 -i audio_mixed.aac \
   final_output.mp4
 ```
 
+### 4e. Phone speaker voice optimization chain (for Reels / TikTok mobile delivery)
+
+Phone speakers roll off below ~150 Hz and above ~8 kHz. ElevenLabs VO is produced stereo at -24 LUFS. This chain prepares it for maximum intelligibility on a phone speaker before mixing:
+
+```bash
+# Apply AFTER loudnorm (4a) and BEFORE the mix commands (4b / 4b2)
+ffmpeg -i voiceover_normalized.mp3 \
+  -af "highpass=f=80, \
+       equalizer=f=2500:t=q:w=1.2:g=3, \
+       equalizer=f=4000:t=q:w=1.5:g=2, \
+       acompressor=threshold=-20dB:ratio=3:attack=5:release=100:makeup=2dB, \
+       aformat=channel_layouts=mono, \
+       aresample=48000" \
+  voiceover_phone.mp3
+```
+
+What each stage does:
+- `highpass=f=80` — removes sub-bass rumble phone can't reproduce
+- `equalizer f=2500 +3dB` — presence peak; Dutch consonants land here
+- `equalizer f=4000 +2dB` — articulation boost; improves "s", "t", "k" clarity
+- `acompressor ratio=3` — tightens dynamic range so quiet syllables aren't lost
+- `aformat=mono` — phone is mono; avoids stereo cancellation artifacts
+- `aresample=48000` — ensures consistent sample rate into the mix
+
+**When to use:** Any deliverable going to Instagram Reels, TikTok, or WhatsApp. Skip for YouTube (stereo plays through TV/laptop).
+
 ### 4e. Pre-process ambient SFX for seamless looping (eliminates audible click)
 
 `aloop` wraps the file abruptly — if start and end don't match in level/tone, you hear a click. Pre-process the raw SFX file ONCE to create a crossfaded loop version:
@@ -380,3 +411,75 @@ The audio QA must also pass shariah-compliance.md hard gate:
 | Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
 | Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
 | SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
+
+---
+
+## 9. Nasheed Instrument Detection Script
+
+Before using any nasheed download, run this script to flag hidden instruments (subtle percussion, synth pads, clap tracks). Pure vocal nasheeds produce high spectral flatness + weak beat confidence; instruments produce low flatness + strong beat periodicity.
+
+```python
+#!/usr/bin/env python3
+"""
+nasheed_check.py — detects likely instruments in a nasheed file.
+Install once: pip install librosa numpy
+Usage: python nasheed_check.py path/to/nasheed.mp3
+Exit 0 = likely vocal-only (PASS). Exit 1 = instruments detected (FAIL — review manually).
+"""
+import sys
+import numpy as np
+import librosa
+
+def check_nasheed(path: str) -> dict:
+    y, sr = librosa.load(path, mono=True, duration=60)  # analyse first 60s
+
+    # 1. Spectral flatness: pure tones → near 0; pure noise/vocals → near 1
+    flatness = librosa.feature.spectral_flatness(y=y)
+    flatness_mean = float(np.mean(flatness))
+
+    # 2. Beat tracking: strong periodic rhythm → instruments likely
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+    onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+    beat_strength = float(np.mean(onset_env[beat_frames])) if len(beat_frames) > 0 else 0.0
+
+    # 3. Spectral contrast: music has high contrast between peaks/valleys
+    contrast = librosa.feature.spectral_contrast(y=y, sr=sr)
+    contrast_mean = float(np.mean(contrast))
+
+    # Heuristic thresholds (empirical — adjust after testing on known-good nasheeds)
+    has_instruments = (
+        flatness_mean < 0.08          # very tonal = likely instruments
+        and beat_strength > 2.5       # strong periodic beats
+        and contrast_mean > 18        # high spectral contrast = music
+    )
+
+    return {
+        "spectral_flatness": round(flatness_mean, 4),
+        "beat_strength": round(beat_strength, 2),
+        "spectral_contrast": round(contrast_mean, 2),
+        "tempo_bpm": round(float(tempo), 1),
+        "verdict": "FAIL — instruments likely" if has_instruments else "PASS — likely vocal-only",
+    }
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python nasheed_check.py <audio_file>")
+        sys.exit(2)
+    result = check_nasheed(sys.argv[1])
+    for k, v in result.items():
+        print(f"  {k}: {v}")
+    sys.exit(1 if "FAIL" in result["verdict"] else 0)
+```
+
+**Thresholds explained:**
+- `flatness < 0.08` — pure tonal energy (instruments have sustained pitches); pure voice/ambient scores ~0.15–0.30
+- `beat_strength > 2.5` — strong onset periodicity; free-verse vocals typically score < 1.5
+- `contrast > 18` — high peak-valley difference typical of music mixing
+
+**Practical workflow:**
+1. Download nasheed: `yt-dlp -x --audio-format mp3 -o nasheed.mp3 "URL"`
+2. Run check: `python nasheed_check.py nasheed.mp3`
+3. FAIL → do NOT use without owner manual review; PASS → proceed, still listen once yourself
+4. PASS does not guarantee halal compliance — always listen to confirm NO instruments, NO beat patterns
+
+**Limitations:** A cappella groups with hand-clap percussion (allowed by some scholars, not by Snelverhuizen policy) may score PASS. Always confirm by ear.
