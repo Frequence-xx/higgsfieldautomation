@@ -431,6 +431,86 @@ The Kling Element Library can auto-generate additional angles from a single refe
 
 **Caveat:** This is a Kling web UI feature. Via AIMLAPI, ref sheet generation still requires 4 separate NBP calls — the auto-view feature is not exposed in the API as of 2026-04.
 
+## face_consistency Parameter (Kling v3 / O1 — Research 2026-05-04)
+
+Kling v3 (and O1) exposes a `face_consistency` boolean that forces the model to refer back to the Element identity reference even when the face is partially occluded by hands, props, or clothing. Without it, the model may drift when a character's face is >50% obscured.
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/video-o1-reference-to-video",
+    "prompt": "...",
+    "elements": [...],          # Identity lock as normal
+    "face_consistency": True,   # Occlusion recovery — add when face may be partially hidden
+    "generate_audio": False,
+    "duration": 5,
+    "aspect_ratio": "9:16"
+}, headers=headers)
+```
+
+**When to set `face_consistency: True`:** Shots where the character's face may be partially covered — hands near face, carrying a box in front of chest/neck, hat brim, or strong shadows across face.
+
+**AIMLAPI caveat:** This parameter is confirmed in the native Kling API. AIMLAPI passthrough status is unverified as of 2026-05-04. Test on a draft clip before using in a final Pro generation.
+
+**Do NOT set `face_consistency: True` for scenes with full clear face visibility** — it adds latency with no benefit.
+
+---
+
+## InsightFace QA Batch Optimization (Research 2026-05-04)
+
+For clip QA (frames at t=0, t=2.5, t=5), use `normed_embedding` directly — it's already L2-normalized, so cosine similarity is just a dot product. Batch-process all frames in one pass rather than 3 separate function calls:
+
+```python
+from insightface.app import FaceAnalysis
+import cv2, numpy as np
+
+# Init once — reuse for all clips in the session
+app = FaceAnalysis(name='buffalo_l')
+app.prepare(ctx_id=-1, det_size=(640, 640))
+
+def clip_qa(ref_path: str, frame_paths: list[str]) -> dict:
+    """Return per-frame similarity scores against reference. Keys: t0, t2_5, t5."""
+    ref_img = cv2.imread(ref_path)
+    ref_faces = app.get(ref_img)
+    if not ref_faces:
+        return {"error": "no face in reference"}
+    ref_emb = ref_faces[0].normed_embedding  # already normalized
+
+    results = {}
+    labels = ["t0", "t2_5", "t5"]
+    for label, path in zip(labels, frame_paths):
+        img = cv2.imread(path)
+        faces = app.get(img)
+        if not faces:
+            results[label] = 0.0
+        else:
+            emb = faces[0].normed_embedding   # already normalized
+            results[label] = float(np.dot(ref_emb, emb))  # cosine sim (no division needed)
+    return results
+
+# Usage
+scores = clip_qa(
+    ref_path="assets/characters/mourad/front.png",
+    frame_paths=["frame_t0.png", "frame_t2_5.png", "frame_t5.png"]
+)
+# PASS if all scores >= 0.68; note if 0.60-0.67; retry if < 0.60; reject if < 0.50
+```
+
+**Speedup vs prior pattern:** Single `app.prepare()` init + `normed_embedding` shortcut eliminates 3 separate division ops and redundant imread overhead. Saves ~15-20% per clip QA cycle on CPU.
+
+---
+
+## Veo 3.1 Reference-to-Video — BLOCKED for Character Shots (Research 2026-05-04)
+
+`google/veo-3.1-reference-to-video` is available on AIMLAPI. It accepts up to 3 character reference images via `image_urls`. However:
+
+- **Cost: ~$0.788/sec → $6.30 per 5s clip** (vs Kling v3 Pro $0.291/sec → $1.46 per 5s clip)
+- **4× more expensive** than Kling v3 Pro for equivalent character shot length
+- No evidence of superior identity lock vs Kling O1 elements at this price premium
+
+**Decision: DO NOT use `google/veo-3.1-reference-to-video` for character shots.** Use only for T2V scenery/B-roll (as `google/veo-3-1-reference-to-video` is a reference/style variant, not a character tool for this pipeline). Kling O1 reference-to-video remains the correct model for character shots.
+
+---
+
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
 - Female family members (if depicted): full hijab, loose-fitting garments
