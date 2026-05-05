@@ -55,6 +55,8 @@ No music. No instruments. Ever. Audio is restricted to:
 | Style Exaggeration | 15 | Slight energy; 0 = flat, >30 = over-dramatic |
 | Speaker Boost | true | Improves clarity on mobile speakers |
 
+**eleven_v3 + audio tags**: lower stability to **50–55** when the script uses `[tag]` markers. Stability ≥60 suppresses the headroom the model needs to act on tags — they will be ignored or weakened. For plain prose with no tags, keep at 60.
+
 ### eleven_v3 Audio Tags
 
 Audio tags are inline `[tag]` markers in the text that direct delivery. They are voice- and context-dependent — test on the actual voice first.
@@ -68,6 +70,8 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[calm]` — composed, professional; use for contact info
 - `[conversational]` — natural, unhurried pace; use for longer copy
 - `[newsreader]` — clean broadcast delivery; use for factual claims
+- `[professional]` — neutral authority; safe default for any line
+- `[direct]` — punchy, no-nonsense; use for price/offer lines
 
 **Avoid for Snelverhuizen brand:**
 - `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
@@ -75,9 +79,11 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[whispers]` — inaudible on phone speakers
 - `[sings]`, `[strong X accent]` — experimental; output is unreliable
 
+**Tag persistence (v3 behaviour):** a tag affects ALL text from that point forward until a new tag appears. Explicitly reset after expressive sections — append `[professional]` before the CTA so it doesn't carry unwanted emotion.
+
 **Usage in text (eleven_v3 only):**
 ```
-[sincere] Verhuizen zonder zorgen? [warm] Snel Verhuizen regelt alles. [confident] Bel nu: 085 333 11 33.
+[sincere] Verhuizen zonder zorgen? [warm] Snel Verhuizen regelt alles. [professional] Bel nu: 085 333 11 33.
 ```
 
 **Note:** Audio tags and `<prosody rate="95%">` SSML can be used together in eleven_v3.
@@ -323,6 +329,32 @@ Then use `ambient_seamless.wav` in all mix commands (4b / 4b2 / 4b3) with `aloop
 
 **Curve options:** `exp` (default, natural), `tri` (linear), `nofade` (hard cut — use to test if click is really there).
 
+### 4g. Phone-speaker pre-processing (run ONCE on raw ambient/nasheed files)
+
+Phone speakers (including most mobile social-media playback) roll off below ~150 Hz and can distort on sub-bass content. Pre-processing prevents muddy/buzzy playback and saves headroom in the mix.
+
+**Step 1 — Highpass ambient bed at 100 Hz (removes rumble, frees headroom):**
+```bash
+ffmpeg -i ambient_seamless.wav \
+  -af "highpass=f=100:width_type=q:width=0.707" \
+  ambient_seamless_hp.wav
+```
+
+**Step 2 — Optional: presence boost on voiceover for small-speaker clarity (+2 dB at 2.5 kHz):**
+```bash
+ffmpeg -i voiceover_normalized.mp3 \
+  -af "equalizer=f=2500:width_type=q:width=1.5:g=2.0" \
+  voiceover_mobile.mp3
+```
+
+**Step 3 — Verify mono compatibility (phase cancellation check):**
+```bash
+ffmpeg -i output_with_audio.mp4 \
+  -af "aformat=channel_layouts=mono,astats" \
+  -f null - 2>&1 | grep "RMS level"
+```
+If mono RMS is >3 dB lower than stereo RMS, there is phase cancellation — check ambient SFX source for stereo-widening processing and downmix to mono before using.
+
 ---
 
 ### 4f. Normalize final mix master to -14 LUFS (social media master)
@@ -400,6 +432,56 @@ The audio QA must also pass shariah-compliance.md hard gate:
 
 ---
 
+## 9. Nasheed Instrument Screening
+
+Use before submitting any nasheed to owner for approval. Catches nasheeds that have instruments disguised under the mix.
+
+### 9a. Sub-bass energy check (FFmpeg — fast, no install)
+
+Vocal-only nasheeds have negligible energy below 80 Hz. Any track with significant sub-bass content almost certainly contains a bass guitar, kick drum, or synthesizer.
+
+```bash
+# Measure RMS level of sub-80Hz content only
+ffmpeg -i nasheed.mp3 \
+  -af "lowpass=f=80,astats=metadata=1,ametadata=print:key=lavfi.astats.Overall.RMS_level" \
+  -f null - 2>&1 | grep RMS
+```
+
+**Interpretation:**
+- RMS < -45 dBFS → likely vocals-only (no bass instrument)
+- RMS −30 to −45 dBFS → borderline; check carefully at 1.5x speed
+- RMS > −30 dBFS → bass instrument present → **REJECT**
+
+### 9b. Onset density check (Python + librosa — detects percussion/claps)
+
+Consistent rhythmic onsets indicate a beat track or percussion (even hand claps at regular BPM suggest instrumented production).
+
+```python
+import librosa
+import numpy as np
+
+y, sr = librosa.load("nasheed.mp3", mono=True)
+onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
+
+print(f"Detected tempo: {tempo:.1f} BPM")
+print(f"Beat confidence: {np.mean(onset_env[beats]):.3f}")
+
+# If tempo > 60 BPM AND beat confidence > 0.5 → likely has rhythmic percussion
+```
+
+**Interpretation:**
+- Detected tempo 0-40 BPM and beat confidence < 0.3 → probably vocals-only speech rhythm
+- Detected tempo 60-130 BPM and beat confidence ≥ 0.5 → likely has a beat track → listen carefully or **REJECT**
+
+### 9c. Essentia voice_instrumental classifier (optional, more accurate)
+
+Pre-trained model available at `https://essentia.upf.edu/models/classification-heads/voice_instrumental/`. Install: `pip install essentia-tensorflow`. Best architecture for general audio: `voice_instrumental-discogs-effnet-1`.
+
+**Note:** this model classifies "voice" (vocals present) vs "instrumental" (no vocals). It will not flag a nasheed with instruments PLUS vocals as "instrumental". Use §9a and §9b for instrument presence checks; use this model if you need to confirm that vocals ARE present in a suspected all-instrumental track.
+
+---
+
 ## 8. Known Issues and Solutions
 
 | Problem | Cause | Fix |
@@ -411,6 +493,7 @@ The audio QA must also pass shariah-compliance.md hard gate:
 | Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
 | Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
 | SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
+<<<<<<< HEAD
 
 ---
 
@@ -483,3 +566,8 @@ if __name__ == "__main__":
 4. PASS does not guarantee halal compliance — always listen to confirm NO instruments, NO beat patterns
 
 **Limitations:** A cappella groups with hand-clap percussion (allowed by some scholars, not by Snelverhuizen policy) may score PASS. Always confirm by ear.
+=======
+| Audio tags ignored / flat delivery with tags | Stability ≥60 suppresses tag headroom | Lower stability to 50–55 when script uses `[tag]` markers (see §0) |
+| Tag emotion bleeds into CTA line | Tags persist until next tag | Explicitly add `[professional]` before CTA line to reset (see §0) |
+| Mobile ambient sounds buzzy/distorted | Sub-bass in ambient SFX hitting phone speaker | Highpass ambient at 100 Hz (see §4g) |
+>>>>>>> 6caaccc (Study cycle 18: Halal audio (pass 3) — tag persistence, sub-bass instrument screen, mobile EQ)
