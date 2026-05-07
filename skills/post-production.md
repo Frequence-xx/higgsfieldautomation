@@ -59,6 +59,37 @@ ffmpeg -i clip.mp4 -vf "scale=1080:1920,fps=30" \
   clip_normalized.mp4
 ```
 
+### 1a. AI Video Input — FFmpeg 7 Colorspace Fix
+
+**Problem:** Kling (and most AI video models) output H.264 with no explicit colorspace metadata. FFmpeg 7.x changed its default behavior — it no longer assumes BT.709 when metadata is missing, causing a visible color shift (greens shift, contrast change) when re-encoding.
+
+**Diagnosis:** Run ffprobe first:
+```bash
+ffprobe -v quiet -select_streams v:0 -show_entries \
+  stream=color_space,color_primaries,color_transfer \
+  -of default=noprint_wrappers=1 input_clip.mp4
+```
+If output shows `color_space=unknown` or is empty → apply the fix.
+
+**Fix — inject BT.709 metadata at input (zero re-encode quality cost):**
+```bash
+ffmpeg -i input_clip.mp4 \
+  -bsf:v h264_metadata=matrix_coefficients=1 \
+  -c copy \
+  clip_tagged.mp4
+```
+`matrix_coefficients=1` = BT.709. Apply once after download, before any normalization or grading. This tags the stream without re-encoding.
+
+**Alternative (re-encode path, e.g. when also normalizing):**
+```bash
+ffmpeg -i input_clip.mp4 \
+  -vf "scale=1080:1920,fps=30" \
+  -c:v libx264 -crf 18 -preset slow \
+  -colorspace bt709 -color_primaries bt709 -color_trc bt709 \
+  -pix_fmt yuv420p -c:a aac -ar 48000 -ac 2 \
+  clip_normalized.mp4
+```
+
 ---
 
 ## 2. Color Grading
@@ -102,7 +133,33 @@ ffmpeg -i assembled.mp4 \
 | saturation | 0 to 3 | 1.15 (warm vibrancy) |
 | gamma | 0.1 to 10 | 0.95 (slight lift in shadows) |
 
-### 2d. LUT Presets by Scene Mood
+### 2d. Banding Prevention (Sky / Gradient Backgrounds)
+
+AI-generated video often has smooth gradient skies or walls. Compressing these to 8-bit yuv420p can produce visible color banding. Apply `zscale` dithering whenever the clip contains large gradient areas (sky, white wall, sunset):
+
+```bash
+ffmpeg -i graded.mp4 \
+  -vf "zscale=t=linear:npl=100,format=gbrpf32le,\
+zscale=p=bt709,tonemap=hable,\
+zscale=t=bt709:m=bt709:r=tv,\
+dither=error_diffusion,format=yuv420p" \
+  -c:v libx264 -crf 18 -preset slow \
+  -c:a copy \
+  graded_nodither.mp4
+```
+
+**Quick version (when you just need dither on 8-bit yuv input, no HDR):**
+```bash
+ffmpeg -i graded.mp4 \
+  -vf "zscale=dither=error_diffusion,format=yuv420p" \
+  -c:v libx264 -crf 18 -preset slow \
+  -c:a copy \
+  graded_dithered.mp4
+```
+
+When to use: moving truck/van clips against sky, interior close-ups with white walls, wide establishing shots. Skip for close-up face shots (unnecessary and slightly slower).
+
+### 2f. LUT Presets by Scene Mood
 
 From cinematic-standards.md:
 
@@ -113,7 +170,7 @@ From cinematic-standards.md:
 | Moving day / stress | Cool desaturated, blue shadows | Cool/teal LUT OR eq saturation=0.85 |
 | Hero/reveal moment | High contrast warm, deep blacks | Warm high-contrast LUT |
 
-### 2e. Free LUT Sources (No Cost)
+### 2g. Free LUT Sources (No Cost)
 
 | Source | Notes |
 |--------|-------|
@@ -135,23 +192,27 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 - Clips with hard cuts within them
 - Kling v3 Pro clips at 1080p — quality is typically fine
 
-### 3a. rife-ncnn-vulkan (Linux, free, GPU-accelerated)
+### 3a. REAL Video Enhancer (Preferred — GUI, scene-detection, multi-backend)
 
-**Use TNTwise fork** — supports up to rife-v4.25 (original nihui repo capped at v4.6):
+**TNTwise REAL Video Enhancer v2.x** is the recommended tool. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
+
+Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
+
+Model selection for live-action / AI-generated video:
+- **rife-v4.25** — recommended for live-action and AI-generated (Kling) clips. Best quality, TTA deprecated (no longer needed)
+- **rife-v4.22** — slightly faster, negligible quality loss, good fallback
+- **rife-v4.26** — released 2024-09-21, focuses on **anime** scenes — do NOT use for live-action or Kling output; quality regresses on real footage
+- **rife-v4.6** — legacy fallback only (nihui original binary)
+
+### 3b. rife-ncnn-vulkan CLI (Headless / Scripted)
+
+For scripted pipeline use (no GUI):
 
 ```bash
 # TNTwise fork: https://github.com/TNTwise/rife-ncnn-vulkan/releases
-# Download the Linux binary from releases page
-wget <latest-release-linux.zip-from-TNTwise-releases>
+# Download the Linux binary
 unzip rife-ncnn-vulkan-linux.zip
-```
 
-Model selection:
-- **rife-v4.25** — latest, best quality, TTA mode deprecated (no longer needed)
-- **rife-v4.6** — still fine if using nihui's original binary
-
-Usage — 24fps to 30fps (1.25x speed):
-```bash
 # Extract frames
 ffmpeg -i clip.mp4 -r 24 frames/%08d.png
 
@@ -168,7 +229,7 @@ ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
 
 **Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.25? Drop it.
 
-### 3b. Expected Quality Risks
+### 3c. Expected Quality Risks
 
 - **Ghost artifacts** on complex motion — if seen, discard and use original
 - **Face warping** on close-up character shots — high risk, skip interpolation for these
@@ -248,7 +309,7 @@ ffmpeg -i normalized.mp4 \
 
 | Platform | Resolution | FPS | Codec | Audio | Max File |
 |----------|-----------|-----|-------|-------|---------|
-| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 1 GB |
+| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 4 GB |
 | TikTok | 1080×1920 | 30 | H.264 | AAC 192k 44.1kHz | 287.6 MB |
 | YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 15 min |
 | WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) |
@@ -260,6 +321,24 @@ ffmpeg -i normalized.mp4 \
 **H.265/HEVC:** TikTok accepts HEVC but H.264 re-compresses it anyway. Instagram does NOT reliably accept H.265. Use H.264 for all platforms.
 
 **WhatsApp delivery to owner:** Regular video message = 16 MB limit (lossy auto-compression). To send the full-quality master file: use **Document share** (paperclip → Document) — supports up to **2 GB** with no recompression. Always deliver the master via document share, not as a video message.
+
+### 5f. Instagram Reels Safe Zone (Text / Logo Placement)
+
+Instagram Reels UI elements overlay the video. Critical danger zones to avoid for text and logos:
+
+| Zone | Pixels from edge | What occupies it |
+|------|-----------------|-----------------|
+| Bottom danger zone | Bottom 280px (organic) / 370px (ads) | Caption bar, audio info, action buttons |
+| Right danger zone | Right 15% (~162px) | Like / comment / share / save buttons |
+| Top danger zone | Top 20% (~384px) | Notch / dynamic island on device |
+
+**Safe area for key text and logos:** 1080 × 1440px centered vertically (roughly rows 240–1680 on a 1080×1920 canvas).
+
+**Hook text position:** Center horizontally, place between y=200px and y=600px from top — safe across all devices.
+
+**CTA pill / URL:** Place between y=1200px and y=1640px from top — below center, above the bottom danger zone.
+
+This directly governs `drawtext` y-coordinates in text-overlay-compositing.md. When calculating `y=` values in FFmpeg `drawtext`, measure from top edge.
 
 ### 5e. File-Size-Constrained Export (WhatsApp 16 MB video message)
 
@@ -370,9 +449,12 @@ ffmpeg -vaapi_device /dev/dri/renderD128 \
 
 Before marking video as delivered:
 
+- [ ] ffprobe colorspace check on each AI clip (see §1a) — tag BT.709 if metadata missing
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
+- [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
 - [ ] Frame interpolation applied only if clip was visually choppy AND passed ghost-artifact check
+- [ ] Text overlays respect Instagram safe zone (y=200–1640px, avoid right 15%) — see §5f
 - [ ] All text overlays composited (see text-overlay-compositing.md)
 - [ ] Audio mixed per halal-audio.md — voiceover + SFX only, no instruments
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
