@@ -40,7 +40,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 | Model | Model ID | Dutch? | Cost/1K chars | Use case |
 |-------|----------|--------|---------------|----------|
-| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support |
+| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support. NOT real-time capable (larger codec). |
 | Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.12/1K chars | Fallback if v3 unavailable (same cost tier) |
 | Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.06/1K chars | **Draft/iteration** — 75ms latency, 50% cheaper |
 
@@ -117,6 +117,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), confirm licensing before use or use CC0 from Internet Archive only.
+
+**Halal Sounds (SoundCloud):** Channel `soundcloud.com/hasib-mahfin-777406511` — explicit "No Copyright Vocals Only Background Nasheed" tracks (Destiny, Grateful, Lost In Dreams, Beauty Of Creation). SoundCloud's ToS permits streaming only; verify license in track description before downloading for commercial use.
 
 **Finding vocals-only tracks on NCN:** Search for "acapella", "vocals only", or "no instrument" in the track title on the NCN channel page.
 
@@ -493,7 +495,10 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
 | Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
 | SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
-<<<<<<< HEAD
+| Audio tags ignored / flat delivery with tags | Stability ≥60 suppresses tag headroom | Lower stability to 50–55 when script uses `[tag]` markers (see §0) |
+| Tag emotion bleeds into CTA line | Tags persist until next tag | Explicitly add `[professional]` before CTA line to reset (see §0) |
+| Mobile ambient sounds buzzy/distorted | Sub-bass in ambient SFX hitting phone speaker | Highpass ambient at 100 Hz (see §4g) |
+| Dutch phonemes sound off | Wrong model | Use `eleven_v3` (production) or `eleven_multilingual_v2` (fallback). Never monolingual v1. |
 
 ---
 
@@ -566,8 +571,26 @@ if __name__ == "__main__":
 4. PASS does not guarantee halal compliance — always listen to confirm NO instruments, NO beat patterns
 
 **Limitations:** A cappella groups with hand-clap percussion (allowed by some scholars, not by Snelverhuizen policy) may score PASS. Always confirm by ear.
-=======
-| Audio tags ignored / flat delivery with tags | Stability ≥60 suppresses tag headroom | Lower stability to 50–55 when script uses `[tag]` markers (see §0) |
-| Tag emotion bleeds into CTA line | Tags persist until next tag | Explicitly add `[professional]` before CTA line to reset (see §0) |
-| Mobile ambient sounds buzzy/distorted | Sub-bass in ambient SFX hitting phone speaker | Highpass ambient at 100 Hz (see §4g) |
->>>>>>> 6caaccc (Study cycle 18: Halal audio (pass 3) — tag persistence, sub-bass instrument screen, mobile EQ)
+
+---
+
+## 10. SFX Noise Reduction (arnndn)
+
+ElevenLabs voiceover is already clean — skip for VO. Use this to remove background hiss, HVAC hum, or room noise from Pixabay/Freesound SFX files before mixing.
+
+**One-time setup — download model files:**
+```bash
+git clone https://github.com/richardpl/arnndn-models /opt/pipeline/models/arnndn-models
+# Primary model: std.rnnn — general speech/ambient
+```
+
+**Denoise a SFX file:**
+```bash
+ffmpeg -i sfx_noisy.wav \
+  -af "arnndn=m=/opt/pipeline/models/arnndn-models/std.rnnn:mix=0.8" \
+  sfx_clean.wav
+```
+
+**mix parameter:** `0.8` = good balance (removes hiss, keeps room character). `1.0` = maximum (may flatten ambience texture). `0.5` = light touch for subtle noise.
+
+**Workflow:** Pre-process once, save as `_clean.wav` in the SFX library for reuse.
