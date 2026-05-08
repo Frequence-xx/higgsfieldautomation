@@ -32,17 +32,23 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 ## Model Selection Matrix
 
-| Model | AIMLAPI String | Best For | Max Refs | Cost (1K) | 9:16 Output |
-|-------|---------------|----------|----------|-----------|-------------|
-| Nano Banana 2 Edit (DRAFT) | `google/nano-banana-2` | Draft iterations before committing NBP Pro credits | 14* | ~$0.07* | 768x1344* |
+| Model | AIMLAPI String | Best For | Max Refs | Cost | 9:16 Output |
+|-------|---------------|----------|----------|------|-------------|
+| Imagen 4 Fast (DRAFT) | `google/imagen-4.0-fast-generate-001` | Cheap prompt iteration — $0.02/img | 0 | $0.02 | native |
+| Imagen 4 | `google/imagen-4.0-generate-001` | High-quality hero frames, superior text rendering | 0 | ~$0.04 | native |
+| Imagen 4 Ultra | `google/imagen-4.0-ultra-generate-001` | Money shots, max prompt adherence, 2K | 0 | ~$0.06 | 2K native |
+| Nano Banana 2 Edit (DRAFT) | `google/nano-banana-2` | Draft iterations with refs, before committing NBP credits | 10* | ~$0.07* | 768x1344* |
 | Nano Banana Pro | `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | 0 | ~$0.13 | 768x1344 |
 | Nano Banana Pro Edit | `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) | 14 | ~$0.20 | 768x1344 |
 | Flux Kontext Max | `flux/kontext-max/image-to-image` | Character identity lock across scenes | 8 | ~$0.10 | 752x1392 |
 | Flux Kontext Max T2I | `flux/kontext-max/text-to-image` | Brand color stills without input ref | 0 | ~$0.08 | 768x1344 |
+| FLUX.2 Pro Edit | `blackforestlabs/flux-2-pro-edit` | Multi-ref brand asset compositing, up to 8 refs | 8 | ~$0.07 | native |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 
-*NB2 row marked with asterisk — CANARY TEST REQUIRED before production use. AIMLAPI pricing unverified. As of Feb 2026 launch, NB2 is reported to support 14 refs and 9:16; earlier April 16 audit noted a "5 refs / 5 ratio" limit that may refer to the older `google/nano-banana` (Gemini 2.5 Flash) model, not NB2. Verify in a $0 test before using on paid shots.
+*NB2 row — CANARY TEST REQUIRED before production use. AIMLAPI pricing unverified. NB2 (Gemini 3.1 Flash Image) supports up to 10 object fidelity refs and 5 character consistency refs; earlier "5 refs / 5 ratio" audit note referred to the OLDER `google/nano-banana` (Gemini 2.5 Flash), not NB2. Verify in a $0 test before using on paid shots.
+
+**Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier.
 
 ### Decision Flow
 
@@ -50,11 +56,11 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 Shot has characters, need to iterate prompt? → NB2 Edit DRAFT first (if canary passes), then NBP Edit for final
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
-Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs)
-Shot is pure scenery / B-roll? → Nano Banana Pro (text-only, cheapest)
-Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering)
-Shot needs brand-color still without input? → Flux Kontext Max T2I
-Shot is the money shot / CTA hero? → Flux Pro v1.1 Ultra
+Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 8 refs)
+Shot is pure scenery / B-roll? → Imagen 4 Fast ($0.02, cheapest) or Nano Banana Pro
+Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering) or Imagen 4 Ultra (2K)
+Shot needs brand-color still without input? → Flux Kontext Max T2I or Imagen 4
+Shot is the money shot / CTA hero? → Imagen 4 Ultra (2K, max adherence) or Flux Pro v1.1 Ultra
 ```
 
 ## API Call Templates
@@ -126,11 +132,13 @@ hero_url = resp.json()["data"][0]["url"]
 
 ## 9:16 Resolution Reference
 
-| Resolution | Nano Banana Pro | Kontext Max | Cost |
-|------------|-----------------|-------------|------|
-| 1K | 768 x 1344 | 752 x 1392 | ~$0.10-0.20 |
-| 2K | 1536 x 2688 | — | ~$0.13 |
-| 4K | 3072 x 5376 | — | ~$0.24 |
+| Resolution | Nano Banana Pro | Kontext Max | Imagen 4 | Cost |
+|------------|-----------------|-------------|----------|------|
+| 1K | 768 x 1344 | 752 x 1392 | native 9:16 | ~$0.02-0.20 |
+| 2K | 1536 x 2688 | — | Ultra only | ~$0.06-0.13 |
+| 4K | 3072 x 5376 | — | — | ~$0.24 |
+
+**Safe zone (2026-05-08):** On Instagram Reels / TikTok, platform UI (profile, caption, buttons) occludes the **top 14%** and **bottom 20%** of the frame. Keep all brand elements, faces, and text out of these zones. For a 768×1344 frame: top 107px and bottom 269px are danger zones. Compose the hero in the middle 66% of vertical height.
 
 ## Prompting Rules for NBP (Gemini 3 Pro Image)
 
@@ -200,13 +208,15 @@ This reduces iteration cycles from 15-20 to 3-5 attempts for multi-shot batches.
 - **Add text description of distinctive features** alongside the image ref: e.g., "Mourad: warm olive skin, strong jawline, dark brown eyes, short black beard" — text reinforces the visual anchor
 - Explicitly remove objects from previous scenes ("No longer holding the clipboard")
 - Character sheet MUST be Image 1 in every call for character shots
-- **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades. For strict structural accuracy, cap total uploads at 6 high-quality refs even if quota allows more.
+- **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades. For strict structural accuracy, cap total uploads at 6 high-quality refs even if quota allows more. (Confirmed by community guides apiyi.com, laozhang.ai 2026 — going beyond 6 shows no quality gain and may introduce conflicting information.)
+- **NB2 (Gemini 3.1 Flash Image) ref limits differ:** up to 10 object fidelity refs, but only 5 character consistency refs. Same 6-cap guidance applies.
 - **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
+- **Chain update technique (2026-05-08):** Include the PREVIOUS output as one of the reference images when making incremental edits. This reduces drift across multi-pass generation by giving the model a visual anchor of the last state. Remind it explicitly each call to preserve hair, clothing, and facial features.
 
 ### Multi-Reference Role Assignment (2026-04-27)
 
-Assign a ROLE to each reference image, not just a name. The model reads role assignments and applies refs selectively:
+Assign a ROLE to each reference image, not just a name. The model reads role assignments and applies refs selectively. **Note (2026-05-08): There is NO structured `role` API field — this is prompt-level instruction only. Effectiveness is prompt-dependent, not guaranteed.** Still worth doing — community data shows it reduces bleed.
 
 ```
 Image 1: Mourad character reference sheet — use as strict IDENTITY reference.
@@ -287,6 +297,54 @@ Edit 6 → Final. If quality insufficient, restart chain from checkpoint A or B 
 - Save every intermediate URL to SQLite before the next edit call
 - Never use the step-6 output as the input for a new chain — restart from original ref or checkpoint A
 - Planning the edit order before starting reduces backtracking: background → lighting → costume details → text
+
+## Face Consistency QA Tools
+
+Two scriptable options for automated face similarity checks between generated frames:
+
+| Tool | GitHub | Method | Threshold |
+|------|--------|--------|-----------|
+| **InsightFace** | `deepinsight/insightface` | ArcFace embeddings | cosine >0.6 = same person |
+| **DeepFace** | `serengil/deepface` (2026-active) | Wraps ArcFace, FaceNet512, VGG-Face, GhostFaceNet | cosine >0.6 = same person |
+
+DeepFace is a practical drop-in alternative to InsightFace — actively maintained, wider model choice, identical interface pattern. Use Facenet512 backend for best accuracy on cropped faces.
+
+```python
+from deepface import DeepFace
+result = DeepFace.verify(img1_path="ref_face.jpg", img2_path="generated_frame.jpg",
+                         model_name="Facenet512", distance_metric="cosine")
+is_same = result["verified"]  # True if cosine distance < threshold
+```
+
+Run this check on every hero frame before sending to owner for approval. Rejection threshold: if cosine distance > 0.4 (i.e. similarity < 0.6), flag for regeneration.
+
+## Imagen 4 API Templates (2026-05-08)
+
+### Imagen 4 Fast — cheapest draft ($0.02)
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "google/imagen-4.0-fast-generate-001",
+    "prompt": "A quiet Dutch residential street at golden hour. Red-brick facades, clean pavement. No people. Wide establishing shot, vertical composition.",
+    "aspect_ratio": "9:16",
+    "num_images": 1,
+}, headers=headers, timeout=60)
+hero_url = resp.json()["data"][0]["url"]
+```
+
+### Imagen 4 Ultra — money shots / CTA (max quality, 2K)
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "google/imagen-4.0-ultra-generate-001",
+    "prompt": "CTA card: clean white background, large bold orange text 'SNELVERHUIZEN.NL', orange #FC8434, professional Dutch design, 9:16 vertical. No people. No additional text.",
+    "aspect_ratio": "9:16",
+    "num_images": 1,
+}, headers=headers, timeout=90)
+hero_url = resp.json()["data"][0]["url"]
+```
+
+**CANARY NOTE:** Imagen 4 pricing on AIMLAPI — run a $0.10 test before batch production use to verify exact cost per image and response structure. Model strings confirmed in AIMLAPI docs as of 2026-05.
 
 ## Post-Generation Checklist
 
