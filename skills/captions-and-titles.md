@@ -32,10 +32,17 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.4`** — v3.8.2 (March 2025) fixed a wildcard alignment bug that anchored ALL word timestamps to segment start instead of actual speech; v3.8.4 fixed blank_id for HuggingFace models. Older versions silently produce wrong timestamps.
 
+   **Dependency requirement (v3.8.4+):** `faster-whisper>=1.2.0` is required. Install both:
    ```bash
-   pip install "whisperx>=3.8.4"
+   pip install "faster-whisper>=1.2.0" "whisperx>=3.8.4"
+   ```
+   **Digit/symbol timestamp fix (v3.8.4):** Words with digits or symbols — "085 3331133", "4,9 ster" — now get proper word-level timestamps via restored wildcard emission column. Prior versions silently anchored these words to segment start, causing caption drift on phone numbers and ratings in Dutch copy.
+
+   ```bash
    # CPU usage — always specify --device cpu explicitly
-   whisperx voiceover.wav --model large-v2 --language nl --batch_size 4 --compute_type int8 --device cpu
+   # Add --max_line_width 40 --max_line_count 2 to enforce 42-char line limit in ASS/SRT output
+   whisperx voiceover.wav --model large-v2 --language nl --batch_size 4 --compute_type int8 --device cpu \
+     --max_line_width 40 --max_line_count 2
    # Output: voiceover.json → segments[].words → [{word, start, end, score}]
    ```
 
@@ -489,6 +496,50 @@ Always set `whiteSpace: 'pre'` on the caption container. Spaces are used as deli
 - CTA button style: `borderRadius: 24` (fully rounded, pill shape)
 
 If FFmpeg compositing is required without Remotion, generate a rounded-rect PNG background per phrase at pre-render time (ImageMagick or Pillow), then overlay it on video with `ffmpeg -i video -i pill.png -filter_complex [0][1]overlay=...`.
+
+### ASS Karaoke — FFmpeg-Native Fallback (No Remotion)
+
+When Remotion is unavailable, WhisperX can generate ASS subtitle files with word-level karaoke timing in a single CLI call:
+
+```bash
+whisperx voiceover.wav \
+  --model large-v2 \
+  --language nl \
+  --device cpu --compute_type int8 --batch_size 4 \
+  --highlight_words True \
+  --output_format ass \
+  --max_line_width 40 \
+  --max_line_count 2 \
+  --output_dir .
+# Output: voiceover.ass — contains \k tags with per-word timing
+```
+
+Burn subtitles into video:
+```bash
+ffmpeg -i main.mp4 -vf "ass=voiceover.ass" -c:a copy output_captioned.mp4
+```
+
+**ASS color format is BGR, NOT RGB** — this is the #1 mistake:
+- Brand orange `#FC8434` in ASS hex = `&H003484FC` (bytes reversed: R→FC, G→84, B→34 → write as BB GG RR → 34 84 FC)
+- Writing `&H00FC8434` renders as BLUE, not orange
+- White (pre-highlight) = `&H00FFFFFF` | Black outline = `&H00000000`
+
+**`\k` vs `\kf` in ASS karaoke:**
+- `\k` — instant color switch at word start (correct for speech ads)
+- `\kf` — left-to-right sweep (traditional karaoke look, odd for voiceover)
+- WhisperX generates `\k` by default — do not change it
+
+**Style override to match brand:** Edit the `[V4+ Styles]` section of the generated `.ass` file:
+```
+Style: Default,Montserrat Bold,55,&H00FFFFFF,&H003484FC,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,6,2,2,10,10,40,1
+```
+Fields: Name, Font, Size, PrimaryColour (white), SecondaryColour (orange `&H003484FC`=highlight), OutlineColour (black), BackColour (semi-transparent black), Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding.
+
+**Limitations of ASS/FFmpeg vs Remotion:**
+- No rounded corners (libass rectangle only)
+- No spring/scale animation on active word
+- No per-frame CSS control
+- ASS is correct fallback when: Remotion not installed, pure server-side pipeline, or quick prototype
 
 ---
 
