@@ -97,7 +97,7 @@ for i in range(30):
 ## CFG Scale Guidelines
 
 | Shot Type | cfg_scale | Reasoning |
-|-----------|-----------|-----------|
+|-----------|-----------|----------|
 | Establishing / B-roll | 0.4 | Creative interpretation acceptable |
 | Character movement | 0.5 (default) | Balanced motion + adherence |
 | Truck / product hero | 0.7 | Strict adherence to preserve branding |
@@ -267,12 +267,12 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
 | motion_strength | float | — | 0-1. Lower = less motion/more stable (0.3-0.4 for stationary subjects). Higher = more aggressive motion (0.8-1.0). Omit for default. |
 | negative_prompt | string | "" | Max 2500 chars |
-| tail_image_url | string | — | End frame for transitions. **Incompatible with Multi-Prompting/guidances.** Same image = forces stationarity. |
+| tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** Same image = forces stationarity. |
 | camera_control | object | — | Named preset OR simple config (not both). See camera control section. |
 | elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
 | static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
-| guidances | array | — | Multi-shot prompting (up to 6 shots). **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
+| multi_prompt | array | — | Multi-shot prompting (up to 6 shots) — **AIMLAPI parameter name**. Base Kling API calls this `guidances`. **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
 
 ## Elements (Subject Binding) — Exact AIMLAPI Structure
 
@@ -312,32 +312,38 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 ```
 
 **Requirements for image reference images:**
-- Frontal: clear face, no occlusion, neutral expression
+- Frontal: clear face, no occlusion, neutral expression — this is the identity anchor
 - References: 3-4 different angles (front, 3/4, side profile, back) — 4 angles gives model a 3D sense of identity
-- Resolution: 1024×1024+ preferred; min 300×300
-- Background: solid (white or grey preferred)
-- Lighting: consistent across all reference images
+- Resolution: upscale to **1024×1024** before upload (min 300×300); higher resolution = stronger identity signal
+- Background: solid white or grey — patterned backgrounds bleed into identity encoding
+- Lighting: even, no harsh shadows — shadow on face degrades facial geometry
+- Expression: neutral base image required; expression variants are optional additions
 - **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources)
+- **More refs ≠ better**: 1-4 focused images optimal. More than 4 confuses the model and weakens binding
+- **frontal_image_url is mandatory** — reference_image_urls alone (without frontal) will not bind correctly
 
 **Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
 
-## Multi-Shot Prompting (guidances)
+## Multi-Shot Prompting (multi_prompt on AIMLAPI)
 
-Kling v3 supports generating up to 6 sequential shots in one API call via the `guidances` array. **Not confirmed available on AIMLAPI for v3 I2V** — may require Kling Omni model. Use only if API returns success.
+Kling v3 supports generating up to 6 sequential shots in one API call. **On AIMLAPI the parameter is `multi_prompt` (not `guidances` — that is the base Kling API name).** Confirmed available for T2V; I2V multi-shot works by combining a start frame with per-shot prompts.
 
 **Constraints:**
-- Main `prompt` field MUST be empty when `guidances` is used
-- `tail_image_url` is INCOMPATIBLE with `guidances` — omit it
+- Main `prompt` field MUST be empty when `multi_prompt` is used
+- `tail_image_url` is INCOMPATIBLE with multi-shot — omit it
 - Total video duration = sum of all shot durations
+- Each entry takes `prompt` and `duration` — no `index` field required on AIMLAPI
 
 ```python
 "prompt": "",  # MUST be empty
-"guidances": [
-    {"index": 1, "prompt": "@Element1 walks to the truck, confident stride", "duration": 5},
-    {"index": 2, "prompt": "@Element1 loads a box into the truck, smooth motion", "duration": 5},
-    {"index": 3, "prompt": "Wide shot: truck drives away down the street", "duration": 5}
+"multi_prompt": [
+    {"prompt": "@Element1 walks to the truck, confident stride", "duration": 5},
+    {"prompt": "@Element1 loads a box into the truck, smooth motion", "duration": 5},
+    {"prompt": "Truck parked on street, environment settling, motion eases to stop", "duration": 5}
 ]
 ```
+
+**If AIMLAPI returns a parameter error:** fall back to single-prompt clips and chain in post via FFmpeg. Do NOT retry multi_prompt more than once per session — it costs credits on failure too.
 
 ## Dynamic Masks — Exact Structure
 
@@ -373,6 +379,26 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 - Must match source image aspect ratio exactly — task fails otherwise
 - Must also match dynamic_masks image resolution if both are used
 - Supported: PNG/JPG/WEBP, max 10MB
+
+## Motion Control V2V (Video-to-Video Motion Transfer)
+
+Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
+
+**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). v3 motion control not yet confirmed on AIMLAPI — canary test before using.
+
+**Key parameter:** `character_orientation`
+- `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
+- `"image"` — output character keeps orientation from source image (better for camera-led shots, max 10s)
+
+**Framing rule:** Half-body image → pair with half-body motion reference. Full-body image → pair with full-body reference. Mismatch degrades motion transfer quality.
+
+**When to use:** Walking shots where motion prompting alone produces robotic or sliding feet artifacts. Requires a royalty-free motion reference clip (3-30s, clear body movement, moderate speed).
+
+## Kling O3 — Future Watch (Not Yet on AIMLAPI)
+
+Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. Not confirmed on AIMLAPI as of May 2026 — Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+
+**O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
 ## Error Handling
 
