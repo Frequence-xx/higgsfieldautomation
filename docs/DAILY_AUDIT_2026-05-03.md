@@ -16,7 +16,7 @@
 ### Scores
 
 | Dimension | Weight | Score | Weighted | Δ vs 2026-05-01 |
-|-----------|--------|-------|----------|----------------|
+|-----------|--------|-------|----------|-----------------|
 | Reasoning | 20% | 4.5 | 0.90 | 0.0 |
 | Execution | 20% | 4.1 | 0.82 | +0.1 |
 | Memory | 15% | 3.0 | 0.45 | 0.0 |
@@ -128,7 +128,7 @@
 ### Per-Skill Scores (8 criteria: Description, Stem, Defaults, RFC2119, Gates, Length, Negatives, Consistency)
 
 | Skill | D | S | Df | RFC | G | L | N | C | Score | Δ |
-|-------|---|---|----|-----|---|---|---|---|-------|---|
+|-------|---|---|----|-----|---|---|---|---|-------|-|
 | anti-sycophancy.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
 | generation-image.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
 | generation-video.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
@@ -157,13 +157,13 @@
 ### What Improved This Cycle
 
 **cinematic-standards.md** (5→7, +2):
-- Negatives field confirmed with 3 specific negatives (Do NOT invoke for captions-only, QA scoring, Shari'ah-only checks)
+- Negatives field confirmed with 3 specific negatives
 - Defaults now present: lens-by-shot-type table, camera-movement-by-emotion table, color grading by scene type
 - RFC2119 present: "MUST include" (artifact mitigation), "MUST NOT USE" (transitions)
 
 **brand-identity.md** (5→6, +1):
-- Negatives field confirmed with 3 specific negatives (pure code, viral research pre-shot-list, audio-only)
-- Description criterion now ✅ (both positive triggers + negatives in YAML)
+- Negatives field confirmed with 3 specific negatives
+- Description criterion now ✅
 
 **viral-research.md** (4→5, +1):
 - RFC2119 now present: "MUST filter", "MUST NOT include", "SHOULD perform"
@@ -191,8 +191,8 @@
 
 ### Quickest path to 95% (2 points needed)
 
-1. **Archive higgsfield-generation.md** (575 lines, Length ❌) → +1 Length point. Replace with 10-line index redirect to generation-image.md + generation-video.md.
-2. **Add RFC2119 to character-consistency.md** (currently ⚠️) → +1 RFC2119 point. Add MUST/SHOULD/MAY to key rules (face adherence, Subject Binding, FaceFusion fallback).
+1. **Archive higgsfield-generation.md** (575 lines, Length ❌) → +1 Length point.
+2. **Add RFC2119 to character-consistency.md** (currently ⚠️) → +1 RFC2119 point.
 
 These two changes alone reach 152/160 = 95.0%.
 
@@ -219,19 +219,14 @@ These two changes alone reach 152/160 = 95.0%.
 ### Gap Analysis
 
 **GAP-001: Hindsight daemon not running (CRITICAL — 4th audit)**
-No change. Must be resolved before next production cycle.
 
 **GAP-002: higgsfield-generation.md legacy file (HIGH)**
-No change. Still at 575 lines. Split work complete but original not archived. 2 points from 95% target.
 
 **GAP-003: viral-research.md trigger debt (MEDIUM)**
-Partial improvement (RFC2119 added, negatives confirmed). Triggers still include "brief", "concept", "research" — estimated 30% false positive rate unchanged.
 
 **GAP-004: shariah-compliance.md defaults missing (MEDIUM)**
-No change. No defaults for unspecified elements (what default dress standard when not specified in brief?).
 
 **GAP-005: character-consistency.md RFC2119 (LOW)**
-RFC2119 partially present in sections but key procedural rules use informal imperative rather than MUST/SHOULD/MAY. 1 of 2 easiest points to 95%.
 
 **SKILL_AUDIT_COMPLETE**
 
@@ -239,152 +234,32 @@ RFC2119 partially present in sections but key procedural rules use informal impe
 
 ## AUDIT 3: CREATIVE OUTPUT QUALITY
 
-**Latest output assessed:** V3-Tarik-v2-couple (2026-04-26) — unchanged from 2026-05-01 audit. No new approved videos produced in this cycle.
-
-**Note:** Study cycle 17 improved caption tooling (ensureMaxCharactersPerLine, t_dtw, drift warning). This does not change retrospective scores on existing videos but reduces caption failure risk in next production.
-
----
+**Latest output assessed:** V3-Tarik-v2-couple (2026-04-26) — unchanged from 2026-05-01 audit.
 
 ### Tier Scores
 
-**TIER 1 — TECHNICAL (binary pass/fail)**
-
-| Check | Status | Evidence |
-|-------|--------|---------|
-| Resolution ≥1080p | ✅ PASS | Kling v3 Pro 1080×1920 native |
-| Frame rate 24-30fps | ✅ PASS | post-production.md 30fps normalization |
-| Correct duration (16-22s) | ✅ PASS | family-lock.json spec enforced |
-| Correct aspect ratio (9:16) | ✅ PASS | pre-flight gate enforces 9:16 |
-| No corruption | ✅ PASS | Approved = delivery passed |
-| Text legible | ✅ PASS | Post-overlay workflow, never in generation |
-| No watermarks | ✅ PASS | generate_audio: false enforced |
-
 **TIER 1: PASS (unchanged)**
-
----
-
-**TIER 2 — VISUAL QUALITY (target ≥3.5/5)**
-
-| Dimension | Score | Basis |
-|-----------|-------|-------|
-| Imaging quality | 4.0 | NBP Edit + Avatar Pro, high fidelity |
-| Subject consistency | 4.0 | Character sheet workflow; Subject Binding via elements |
-| Background consistency | 4.2 | Controlled testimonial indoor environments |
-| Temporal flickering | 3.8 | Kling v3 Pro generally stable; RIFE available |
-| Motion smoothness | 4.0 | Pre-flight gate blocks breathing; endpoints specified |
-| Physics plausibility | 4.0 | Seated/standing people; minimal complex physics |
-| Human anatomy | 3.8 | NBP Edit handles anatomy well; minor hand risk |
-| Aesthetic quality | 4.0 | Warm golden hour LUT, 85mm portrait framing |
-| Cinematic quality | 3.9 | 17 study cycles of cinematic standards |
-| **Average** | **3.97** | ✅ **PASS (≥3.5) — unchanged** |
-
----
-
-**TIER 3 — BRAND COMPLIANCE (target ≥4.0/5)**
-
-| Dimension | Score | Basis |
-|-----------|-------|-------|
-| Snelverhuizen #FC8434 | 4.5 | Post-overlay FFmpeg; FLUX.2 Pro for brand-color stills |
-| Logo integrity | 4.3 | assets/logo-snelverhuizen.png composited post-gen |
-| Truck branding (if present) | 4.0 | Five-layer freeze protocol; text post-overlaid |
-| Crew uniform | 4.0 | Production checklist hard gate |
-| Brand tone | 4.2 | Testimonial format = trust, authenticity |
-| Shari'ah compliance | 5.0 | Hard gate; 3/3 approved videos passed |
-| **Average** | **4.33** | ✅ **PASS (≥4.0) — unchanged** |
-
----
-
-**TIER 4 — ADVERTISING EFFECTIVENESS (target ≥3.5/5)**
-
-| Dimension | Score | Basis |
-|-----------|-------|-------|
-| Hook strength | 3.8 | VFX hook (zuig-effect + SFX, 5s); risk of gimmicky |
-| Message clarity | 4.0 | Testimonial = "person used Snel Verhuizen" — unambiguous |
-| CTA presence | 4.0 | CTA end card in family spec |
-| Target audience fit | 4.2 | Dutch Muslim family testimonial — direct demographic match |
-| Trust / authenticity | 4.0 | Testimonial is highest-trust format |
-| **Average** | **4.00** | ✅ **PASS (≥3.5) — unchanged** |
-
----
+**TIER 2: 3.97/5 ✅ PASS**
+**TIER 3: 4.33/5 ✅ PASS**
+**TIER 4: 4.00/5 ✅ PASS**
 
 **Overall Creative Score: 4.10/5.0 (unchanged)**
 
 ---
 
-### Ralph Loop — "What would a senior creative director still reject?"
-
-All four Ralph Loop concerns from 2026-05-01 audit remain open (no new production):
-
-1. **Testimonial repetition (Medium):** 3/6 planned videos are all testimonials. V5 or V6 should break the format — "process" or "hero" shot to prevent format fatigue. Still unaddressed.
-
-2. **Avatar Pro lipsync quality (Unknown):** Uncanny valley risk unresolved. Cannot verify without watching video. Remains an open risk.
-
-3. **VFX hook gimmick risk (Low-medium):** "Zuig-effect" effectiveness depends on execution quality. A/B test with simple emotional hook not done.
-
-4. **Caption precision risk (Low):** SC17 improvements reduce future risk, but V4 caption refresh (`acb1cfb`) confirms first-pass captions have failed before. Per-video QA is mandatory going forward.
-
----
-
-### Cost Metric
-
-| Metric | Value |
-|--------|-------|
-| Approved videos since 2026-05-01 audit | 0 |
-| Approved videos total (family) | 3 |
-| Estimated cost per video | ~$7-9 |
-| Cost ceiling | $15/video ✅ |
-| Credits this cycle | $0 (no generation) |
-
----
-
-### Workflow Gate Status
-
-| Gate | Exists? | Active? |
-|------|---------|---------|
-| Brief validation | ✅ | ✅ |
-| Pre-generation memory read | ✅ | ✅ (SessionStart hook) |
-| Pre-flight gate (API payload) | ✅ | ✅ |
-| Hero frame QA | ✅ | ✅ |
-| Video clip QA (frame extraction) | ✅ | ⚠️ (documented, discipline unverifiable) |
-| Brand binary checklist | ✅ | ✅ |
-| InsightFace face consistency | ✅ | ⚠️ (skill documented, runtime unverifiable) |
-| Owner approval before animation | ✅ | ✅ |
-| Three-agent Evaluator | ✅ | ⚠️ (documented, subagent isolation unverifiable) |
-| Assembly QA | ✅ | ✅ |
-| Cost ceiling | ✅ | ✅ |
-
-**CREATIVE_AUDIT_COMPLETE**
-
----
-
 ## COMBINED VERDICT
 
-| Audit | Score | Δ vs 2026-05-01 | Δ vs 2026-04-12 | Status |
-|-------|-------|----------------|----------------|--------|
-| Operator | 4.09/5.0 | +0.06 | +0.24 | ✅ Above 4.0 target |
-| Skills | 93.75% | +1.75% | +2.25% | ⚠️ Below 95% target (gap: 2 pts) |
-| Creative | 4.10/5.0 | 0.00 | -0.30 | ✅ All tiers pass |
-
----
+| Audit | Score | Δ vs 2026-05-01 | Status |
+|-------|-------|----------------|--------|
+| Operator | 4.09/5.0 | +0.06 | ✅ Above 4.0 target |
+| Skills | 93.75% | +1.75% | ⚠️ Below 95% target (gap: 2 pts) |
+| Creative | 4.10/5.0 | 0.00 | ✅ All tiers pass |
 
 ### Top 3 Action Items
 
-**ACTION 1 (CRITICAL — 4th audit): Start Hindsight daemon**
-Four consecutive audits have flagged this. Memory score is locked at 3.0/5 until resolved. The Hindsight binary is not in PATH and the daemon is not running since 2026-04-11 15:13 UTC. Pre-flight gate covers known patterns but cannot surface novel lessons. Steps: (1) Verify `hindsight` binary installation path; (2) Add start command to SessionStart hook; (3) Verify hindsight-monitor.sh shows RUNNING. Do before next production session.
-
-**ACTION 2 (HIGH — 2 points from 95% target): Archive higgsfield-generation.md**
-Replace higgsfield-generation.md (575 lines, Length ❌) with a 10-line redirect index pointing to generation-image.md and generation-video.md. Combined with adding RFC2119 MUST/SHOULD/MAY to character-consistency.md, this closes the 2-point gap to 95% Skills target.
-
-**ACTION 3 (MEDIUM): Produce V5 in testimonial family**
-No videos produced since 2026-04-26. Family lock at 3/6. SC17 caption improvements are ready to use. Producing V5 would: (a) advance the family lock count, (b) verify caption pipeline pass 3 improvements in production, (c) give Evaluator a new clip to score for Creative Audit 4. Plan the V5 brief now.
-
----
-
-### Pipeline Status
-
-**OPERATIONAL.** Three approved videos in testimonial family. All infrastructure on main branch (dangling commit risk eliminated). Skills at 93.75% — best raw score since pipeline launch. Main constraints: Hindsight semantic recall missing (4th audit), two legacy length failures. SC17 caption tooling ready for next production.
-
----
+1. START HINDSIGHT DAEMON — 4th audit, blocking Memory 3.0/5
+2. Archive higgsfield-generation.md → closes gap to 95% Skills
+3. Plan V5 brief — no production since Apr 26
 
 ## TELEGRAM REPORT (for manual delivery to chat_id 1677012496)
 
