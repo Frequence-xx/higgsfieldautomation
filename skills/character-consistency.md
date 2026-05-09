@@ -24,7 +24,7 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 ## AIMLAPI Character Reference Models
 
 | Stage | Model | Param | Max Refs | Use For |
-|-------|-------|-------|----------|---------|
+|-------|-------|-------|----------|--------|
 | Hero frame with character lock | `flux/kontext-max/image-to-image` | `image_url` (array) | 4 | Lock character identity across scenes |
 | Compositing character into scene | `google/nano-banana-pro-edit` | `image_urls` (array) | **14** | Place character into any background |
 | Character-consistent video | `klingai/video-o1-reference-to-video` | `elements` + `image_list` | 4 elements, 7 total | Video with locked character identity |
@@ -38,33 +38,20 @@ Use 1:1 for reference sheets (consistency matching), 9:16 for final hero frames.
 
 ```python
 # Generate 4 angles of the character via AIMLAPI
-# Use 1:1 for reference sheets — these are for identity matching, not final output
 for angle in ["front view", "3/4 angle from left", "profile from right side", "full body standing"]:
     resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
         "model": "google/nano-banana-pro",
         "prompt": f"A 37-year-old Dutch man with short dark brown hair, medium olive skin, clean shaven, wearing a navy blue polo shirt with company logo on left chest and dark grey cargo trousers with black work boots, {angle}, professional photography, neutral background",
-        "aspect_ratio": "1:1",    # 1:1 for ref sheets
+        "aspect_ratio": "1:1",
         "resolution": "1K",
     }, headers=headers, timeout=60)
 ```
 
-Save to `/opt/pipeline/assets/characters/{name}/`:
-```
-/assets/characters/
-├── crew_lead/
-│   ├── front.png          # Generated via Nano Banana Pro
-│   ├── three_quarter.png  # Generated via Nano Banana Pro
-│   ├── profile.png        # Generated via Nano Banana Pro
-│   ├── full_body.png      # Generated via Nano Banana Pro
-│   └── character.json     # Metadata (see below)
-```
+Save to `/opt/pipeline/assets/characters/{name}/`.
 
 ### Step 2: Lock Character via Flux Kontext Max
-Use Kontext Max to place the character into each scene while preserving identity.
-**Always use `aspect_ratio: "9:16"` for vertical hero frames.**
 
 ```python
-# Generate hero frame with character locked into the scene — NATIVE 9:16
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "flux/kontext-max/image-to-image",
     "prompt": "Place this person on a Dutch suburban street next to a white moving truck, golden hour lighting, cinematic vertical composition, 35mm lens",
@@ -72,15 +59,13 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
         "https://cdn.example.com/characters/crew_lead/front.png",
         "https://cdn.example.com/characters/crew_lead/three_quarter.png"
     ],
-    "aspect_ratio": "9:16",   # VERIFIED: produces native ~752x1392 vertical output
+    "aspect_ratio": "9:16",
     "num_images": 1,
 }, headers=headers, timeout=90)
-# Response is SYNCHRONOUS — no polling needed
 hero_frame_url = resp.json()["data"][0]["url"]
 ```
 
 ### Step 3: Animate with Character Reference (Kling O1)
-For video clips where character must stay consistent:
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
@@ -98,35 +83,19 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "duration": 5,
     "aspect_ratio": "16:9"
 }, headers=headers)
-# ASYNC — poll for completion
 ```
 
-**Important:** Elements extract face + posture + clothing together. The model uses the reference image's clothing to understand the character's appearance, not just their face. Clothing description in the prompt reinforces what the element already defines — both are needed.
+**Important:** Elements extract face + posture + clothing together. **No face_weight API parameter exists on AIMLAPI.** "Subject Binding 80-90" in CLAUDE.md is a quality target, not a parameter.
 
-**No face_weight API parameter exists on AIMLAPI.** "Subject Binding 80-90" in CLAUDE.md is a quality target, not a parameter. Adherence is driven entirely by reference image quality and count.
-
-### Step 3b: Multi-Character Scene (Two People in Same Frame)
-When two named characters appear together, define separate elements and reference both in prompt. Max 3 elements per call.
+### Step 3b: Multi-Character Scene
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "klingai/video-o1-reference-to-video",
     "prompt": "@Element1 and @Element2 carry boxes together towards the truck, natural collaboration, golden hour",
     "elements": [
-        {
-            "frontal_image_url": "https://cdn.example.com/characters/mourad/front.png",
-            "reference_image_urls": [
-                "https://cdn.example.com/characters/mourad/three_quarter.png",
-                "https://cdn.example.com/characters/mourad/profile.png"
-            ]
-        },
-        {
-            "frontal_image_url": "https://cdn.example.com/characters/karel/front.png",
-            "reference_image_urls": [
-                "https://cdn.example.com/characters/karel/three_quarter.png",
-                "https://cdn.example.com/characters/karel/profile.png"
-            ]
-        }
+        {"frontal_image_url": "mourad/front.png", "reference_image_urls": ["mourad/three_quarter.png", "mourad/profile.png"]},
+        {"frontal_image_url": "karel/front.png", "reference_image_urls": ["karel/three_quarter.png", "karel/profile.png"]}
     ],
     "generate_audio": False,
     "duration": 5,
@@ -134,40 +103,30 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 }, headers=headers)
 ```
 
-**Multi-character known failure mode:** Feature swapping (Element1's face appears on Element2's body) when characters physically touch, embrace, or overlap. Mitigation: keep characters spatially separated in the prompt ("standing 1 metre apart"), and run InsightFace QA on BOTH character identities in the output.
+**Multi-character known failure mode:** Feature swapping when characters touch or overlap. Mitigation: keep characters spatially separated in prompt, run InsightFace QA on BOTH.
 
-### Step 3c: Video-Based Element (Stronger Identity Lock)
-If a prior approved clip of the character exists, use it as a video element instead of static photos — the model sees motion and 3D structure, yielding stronger consistency:
+### Step 3c: Video-Based Element
 
 ```python
-"elements": [
-    {
-        "video_url": "https://cdn.example.com/characters/mourad/reference_clip.mp4"
-    }
-]
+"elements": [{"video_url": "https://cdn.example.com/characters/mourad/reference_clip.mp4"}]
 ```
 
-Best for: carrying consistency forward from clip N to clip N+1 in a multi-clip sequence.
+Best for carrying consistency forward from clip N to clip N+1.
 
-### Step 4: Alternative — Nano Banana Pro Edit for Compositing
-For placing a character into a specific background scene (max 14 reference images).
-**Always use `aspect_ratio: "9:16"` for vertical hero frames.**
+### Step 4: Alternative — Nano Banana Pro Edit
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "google/nano-banana-pro-edit",
-    "image_urls": [
-        "https://cdn.example.com/characters/crew_lead/front.png",
-        "https://cdn.example.com/characters/crew_lead/full_body.png",
-        "https://cdn.example.com/scenes/dutch_street_golden_hour.png"
-    ],
-    "prompt": "Place the person from the first two images into the street scene from the third image, maintaining their exact appearance and clothing, cinematic vertical composition",
-    "aspect_ratio": "9:16",   # Native 9:16 output — no cropping needed
-    "resolution": "1K",       # Options: 1K (768x1344), 2K (1536x2688), 4K (3072x5376)
+    "image_urls": ["crew_lead/front.png", "crew_lead/full_body.png", "dutch_street_golden_hour.png"],
+    "prompt": "Place the person from the first two images into the street scene from the third image",
+    "aspect_ratio": "9:16",
+    "resolution": "1K",
 }, headers=headers, timeout=60)
 ```
 
 ### Step 5: Character Metadata (character.json)
+
 ```json
 {
   "name": "Crew Lead",
@@ -190,72 +149,52 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
 
 ### Step 6: QA Check for Character Drift
 
-**Automated (InsightFace — free, runs on CPU):**
-
-```bash
-pip install insightface onnxruntime  # CPU; use onnxruntime-gpu for GPU
-```
-
 ```python
-import cv2
-import numpy as np
 from insightface.app import FaceAnalysis
+import cv2, numpy as np
 
 app = FaceAnalysis(name='buffalo_l')
-app.prepare(ctx_id=-1, det_size=(640, 640))  # ctx_id=-1 = CPU
+app.prepare(ctx_id=-1, det_size=(640, 640))  # init once per session
 
-def get_embedding(image_path):
-    img = cv2.imread(image_path)
-    faces = app.get(img)
-    return faces[0].embedding if faces else None  # 512-dim vector
+def clip_qa(ref_path: str, frame_paths: list[str]) -> dict:
+    ref_img = cv2.imread(ref_path)
+    ref_faces = app.get(ref_img)
+    if not ref_faces:
+        return {"error": "no face in reference"}
+    ref_emb = ref_faces[0].normed_embedding  # already L2-normalized
 
-def face_similarity(path1, path2):
-    e1, e2 = get_embedding(path1), get_embedding(path2)
-    if e1 is None or e2 is None:
-        return 0.0
-    return float(np.dot(e1, e2) / (np.linalg.norm(e1) * np.linalg.norm(e2)))
+    results = {}
+    labels = ["t0", "t2_5", "t5"]
+    for label, path in zip(labels, frame_paths):
+        img = cv2.imread(path)
+        faces = app.get(img)
+        if not faces:
+            results[label] = 0.0
+        else:
+            emb = faces[0].normed_embedding
+            results[label] = float(np.dot(ref_emb, emb))  # cosine sim (no division needed)
+    return results
 
-# Usage: compare reference photo to each extracted frame
-ref_score = face_similarity("assets/characters/mourad/front.png", "frame_t0.png")
+# PASS if all scores >= 0.68; note if 0.60-0.67; retry if < 0.60; reject if < 0.50
 ```
 
-**Threshold guide (buffalo_l model, cross-pose video QA):**
+**Threshold guide (buffalo_l model):**
 
 | Score | Meaning | Action |
 |-------|---------|--------|
 | ≥ 0.68 | Strong identity match | PASS |
-| 0.60 – 0.67 | Acceptable drift (pose/lighting variation) | PASS with note |
-| 0.50 – 0.59 | Marginal — borderline drift | RETRY with more refs or higher face adherence |
-| < 0.50 | Identity failure | REJECT — try FaceFusion fallback (see below) before full regenerate |
+| 0.60 – 0.67 | Acceptable drift | PASS with note |
+| 0.50 – 0.59 | Marginal | RETRY |
+| < 0.50 | Identity failure | REJECT — try FaceFusion fallback |
 
-> **Note:** The prior threshold of `<0.80 = drift` in model-prompting-guide.md was too strict for cross-pose/lighting comparison. 0.80+ is correct for strict same-photo identity verification; 0.65 is the practical production threshold for I2V character consistency across different angles.
-
-**Why buffalo_l (not antelopev2):** Benchmarks — buffalo_l: LFW 99.83%, CFP-FP 99.33%, AgeDB-30 98.23%, IJB-C 97.25%, 326MB, auto-downloads. antelopev2: LFW ~99.80%, IJB-C ~97.13%, 407MB, requires manual download. buffalo_l is marginally more accurate AND easier to install. Do not switch.
-
-**Manual QA checklist (visual):**
-- Face geometry: same jaw shape, nose, eye spacing
-- Skin tone: no shifts between shots
-- Clothing: same items, same colors, same fit
-- Build/proportions: no height or weight changes
-
-Score character consistency 1-10. Below 7 = reject and regenerate with stronger reference anchoring.
+**Why buffalo_l (not antelopev2):** LFW 99.83%, 326MB, auto-downloads. antelopev2 requires manual download and is slightly less accurate. Do not switch.
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-When a clip fails InsightFace QA and a full regenerate still fails (max 3 retries), use FaceFusion as a last-resort face-swap fix. Free, open-source, local — no API cost.
-
-**Setup (one-time):**
 ```bash
-# Python 3.12 via conda
-conda create -n facefusion python=3.12 -y
-conda activate facefusion
-git clone https://github.com/facefusion/facefusion
-cd facefusion
-python install.py
-```
+conda create -n facefusion python=3.12 -y && conda activate facefusion
+git clone https://github.com/facefusion/facefusion && cd facefusion && python install.py
 
-**Headless CLI usage (scriptable):**
-```bash
 python facefusion.py run \
   --source-paths /path/to/approved_character_front.png \
   --target-path /path/to/failed_clip.mp4 \
@@ -268,133 +207,46 @@ python facefusion.py run \
   --headless
 ```
 
-**When to use:** Score < 0.50 AND clip motion/composition is good AND max retries exhausted. If the motion itself is wrong, regenerate instead — FaceFusion fixes face only, not body/pose.
-
-**Re-run InsightFace QA after FaceFusion.** Score should now be ≥ 0.65. If still < 0.60, escalate to owner.
+Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 ## Model Selection for Character Shots
 
-| Scenario | Character Type | Image Model | Video Model | Cost Est. |
-|----------|---------------|-------------|-------------|-----------|
-| Karel/Mourad alone | A (existing) | Nano Banana Pro Edit (existing refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
-| Karel/Mourad in scene | A (existing) | Nano Banana Pro Edit (refs + truck + box) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
-| New recurring character | B (create refs first) | Kontext Max or NBP Edit (new refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
-| Multiple characters | A or B | Nano Banana Pro Edit (14 refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
-| Generic one-off person | C (text-only) | Nano Banana Pro (no refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
-| Ref sheet creation (Type B) | — | Nano Banana Pro × 4 angles | — | ~$0.52 (one-time) |
+| Scenario | Image Model | Video Model | Cost Est. |
+|----------|-------------|-------------|----------|
+| Karel/Mourad alone | Nano Banana Pro Edit | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Multiple characters | Nano Banana Pro Edit (14 refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
+| Generic one-off person | Nano Banana Pro (no refs) | Kling v3 Pro I2V (audio OFF) | ~$0.13 + $1.46/5s |
 
 ## Character Types — Decision Tree
 
-Every production starts here. Determine which character type applies:
-
 ### Type A: Existing Characters (Karel & Mourad)
-- Reference sheets already exist at `/opt/pipeline/assets/crew/`
-- Use Nano Banana Pro Edit with existing character sheets + brand assets
-- Cheapest option — no new reference generation needed
+Ref sheets at `/opt/pipeline/assets/crew/`. Use Nano Banana Pro Edit with existing sheets.
 
-### Type B: New Recurring Character (invented)
-- Owner provides a description (age, build, skin tone, hair, clothing)
-- Generate a 4-angle reference sheet (front, 3/4, profile, full body) via Nano Banana Pro
-- Cost: ~$0.50 (4 × $0.13)
-- Send to owner for approval BEFORE using in production
-- After approval: save to `/opt/pipeline/assets/characters/{name}/` with character.json
-- Character is now "locked" and reusable across all future videos
-- Workflow: same as Karel/Mourad from this point on
+### Type B: New Recurring Character
+Generate 4-angle ref sheet via Nano Banana Pro. Owner approval required before use.
 
-### Type C: Generic One-Off Person (no consistency needed)
-- For concepts where the specific person doesn't matter
-- Use Nano Banana Pro text-only with detailed appearance + Shari'ah dress description
-- Cheapest option — no reference generation needed
-- NOT reusable — each generation may look different
-- Best for: wide shots, back-of-head, silhouettes, crowd scenes
+### Type C: Generic One-Off Person
+Nano Banana Pro text-only. Not reusable. Best for wide shots, back-of-head, silhouettes.
 
-### Decision Flow
-```
-Is this Karel or Mourad? → Type A (use existing refs)
-Is this a new character that appears in multiple shots? → Type B (create ref sheet first)
-Is this a person who only appears once or in a wide shot? → Type C (text-only, no ref needed)
-```
+## Reference Image Quality Requirements
 
-### Creating a New Character (Type B — Full Workflow)
+- **Resolution:** 1024×1024 minimum
+- **Background:** Pure flat white or green screen — MANDATORY for Kling Element binding
+- **Lighting:** Soft, even, diffused. All 4 angles MUST be from the same lighting setup
+- **Expression:** Neutral across ALL reference images
+- **Ref count sweet spot:** 2–4 refs optimal; 12-15+ refs degrades consistency
+- **Do NOT feed generated frames back as references.** Always re-anchor from original approved photos
+- **Each clip in a video sequence MUST independently derive character identity** from original approved reference photos
 
-1. **Owner provides brief:** "Man, 45 jaar, baard, stevig, vriendelijk, traditionele kleding"
-2. **Generate 4 reference images:**
-   ```python
-   angles = ["front view facing camera", "3/4 angle from left", "profile from right side", "full body standing"]
-   for angle in angles:
-       resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
-           "model": "google/nano-banana-pro",
-           "prompt": f"<owner description with full Shari'ah compliant clothing details>, {angle}, professional photography, neutral white background, studio lighting",
-           "aspect_ratio": "1:1",
-           "resolution": "1K",
-       }, headers=headers, timeout=60)
-   ```
-3. **Send all 4 to owner via Telegram for approval**
-4. **If approved:** Save to `/opt/pipeline/assets/characters/{name}/` + create character.json
-5. **If rejected:** Adjust description and regenerate (max 2 retries)
-6. **Character is now locked** — use in all shots with Nano Banana Pro Edit or Kontext Max
+## Multi-Shot Frame-Chaining
 
-## Reference Image Quality Requirements (Research 2026-04-20)
-
-These requirements apply to ALL reference images — both existing Karel/Mourad sheets and new Type B character sheets.
-
-**Resolution:** 1024×1024 minimum. Clarity matters more than megapixels — a sharp 1024px image outperforms a blurry 4K photo for the 3D face mapping algorithm.
-
-**Background:** Pure flat white or green screen — MANDATORY for Kling Element/Subject Binding. Kling's tokenization binds the entire image region, not just the person. Any environmental content (trees, furniture, street) in the background gets co-tokenized with the character and may appear as artifacts in generated shots. A park bench in a reference photo → bench elements leaking into the character's scene is a documented failure mode. For NBP Edit the background is less critical (model handles segmentation better), but flat white is still best practice for all ref sheets.
-
-**Lighting:** Soft, even, diffused from a single clear direction. AVOID:
-- Strong directional shadows (model may read them as permanent facial features)
-- Color casts (warm/cool casts alter skin tone across shots)
-- Dramatic high-contrast lighting
-
-**Lighting consistency across all 4 refs:** All 4 angles MUST be from the same lighting setup. Refs with different lighting conditions produce conflicting 3D face reconstruction signals, which reduces consistency.
-
-**Expression:** Neutral across ALL reference images. Slight smile is acceptable but must be identical in all 4 shots. Do NOT mix expressions (one smiling, one neutral, one surprised) — locks in expression conflicts.
-
-**Ref count — sweet spot:**
-- 2-4 refs: optimal for identity lock
-- 6-8 refs: diminishing returns, slightly worse than 4
-- 12-15+ refs: conflicting signals can actively reduce consistency
-- For NBP Edit: use 4 high-quality refs even though 14 are supported — quality > quantity
-
-**Do NOT feed generated frames back as references.** Re-anchor ALWAYS from original approved reference photos. Generated frames accumulate drift because each generation round-trips through the 3D latent, compounding small errors in face geometry. By shot 3-4 using generated frames as refs, identity coherence collapses.
-
-**Use the SAME reference images for every shot.** Switching to a "better" hero frame from a previous shot as the new ref is counterproductive — it introduces subtle pose/lighting biases from that generation's specific motion. The original clean studio-lit 4-angle refs are the permanent anchor for all shots in all future videos.
-
-**Temporal re-anchoring rule (multi-clip productions):** Each clip in a video sequence MUST independently derive character identity from the original approved reference photos. Never chain: use clip1_output_frame as the reference for clip2. The correct pattern is: every clip → original ref photos in elements. Use video-based elements (Step 3c) only when you want to carry specific motion characteristics forward, never to compensate for a drifted clip.
-
-**10% expected failure zone:** Kling v3 achieves ~90% identity consistency with good refs. The remaining 10% fail predictably at: extreme angles (profile beyond 90°), very dark or heavily shadowed lighting in the scene, and when the character is small in frame (<15% frame height).
-
-## Multi-Shot Frame-Chaining (Research 2026-04-25)
-
-For multi-shot sequences where the same character appears across consecutive clips, frame-chaining locks identity at the shot boundary level:
-
-**Technique:** Extract the last frame of clip N (FFmpeg `ffmpeg -i clip_n.mp4 -vframes 1 -sseof -0.1 last_frame.png`), then use it as `image_url` for clip N+1 alongside the original character refs in `elements`. This creates a visual bridge between clips — the model treats the last frame as the compositional anchor for the next clip's start pose.
-
-**When to use:**
-- Character walks INTO next shot (position continuity matters)
-- Close-up → medium cut to the same character (face continuity at high scrutiny)
-
-**When NOT to use:**
-- Hard cuts to a different scene/location (frame-chaining enforces wrong lighting/background)
-- When using `guidances` multi-shot (incompatible with `tail_image_url` approach)
-- When the character changes clothing between shots
-
-**Implementation:**
 ```python
-# Extract last frame of previous clip
 os.system(f"ffmpeg -i {prev_clip} -vframes 1 -sseof -0.1 {last_frame_path}")
 
-# Use last frame as start image for next clip — elements still provide identity lock
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "klingai/kling-video-v3-pro-image-to-video",
     "image_url": last_frame_path_or_url,   # Continuity anchor
-    "elements": [                           # Identity lock (same refs as always)
-        {
-            "frontal_image_url": "https://cdn.example.com/crew_lead/front.png",
-            "reference_image_urls": ["https://cdn.example.com/crew_lead/three_quarter.png"]
-        }
-    ],
+    "elements": [{"frontal_image_url": "crew_lead/front.png", "reference_image_urls": ["crew_lead/three_quarter.png"]}],
     "prompt": "...",
     "generate_audio": False,
     "duration": 5,
@@ -402,44 +254,24 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 }, headers=headers)
 ```
 
-**Important:** `tail_image_url` (same start/end image) is a separate technique used for stationarity (truck shots). Frame-chaining uses a *different* `image_url` per shot. Do not confuse the two.
-
-## InsightFace buffalo_l Benchmarks (Confirmed 2026-04-25)
-
-buffalo_l is the correct model for QA face verification. Official accuracy metrics:
+## InsightFace buffalo_l Benchmarks
 
 | Model | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size |
 |-------|-----|--------|----------|-----------|------|
 | buffalo_l | 99.83% | 99.33% | 98.23% | 97.25% | 326MB |
 | buffalo_s (CPU fallback) | 99.70% | 98.00% | — | — | 159MB |
 
-antelopev2 (ResNet100, 407MB) is NOT recommended — InsightFace does not promote it and testing shows buffalo_l outperforms it despite being smaller (better training schedule on WebFace600K).
-
-For resource-constrained environments (e.g., pipeline CI step), buffalo_s at 159MB is acceptable fallback with minimal accuracy loss.
-
 ## Kling Element Library Auto-View Generation
 
-The Kling Element Library can auto-generate additional angles from a single reference image using AI-assisted view synthesis. Workflow:
-
-1. Upload ONE good front-facing reference to the Element Library
-2. Enable "AI-generate additional views" (available in the Kling web UI)
-3. The system generates 3/4, profile, and full-body views automatically
-
-**Production use:** This accelerates Type B new character creation from 4 separate generation calls to 1. However, **verify AI-generated views before using as production refs** — auto-generated side/back angles may introduce face geometry errors. Run InsightFace similarity check on all auto-generated views against the source image before accepting.
-
-**Cost impact:** Saves ~$0.39 (3 × $0.13 NBP generation calls) per new character sheet.
-
-**Caveat:** This is a Kling web UI feature. Via AIMLAPI, ref sheet generation still requires 4 separate NBP calls — the auto-view feature is not exposed in the API as of 2026-04.
+Upload ONE good front-facing reference; enable "AI-generate additional views" in Kling web UI. Saves ~$0.39 vs 4 separate NBP calls. **Caveat:** web UI feature only — not exposed via AIMLAPI as of 2026-04.
 
 ## face_consistency Parameter (Kling v3 / O1 — Research 2026-05-04)
-
-Kling v3 (and O1) exposes a `face_consistency` boolean that forces the model to refer back to the Element identity reference even when the face is partially occluded by hands, props, or clothing. Without it, the model may drift when a character's face is >50% obscured.
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "klingai/video-o1-reference-to-video",
     "prompt": "...",
-    "elements": [...],          # Identity lock as normal
+    "elements": [...],
     "face_consistency": True,   # Occlusion recovery — add when face may be partially hidden
     "generate_audio": False,
     "duration": 5,
@@ -447,73 +279,19 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 }, headers=headers)
 ```
 
-**When to set `face_consistency: True`:** Shots where the character's face may be partially covered — hands near face, carrying a box in front of chest/neck, hat brim, or strong shadows across face.
+**When to set `face_consistency: True`:** Face partially covered — hands near face, carrying box, hat brim, strong shadows. **AIMLAPI passthrough unverified as of 2026-05-04.** Test on draft before Pro.
 
-**AIMLAPI caveat:** This parameter is confirmed in the native Kling API. AIMLAPI passthrough status is unverified as of 2026-05-04. Test on a draft clip before using in a final Pro generation.
+**Do NOT set for full clear face visibility** — adds latency with no benefit.
 
-**Do NOT set `face_consistency: True` for scenes with full clear face visibility** — it adds latency with no benefit.
-
----
-
-## InsightFace QA Batch Optimization (Research 2026-05-04)
-
-For clip QA (frames at t=0, t=2.5, t=5), use `normed_embedding` directly — it's already L2-normalized, so cosine similarity is just a dot product. Batch-process all frames in one pass rather than 3 separate function calls:
-
-```python
-from insightface.app import FaceAnalysis
-import cv2, numpy as np
-
-# Init once — reuse for all clips in the session
-app = FaceAnalysis(name='buffalo_l')
-app.prepare(ctx_id=-1, det_size=(640, 640))
-
-def clip_qa(ref_path: str, frame_paths: list[str]) -> dict:
-    """Return per-frame similarity scores against reference. Keys: t0, t2_5, t5."""
-    ref_img = cv2.imread(ref_path)
-    ref_faces = app.get(ref_img)
-    if not ref_faces:
-        return {"error": "no face in reference"}
-    ref_emb = ref_faces[0].normed_embedding  # already normalized
-
-    results = {}
-    labels = ["t0", "t2_5", "t5"]
-    for label, path in zip(labels, frame_paths):
-        img = cv2.imread(path)
-        faces = app.get(img)
-        if not faces:
-            results[label] = 0.0
-        else:
-            emb = faces[0].normed_embedding   # already normalized
-            results[label] = float(np.dot(ref_emb, emb))  # cosine sim (no division needed)
-    return results
-
-# Usage
-scores = clip_qa(
-    ref_path="assets/characters/mourad/front.png",
-    frame_paths=["frame_t0.png", "frame_t2_5.png", "frame_t5.png"]
-)
-# PASS if all scores >= 0.68; note if 0.60-0.67; retry if < 0.60; reject if < 0.50
-```
-
-**Speedup vs prior pattern:** Single `app.prepare()` init + `normed_embedding` shortcut eliminates 3 separate division ops and redundant imread overhead. Saves ~15-20% per clip QA cycle on CPU.
-
----
-
-## Veo 3.1 Reference-to-Video — BLOCKED for Character Shots (Research 2026-05-04)
-
-`google/veo-3.1-reference-to-video` is available on AIMLAPI. It accepts up to 3 character reference images via `image_urls`. However:
+## Veo 3.1 Reference-to-Video — BLOCKED for Character Shots
 
 - **Cost: ~$0.788/sec → $6.30 per 5s clip** (vs Kling v3 Pro $0.291/sec → $1.46 per 5s clip)
-- **4× more expensive** than Kling v3 Pro for equivalent character shot length
-- No evidence of superior identity lock vs Kling O1 elements at this price premium
+- **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
+- **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-**Decision: DO NOT use `google/veo-3.1-reference-to-video` for character shots.** Use only for T2V scenery/B-roll (as `google/veo-3-1-reference-to-video` is a reference/style variant, not a character tool for this pipeline). Kling O1 reference-to-video remains the correct model for character shots.
-
----
-
-## Shari'ah-Specific Character Rules
+## Shari’ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
 - Female family members (if depicted): full hijab, loose-fitting garments
 - MUST specify exact clothing in prompts — MUST NOT leave it to the model's default
-- MUST include clothing description in EVERY prompt, even if the character appeared in a previous shot
-- Reference images themselves MUST be Shari'ah compliant — MUST run QA on character sheets before using
+- MUST include clothing description in EVERY prompt, even if character appeared in a previous shot
+- Reference images themselves MUST be Shari’ah compliant — MUST run QA on character sheets before using
