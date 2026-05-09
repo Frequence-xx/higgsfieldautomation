@@ -54,6 +54,8 @@ No music. No instruments. Ever. Audio is restricted to:
 | Similarity Boost | 72 | >80 introduces artifacts in Dutch |
 | Style Exaggeration | 15 | Slight energy; 0 = flat, >30 = over-dramatic |
 | Speaker Boost | true | Improves clarity on mobile speakers |
+| **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
+| **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
 **eleven_v3 + audio tags**: lower stability to **50–55** when the script uses `[tag]` markers. Stability ≥60 suppresses the headroom the model needs to act on tags — they will be ignored or weakened. For plain prose with no tags, keep at 60.
 
@@ -87,6 +89,37 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 ```
 
 **Note:** Audio tags and `<prosody rate="95%">` SSML can be used together in eleven_v3.
+
+### eleven_v3 Character Limit and Multi-Chunk Continuity
+
+**Character limit:** eleven_v3 caps at **5,000 characters per request** (versus 40,000 for Flash/Turbo). Scripts longer than ~750 Dutch words must be split.
+
+**`previous_request_ids` — preserves prosody continuity across chunks:**
+When splitting a long script, pass the prior call's request ID in the next call so the model maintains natural flow across the join point. Max 3 IDs. Pass them in chronological order.
+
+```python
+# Chunk 1 — no previous context
+r1 = client.text_to_speech.convert(
+    voice_id=VOICE_ID,
+    text=chunk_1_text,
+    model_id="eleven_v3",
+    language_code="nl",
+    apply_text_normalization="on",
+)
+request_id_1 = r1.request_id  # save for next call
+
+# Chunk 2 — references chunk 1 for prosody continuity
+r2 = client.text_to_speech.convert(
+    voice_id=VOICE_ID,
+    text=chunk_2_text,
+    model_id="eleven_v3",
+    language_code="nl",
+    apply_text_normalization="on",
+    previous_request_ids=[request_id_1],
+)
+```
+
+**Split rule:** Break at sentence boundaries (full stop + capital). Never split mid-sentence. Crossfade the joined audio clips by 5–10 ms in FFmpeg to eliminate any click at the join point.
 
 ### SSML for natural Dutch pacing (all models)
 ```xml
@@ -142,7 +175,7 @@ yt-dlp -x --audio-format mp3 --audio-quality 0 \
 **Search terms by scene:**
 
 | Scene | Pixabay search term | Duration target |
-|-------|---------------------|-----------------|
+|-------|---------------------|------------------|
 | Truck arriving | `truck engine idle` | 10–30s loop |
 | Boxes being moved | `cardboard boxes moving` | 3–8s |
 | Door open/close | `door open creak` | 2–4s |
@@ -359,6 +392,36 @@ If mono RMS is >3 dB lower than stereo RMS, there is phase cancellation — chec
 
 ---
 
+### 4h. Two-stage voiceover normalization (preferred over single loudnorm pass)
+
+**Why two stages?**  
+`loudnorm` measures at the clip level and applies a static gain — it does not even out sentence-to-sentence volume variation within the clip.  
+`dynaudnorm` operates on sliding 200 ms frames and actively boosts quiet syllables, making the voice consistently audible across the clip before the loudness standard is applied.
+
+**Stage 1 — `dynaudnorm` on raw ElevenLabs output (evens out intra-clip dynamics):**
+```bash
+ffmpeg -i voiceover_raw.mp3 \
+  -af "dynaudnorm=framelen=200:gausssize=11:maxgain=30:peak=0.95" \
+  voiceover_dynorm.mp3
+```
+- `framelen=200` — 200 ms analysis frames; responsive to speech without over-pumping
+- `gausssize=11` — smooth gain transitions between frames
+- `maxgain=30` — sufficient boost for very quiet passages
+- `peak=0.95` — 5% headroom, matches loudnorm default
+
+**Stage 2 — `loudnorm` on dynaudnorm output (EBU R128 broadcast compliance):**
+```bash
+ffmpeg -i voiceover_dynorm.mp3 \
+  -af loudnorm=I=-14:TP=-1.5:LRA=11 \
+  voiceover_normalized.mp3
+```
+
+Then feed `voiceover_normalized.mp3` into the mix commands (§4b / §4b2).
+
+**Use single `loudnorm` (§4a) ONLY** when the script is already dynamically even (short sentences, consistent delivery). For longer Dutch VO scripts with varied sentence energy, always use the two-stage chain.
+
+---
+
 ### 4f. Normalize final mix master to -14 LUFS (social media master)
 
 **Single-pass (fast):**
@@ -499,6 +562,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Tag emotion bleeds into CTA line | Tags persist until next tag | Explicitly add `[professional]` before CTA line to reset (see §0) |
 | Mobile ambient sounds buzzy/distorted | Sub-bass in ambient SFX hitting phone speaker | Highpass ambient at 100 Hz (see §4g) |
 | Dutch phonemes sound off | Wrong model | Use `eleven_v3` (production) or `eleven_multilingual_v2` (fallback). Never monolingual v1. |
+| Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
+| VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
+| Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
 
 ---
 
