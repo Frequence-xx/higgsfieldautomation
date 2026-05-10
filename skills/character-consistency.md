@@ -24,7 +24,7 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 ## AIMLAPI Character Reference Models
 
 | Stage | Model | Param | Max Refs | Use For |
-|-------|-------|-------|----------|--------|
+|-------|-------|-------|----------|---------|
 | Hero frame with character lock | `flux/kontext-max/image-to-image` | `image_url` (array) | 4 | Lock character identity across scenes |
 | Compositing character into scene | `google/nano-banana-pro-edit` | `image_urls` (array) | **14** | Place character into any background |
 | Character-consistent video | `klingai/video-o1-reference-to-video` | `elements` + `image_list` | 4 elements, 7 total | Video with locked character identity |
@@ -125,6 +125,15 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
 }, headers=headers, timeout=60)
 ```
 
+### Step 4b: Flux Kontext Max — Noun-Phrase Prompts (no pronouns)
+
+When using `flux/kontext-max/image-to-image` for character hero frames, **always describe the character in the prompt with noun phrases, never pronouns**. The model treats each reference independently and has no pronoun resolution.
+
+**DO:** `"The man with short dark brown hair and medium olive skin, wearing a navy blue polo, stands next to the truck"`
+**DON'T:** `"He stands next to the truck"` — "he" is ignored, identity reverts to model default
+
+Up to 10 reference images are technically supported; 3–5 covering distinct angles (front, 3/4, profile, full body) is the practical optimum. Beyond 5, references compete and consistency degrades.
+
 ### Step 5: Character Metadata (character.json)
 
 ```json
@@ -187,7 +196,20 @@ def clip_qa(ref_path: str, frame_paths: list[str]) -> dict:
 | 0.50 – 0.59 | Marginal | RETRY |
 | < 0.50 | Identity failure | REJECT — try FaceFusion fallback |
 
+**Skin-tone bias correction (pass 4 finding):** buffalo_l was trained predominantly on lighter-skinned subjects. For olive/brown skin characters (Karel, Mourad), the model produces systematically lower cosine scores at the same identity. **Lower the RETRY threshold to 0.42–0.45 for these characters** to avoid false QA rejects. The REJECT floor stays at 0.40 (below which identity failure is genuine). Calibrate per character by scoring 4 approved reference images against each other — the lowest pair score is the effective floor.
+
+```python
+# Character-specific threshold example:
+THRESHOLDS = {
+    "karel":  {"pass": 0.62, "note": 0.55, "retry": 0.42, "reject": 0.40},
+    "mourad": {"pass": 0.62, "note": 0.55, "retry": 0.42, "reject": 0.40},
+    "generic_light_skin": {"pass": 0.68, "note": 0.60, "retry": 0.50, "reject": 0.50},
+}
+```
+
 **Why buffalo_l (not antelopev2):** LFW 99.83%, 326MB, auto-downloads. antelopev2 requires manual download and is slightly less accurate. Do not switch.
+
+**AuraFace** (open-source, diverse demographic training) may outperform buffalo_l for olive/brown skin — benchmark candidate. GitHub: `minchul/cvlface`. Not yet production-validated on this pipeline.
 
 ### FaceFusion Fallback (identity score < 0.50)
 
@@ -208,6 +230,26 @@ python facefusion.py run \
 ```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
+
+**CodeFormer alternative (better for olive/brown skin):** GFPGAN can whiten/flatten brown skin features at high fidelity. Use CodeFormer with `w=0.5–0.6` instead — lower w preserves skin tone accuracy.
+
+```bash
+# CodeFormer face restoration (better for non-white skin than GFPGAN)
+python inference_codeformer.py \
+  -w 0.6 \
+  --input_path /path/to/failed_clip.mp4 \
+  --output_path /path/to/fixed_clip.mp4 \
+  --face_upsample \
+  --bg_upsampler realesrgan
+# w=0.5-0.6: preserve skin tone; w>0.7: over-smooth, whitens features
+```
+
+**ComfyUI InstantID + IP-Adapter + FaceDetailer stack (best quality, most effort):**
+For clips where FaceFusion produces unnatural results (stiff face, wrong skin tone):
+1. InstantID node: inject reference face identity
+2. IP-Adapter node: match pose + lighting from reference
+3. FaceDetailer node: CodeFormer polish (w=0.6)
+Best for non-celebrity, non-white subjects. Setup time: ~2h first run.
 
 ## Model Selection for Character Shots
 
@@ -241,7 +283,11 @@ Nano Banana Pro text-only. Not reusable. Best for wide shots, back-of-head, silh
 ## Multi-Shot Frame-Chaining
 
 ```python
-os.system(f"ffmpeg -i {prev_clip} -vframes 1 -sseof -0.1 {last_frame_path}")
+# Extract last clean frame — prefer t=4.5s if t=5.0s has motion blur
+# -sseof -0.5 = 0.5s before end; use -sseof -0.1 only for well-resolved final frames
+os.system(f"ffmpeg -i {prev_clip} -vframes 1 -sseof -0.5 {last_frame_path}")
+# If that frame has motion blur, fall back to t=4.5s absolute:
+# os.system(f"ffmpeg -i {prev_clip} -ss 4.5 -vframes 1 {last_frame_path}")
 
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "klingai/kling-video-v3-pro-image-to-video",
@@ -289,9 +335,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Shari’ah-Specific Character Rules
+## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
 - Female family members (if depicted): full hijab, loose-fitting garments
 - MUST specify exact clothing in prompts — MUST NOT leave it to the model's default
 - MUST include clothing description in EVERY prompt, even if character appeared in a previous shot
-- Reference images themselves MUST be Shari’ah compliant — MUST run QA on character sheets before using
+- Reference images themselves MUST be Shari'ah compliant — MUST run QA on character sheets before using
