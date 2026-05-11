@@ -194,15 +194,17 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 ### 3a. REAL Video Enhancer (Preferred — GUI, scene-detection, multi-backend)
 
-**TNTwise REAL Video Enhancer v2.x** is the recommended tool. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
+**TNTwise REAL Video Enhancer v2.4.1** (stable, 2025-01-02) is the recommended tool. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
 Model selection for live-action / AI-generated video:
-- **rife-v4.25** — recommended for live-action and AI-generated (Kling) clips. Best quality, TTA deprecated (no longer needed)
-- **rife-v4.22** — slightly faster, negligible quality loss, good fallback
-- **rife-v4.26** — released 2024-09-21, focuses on **anime** scenes — do NOT use for live-action or Kling output; quality regresses on real footage
+- **rife-v4.22** — **best for diffusion-generated video (Kling, Veo output)**. Maintainer explicitly notes this version for diffusion post-processing. Use this as default for our pipeline.
+- **rife-v4.26** — latest model (2024-09-21), officially recommended by maintainer for general use. Improves flow blocks over v4.25. Good fallback if v4.22 produces artifacts on a specific clip.
+- **rife-v4.25** — previous recommended; community finds it matches v4.26 on real footage when bidirectional + dynamic optical flow enabled. No longer the first choice.
 - **rife-v4.6** — legacy fallback only (nihui original binary)
+
+**CORRECTION from SC21:** Prior note that v4.26 is "anime-only" was incorrect. v4.26 is a general improvement. There is a separate `rife-v4.6-anime` variant for anime, which is unrelated.
 
 ### 3b. rife-ncnn-vulkan CLI (Headless / Scripted)
 
@@ -216,8 +218,9 @@ unzip rife-ncnn-vulkan-linux.zip
 # Extract frames
 ffmpeg -i clip.mp4 -r 24 frames/%08d.png
 
-# Interpolate with v4.25 (no -x TTA flag — deprecated in v4.25)
-./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.25 -j 1:2:2
+# Interpolate with v4.22 (best for diffusion/AI-generated video — see §3a)
+# No -x TTA flag — deprecated in v4.22+
+./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.22 -j 1:2:2
 
 # Reassemble at target fps
 ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
@@ -227,13 +230,38 @@ ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
   -r 30 clip_smooth.mp4
 ```
 
-**Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.25? Drop it.
+**Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.22+? Drop it — TTA deprecated.
 
 ### 3c. Expected Quality Risks
 
 - **Ghost artifacts** on complex motion — if seen, discard and use original
 - **Face warping** on close-up character shots — high risk, skip interpolation for these
-- **Blended frames** at hard cuts within a clip — always trim clips cleanly before interpolating
+- **Blended frames** at hard cuts within a clip — ALWAYS split at scene changes before interpolating (§3d)
+
+### 3d. Scene Change Detection Before RIFE (Mandatory Pre-Step)
+
+RIFE blends across hard cuts, producing ghost frames. Detect and split clips at scene boundaries before interpolating each segment separately.
+
+**Option A — PySceneDetect (recommended, handles splitting automatically):**
+```bash
+# Install: pip install scenedetect[opencv]
+# Detect content-aware cuts and auto-split to segment_XXX.mp4 files
+scenedetect -i clip.mp4 detect-content --threshold 27 split-video
+# Lower threshold = more sensitive (catch subtle cuts); default 27 is safe for AI video
+```
+
+**Option B — FFmpeg scdet (no install, timestamps only):**
+```bash
+# Get scene change timestamps (threshold 10 = ~10% luma change between frames)
+ffmpeg -i clip.mp4 -vf "scdet=t=10" -f null - 2>&1 | grep "Parsed_scdet"
+
+# Then split using those timestamps (replace 2.5,8.1 with actual values):
+ffmpeg -i clip.mp4 -c copy \
+  -f segment -segment_times "2.5,8.1" \
+  -reset_timestamps 1 segment_%03d.mp4
+```
+
+**For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
 
 ---
 
@@ -281,11 +309,11 @@ ffmpeg -i normalized.mp4 \
 
 ### 5b. Social Media Upload (Optimized Bitrate)
 
-For Instagram Reels (3,500–4,500 kbps target):
+For Instagram Reels (10–20 Mbps recommended upload — Instagram recompresses anyway, upload high):
 
 ```bash
 ffmpeg -i normalized.mp4 \
-  -c:v libx264 -b:v 4000k -maxrate 4500k -bufsize 4500k \
+  -c:v libx264 -b:v 15000k -maxrate 20000k -bufsize 20000k \
   -preset slow -profile:v high -level:v 4.1 \
   -pix_fmt yuv420p \
   -movflags +faststart \
@@ -293,17 +321,19 @@ ffmpeg -i normalized.mp4 \
   upload_reels.mp4
 ```
 
-For TikTok (2,000–3,500 kbps acceptable):
+For TikTok (8–15 Mbps — below 5 Mbps triggers quality downgrade flag):
 
 ```bash
 ffmpeg -i normalized.mp4 \
-  -c:v libx264 -b:v 3000k -maxrate 3500k -bufsize 3500k \
-  -preset slow -profile:v main -level:v 3.1 \
+  -c:v libx264 -b:v 10000k -maxrate 15000k -bufsize 15000k \
+  -preset slow -profile:v high -level:v 4.1 \
   -pix_fmt yuv420p \
   -movflags +faststart \
-  -c:a aac -ar 48000 -b:a 192k -ac 2 \
+  -c:a aac -ar 48000 -b:a 256k -ac 2 \
   upload_tiktok.mp4
 ```
+
+**Note:** Both platforms transcode H.264 to AV1 internally for delivery — that is Meta/TikTok's pipeline, not ours. Upload H.264; uploading AV1 causes a double-transcode with quality loss.
 
 ### 5c. Platform Specs Reference (2026)
 
@@ -327,18 +357,36 @@ ffmpeg -i normalized.mp4 \
 Instagram Reels UI elements overlay the video. Critical danger zones to avoid for text and logos:
 
 | Zone | Pixels from edge | What occupies it |
-|------|-----------------|-----------------|
-| Bottom danger zone | Bottom 280px (organic) / 370px (ads) | Caption bar, audio info, action buttons |
-| Right danger zone | Right 15% (~162px) | Like / comment / share / save buttons |
-| Top danger zone | Top 20% (~384px) | Notch / dynamic island on device |
+|------|-----------------|------------------|
+| Bottom danger zone | Bottom **320px** (organic) / 370px (ads) | Caption bar, audio attribution, engagement buttons |
+| Right danger zone | Right **120px** | Like / comment / share / save buttons |
+| Top danger zone | Top **108px** | Notch / dynamic island on device |
+| Left danger zone | Left **60px** | Profile overlay elements |
 
-**Safe area for key text and logos:** 1080 × 1440px centered vertically (roughly rows 240–1680 on a 1080×1920 canvas).
+**Effective safe content area: ~900 × 1492px, centered.**
 
-**Hook text position:** Center horizontally, place between y=200px and y=600px from top — safe across all devices.
+**Hook text position:** Center horizontally, place between y=200px and y=600px from top — safe across all devices and notch sizes.
 
-**CTA pill / URL:** Place between y=1200px and y=1640px from top — below center, above the bottom danger zone.
+**CTA pill / URL:** Place between y=1200px and y=1600px from top — below center, above the 320px bottom danger zone.
 
 This directly governs `drawtext` y-coordinates in text-overlay-compositing.md. When calculating `y=` values in FFmpeg `drawtext`, measure from top edge.
+
+### 5g. TikTok Safe Zone (Text / Logo Placement)
+
+TikTok's right-side dead zone is significantly wider than Instagram's — this is the most common placement mistake when repurposing Reels assets for TikTok.
+
+| Zone | Pixels from edge | What occupies it |
+|------|-----------------|------------------|
+| Bottom danger zone | Bottom **324px** (organic) / **370px** (ads/branded) | Caption, sound attribution, engagement buttons |
+| Right danger zone | Right **164px** | Like, Comment, Share, Bookmark + "Add to Playlist" (added Jan 2026) |
+| Top danger zone | Top **130px** | Back button, overflow menu |
+| Left danger zone | Left **60px** | Profile avatar |
+
+**Effective safe content area: ~916 × 1466px, centered.**
+
+**Key difference vs Instagram:** TikTok's right dead zone is 164px vs Instagram's 120px. When reusing an asset designed for Instagram, any element within the right 164px may be hidden on TikTok. Re-check placement of logos, phone numbers, and CTAs before cross-posting.
+
+**Upload bitrate guidance:** Upload at 8–15 Mbps for 1080p/30fps. Below 5 Mbps triggers TikTok's quality downgrade flag. Desktop upload via TikTok Studio supports up to **10 GB** — always upload via desktop for master-quality delivery, not mobile (mobile cap is 287 MB iOS / 72 MB Android).
 
 ### 5e. File-Size-Constrained Export (WhatsApp 16 MB video message)
 
@@ -394,7 +442,7 @@ ffmpeg -i assembled_pre_export.mp4 -i delivery_master.mp4 \
 VMAF score interpretation:
 
 | Score | Quality |
-|-------|---------|
+|-------|--------|
 | ≥ 95 | Excellent — imperceptible loss |
 | 85–94 | Good — minor compression visible only on close inspection |
 | 70–84 | Acceptable — visible compression, borderline for delivery |
@@ -453,8 +501,9 @@ Before marking video as delivered:
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
-- [ ] Frame interpolation applied only if clip was visually choppy AND passed ghost-artifact check
-- [ ] Text overlays respect Instagram safe zone (y=200–1640px, avoid right 15%) — see §5f
+- [ ] Frame interpolation: run scene detection (§3d) first, interpolate per-segment with rife-v4.22, check ghost artifacts
+- [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
+- [ ] TikTok repurpose: re-check right 164px dead zone (wider than Instagram) — see §5g
 - [ ] All text overlays composited (see text-overlay-compositing.md)
 - [ ] Audio mixed per halal-audio.md — voiceover + SFX only, no instruments
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
