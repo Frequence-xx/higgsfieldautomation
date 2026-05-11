@@ -1,0 +1,147 @@
+[
+  {
+    "key": "study_cycle_12_topic",
+    "value": "Character consistency pass 2",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "char_consistency_blank_bg",
+    "value": "Kling Element tokenization binds entire image region. Environmental content in ref image leaks into generated shots. MUST use pure flat white or green screen background for ALL Kling element refs.",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "char_consistency_frame_chaining",
+    "value": "Multi-shot: extract last frame of clip N (ffmpeg -sseof -0.1), use as image_url for clip N+1 alongside elements for identity lock. Separate from tail_image_url stationarity technique.",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "char_consistency_regen_drift",
+    "value": "Do NOT use generated frames as refs. Each round-trip through 3D latent compounds geometry errors. By shot 3-4, identity collapses. Always re-anchor from original approved studio refs.",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "insightface_buffalo_l_benchmarks",
+    "value": "buffalo_l: LFW 99.83%, CFP-FP 99.33%, AgeDB-30 98.23%, IJB-C(E4) 97.25%, 326MB. Preferred over antelopev2 (larger, worse). buffalo_s: LFW 99.70%, CFP-FP 98.00%, 159MB.",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "kling_element_auto_view",
+    "value": "Kling web UI Element Library auto-generates additional angles from 1 ref image. Saves ~0.39 per Type B sheet. Not via AIMLAPI as of 2026-04. Verify auto-views with InsightFace before using.",
+    "updated_at": "2026-04-25 12:33:29"
+  },
+  {
+    "key": "study_cycle_13_topic",
+    "value": "Cost optimization pass 2",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_3s_standard_drafts",
+    "value": "Use 3s Kling Standard for draft iterations: $0.65 vs $1.09 at 5s. Saves $0.44/draft. 3s sufficient to evaluate motion type, identity drift, ghost-driving. Only use 5s for Pro finals. Duration param accepts int 3-15 with linear scaling.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_wan26_price",
+    "value": "Wan 2.6 I2V on AIMLAPI: ~$0.13/sec ($0.65/5s), medium confidence. Minimum 5s clip only — no 3s option. More expensive than Veo 3.1 Lite ($0.52/5s) but provides I2V capability. Useful Veo fallback.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_kling26_canary",
+    "value": "Kling 2.6 Pro I2V at ~$0.091/sec ($0.46/5s) — 58% cheaper than Kling v3 Standard. CANARY REQUIRED. Not validated for character face identity. Potential use: truck-only draft shots.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_nb2_price",
+    "value": "NB2 (google/nano-banana-2) Google official rate: $0.067/image at 1K, $0.151 at 4K. AIMLAPI may differ. Canary required before production. Saves ~$0.125/iteration vs NBP Edit ($0.195).",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_polling_free",
+    "value": "AIMLAPI polling status checks are FREE. Tokens consumed only at generation submission. Poll aggressively (every 5-10s) without cost concern. Confirmed from AIMLAPI docs.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_no_batch_discount",
+    "value": "AIMLAPI has no batch discount program for video models. All savings must come from model selection and clip duration management. Enterprise plan exists but terms are negotiated individually.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_veo_price_discrepancy",
+    "value": "Third-party blog (2026-04-26) cited Veo 3.1 Lite at $0.05/sec ($0.26/5s) vs our production-verified $0.104/sec ($0.52/5s). Keep production number for budgeting until re-verified on AIMLAPI directly.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_math_error_fixed",
+    "value": "Fixed arithmetic error in credit-efficiency.md Draft Tiering section: $2.64 was incorrect. Correct is $3.64 for 2 Standard 5s + 1 Pro 5s. With 3s drafts: $2.76.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "cost_veo_seed_logging",
+    "value": "Veo 3.1 Lite seed parameter (int 0-4294967295) should be logged after every successful generation. Reuse seed for minor prompt tweaks to narrow output variance, saving retry passes.",
+    "updated_at": "2026-04-26 00:44:59"
+  },
+  {
+    "key": "study_cycle_13_commit",
+    "value": "65dfc03",
+    "updated_at": "2026-04-26 00:45:11"
+  },
+  {
+    "key": "study_cycle_14_topic",
+    "value": "Post-production pass 2",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "study_cycle_14_commit",
+    "value": "658efe1",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_rife_model_update",
+    "value": "Use TNTwise rife-ncnn-vulkan fork (github.com/TNTwise/rife-ncnn-vulkan). Latest model is rife-v4.25 vs v4.6 in nihui original. TTA mode (-x flag) deprecated in v4.25 — omit it.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_vmaf_scoring",
+    "value": "FFmpeg libvmaf filter scores export quality vs reference. Command: ffmpeg -i ref.mp4 -i encoded.mp4 -lavfi libvmaf=log_fmt=json:log_path=score.json:n_subsample=5 -f null -. n_subsample=5 = 4x faster. Threshold: >=90 for delivery.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hw_encode_nvenc",
+    "value": "NVIDIA NVENC: -c:v h264_nvenc -preset p7 -tune hq -cq 20. 3-5x faster than libx264 slow. Use for review copies; use libx264 for archive master.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hw_encode_vaapi",
+    "value": "VAAPI (Intel/AMD Linux): -vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 19. Check device: ls /dev/dri/renderD*",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_whatsapp_delivery",
+    "value": "WhatsApp video message = 16MB limit with lossy recompression. Document share (paperclip > Document) = 2GB no-recompression. Always deliver master as document share to owner.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_whatsapp_2pass_formula",
+    "value": "For 16MB video message: bitrate_kbps = (target_MB x 8 x 1024 / duration_sec) - audio_kbps. For 30s to 15MB: (15x8x1024/30)-128 = 3900k video. Use 2-pass encoding.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hevc_platform",
+    "value": "H.265/HEVC: TikTok accepts HEVC but re-compresses it anyway. Instagram does NOT reliably accept H.265. Use H.264 universally for all platforms.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "study_cycle_28_topic",
+    "value": "post-production (pass 2)",
+    "updated_at": "2026-05-11T06:15:28.910956"
+  },
+  {
+    "key": "study_cycle_28_date",
+    "value": "2026-05-11",
+    "updated_at": "2026-05-11T06:15:28.910956"
+  },
+  {
+    "key": "study_cycle_28_findings",
+    "value": "RIFE: v4.22 is best for diffusion/AI-generated video (Kling output) per maintainer. v4.26 is NOT anime-only (SC21 error corrected) — it is the current general recommended. Scene detection required before RIFE to prevent cut-blending ghost frames. REAL-Video-Enhancer latest stable: v2.4.1 (2025-01-02). Instagram safe zone: bottom 320px (was 280px), right 120px. TikTok safe zone: right 164px (wider than Instagram 120px; Add to Playlist button Jan 2026). Upload bitrates: Instagram 10-20 Mbps, TikTok 8-15 Mbps (below 5 Mbps = quality flag). Both platforms transcode H.264 to AV1 internally; upload H.264 only.",
+    "updated_at": "2026-05-11T06:15:28.910956"
+  }
+]
