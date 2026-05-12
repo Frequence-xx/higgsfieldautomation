@@ -135,7 +135,7 @@ hero_url = resp.json()["data"][0]["url"]
 | Resolution | Nano Banana Pro | Kontext Max | Imagen 4 | Cost |
 |------------|-----------------|-------------|----------|------|
 | 1K | 768 x 1344 | 752 x 1392 | native 9:16 | ~$0.02-0.20 |
-| 2K | 1536 x 2688 | — | Ultra only | ~$0.06-0.13 |
+| 2K | 1536 x 2688 | — | Ultra only | ~$0.06 (Ultra confirmed) |
 | 4K | 3072 x 5376 | — | — | ~$0.24 |
 
 **Safe zone (2026-05-08):** On Instagram Reels / TikTok, platform UI (profile, caption, buttons) occludes the **top 14%** and **bottom 20%** of the frame. Keep all brand elements, faces, and text out of these zones. For a 768×1344 frame: top 107px and bottom 269px are danger zones. Compose the hero in the middle 66% of vertical height.
@@ -193,6 +193,71 @@ VISUAL ANCHORS (maintain across all shots):
 ```
 
 This reduces iteration cycles from 15-20 to 3-5 attempts for multi-shot batches.
+
+### Strong Verb at Start (2026-05-12)
+
+Google official guidance: **start every prompt with a strong verb** that tells the model the primary operation to perform. This improves prompt adherence.
+
+```
+✗ WEAK:  "Mourad standing next to the truck, golden hour..."
+✓ STRONG: "Generate Mourad standing next to the truck, golden hour..."
+✓ STRONG: "Create a cinematic hero frame of Mourad lifting a box..."
+✓ STRONG: "Render a wide establishing shot of a Dutch residential street..."
+```
+
+### Positive Framing Rule (2026-05-12)
+
+Google official guidance: **describe what you want, not what you don't want.** Use positive language where possible.
+
+| Weak (negative) | Strong (positive) |
+|----------------|-------------------|
+| "no cars in the street" | "empty residential street, clear pavement" |
+| "no blur" | "sharp focus, crisp detail" |
+| "no yellow, no gold" | "bright orange #FC8434 only" |
+
+**Exception:** For brand-critical structural elements where ambiguity could be costly, explicit exclusions remain appropriate alongside positive framing:
+```
+"White sealed cargo box with smooth flat panels [positive].
+No side door or sliding panel cutout [explicit — brand binary]."
+```
+
+### Trait Locking — Verbatim Descriptor Reuse (2026-05-12)
+
+For multi-shot productions: **use the exact same descriptor words verbatim in every prompt.** Swapping synonyms causes identity drift.
+
+```
+✗ DRIFT:  Prompt 1: "olive complexion, dark beard" | Prompt 2: "tan skin, black stubble"
+✓ LOCKED: ALL prompts: "warm olive skin, short black beard, dark brown eyes, strong jawline"
+```
+
+Mourad canonical trait lock (copy verbatim into every prompt):
+```
+warm olive skin, strong jawline, dark brown eyes, short black beard, mid-30s
+```
+
+### Character Unique Tag (2026-05-12)
+
+Give each recurring character a short unique tag and include it in every prompt. The model anchors on named identities.
+
+```
+"Mourad-SV [short tag]: warm olive skin, strong jawline, dark brown eyes, short black beard, black crewneck with orange chest logo, blue jeans, white sneakers."
+```
+
+Add the tag + one-line descriptor at the START of every character prompt, before the scene description.
+
+### Font Specification for Typography in NBP (2026-05-12)
+
+NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable than generic descriptions:
+
+```
+✓ "Display 'SNELVERHUIZEN.NL' in a bold, clean sans-serif font, white text, orange background #FC8434"
+✓ "Render '085 3331133' in Century Gothic, 14px weight, left-aligned"
+✓ "Large Impact-style headline 'VERHUIZEN ZONDER ZORGEN', orange #FC8434"
+```
+
+**Text-first hack:** For best NBP text rendering, converse with the model first to generate the text concepts, then request the image. (Google official tip, 2026.) Works well for CTA cards and label text.
+
+**Note:** Despite NBP's strong text rendering, truck text (SNELVERHUIZEN.NL) is still safer as post-overlay due to garbling risk on curved/lit surfaces. Use NBP font naming for flat CTA card designs only.
 
 ### Other Rules
 
@@ -303,7 +368,7 @@ Edit 6 → Final. If quality insufficient, restart chain from checkpoint A or B 
 Two scriptable options for automated face similarity checks between generated frames:
 
 | Tool | GitHub | Method | Threshold |
-|------|--------|--------|-----------|
+|------|--------|--------|----------|
 | **InsightFace** | `deepinsight/insightface` | ArcFace embeddings | cosine >0.6 = same person |
 | **DeepFace** | `serengil/deepface` (2026-active) | Wraps ArcFace, FaceNet512, VGG-Face, GhostFaceNet | cosine >0.6 = same person |
 
@@ -345,6 +410,21 @@ hero_url = resp.json()["data"][0]["url"]
 ```
 
 **CANARY NOTE:** Imagen 4 pricing on AIMLAPI — run a $0.10 test before batch production use to verify exact cost per image and response structure. Model strings confirmed in AIMLAPI docs as of 2026-05.
+
+## NBP → Veo Keyframe Bridge (2026-05-12)
+
+Official Google workflow: generate hero keyframes with NBP, then use Veo to animate between them.
+
+```
+Step 1: Generate shot start frame with NBP Edit (approved, QA passed)
+Step 2: Generate shot end frame with NBP Edit (approved, QA passed)
+Step 3: Pass START frame as image_url to Veo I2V with motion prompt
+        — Veo animates from that anchor toward the end state
+```
+
+Benefit: brand accuracy from the NBP hero-frame QA gate carries through to the animation. Reduces ghost-driving and off-brand drift compared to T2V. Best for predictable action pairs: Mourad lifts box → box loaded, door open → door closed.
+
+---
 
 ## Post-Generation Checklist
 

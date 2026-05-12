@@ -1,33 +1,93 @@
 [
   {
-    "key": "study_cycle_12_topic",
-    "value": "Character consistency pass 2",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "imagen4_ultra_price_confirmed",
+    "value": "Imagen 4 Ultra ($0.06/img confirmed, not a range). Model string: google/imagen-4.0-ultra-generate-001. Preview variant imagen-4.0-ultra-generate-preview-06-06 exists but unverified on AIMLAPI — do not use until canary passes.",
+    "updated_at": "2026-05-12 12:14:14"
   },
   {
-    "key": "char_consistency_blank_bg",
-    "value": "Kling Element tokenization binds entire image region. Environmental content in ref image leaks into generated shots. MUST use pure flat white or green screen background for ALL Kling element refs.",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "study_cycle_29_topic",
+    "value": "Hero frame generation pass 5",
+    "updated_at": "2026-05-12 12:10:52"
   },
   {
-    "key": "char_consistency_frame_chaining",
-    "value": "Multi-shot: extract last frame of clip N (ffmpeg -sseof -0.1), use as image_url for clip N+1 alongside elements for identity lock. Separate from tail_image_url stationarity technique.",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "nbp_strong_verb_rule",
+    "value": "Start every NBP prompt with a strong verb: \"Generate\", \"Create\", \"Render\". Official Google guidance — improves prompt adherence. Weak: \"Mourad standing...\". Strong: \"Generate Mourad standing...\"",
+    "updated_at": "2026-05-12 12:10:52"
   },
   {
-    "key": "char_consistency_regen_drift",
-    "value": "Do NOT use generated frames as refs. Each round-trip through 3D latent compounds geometry errors. By shot 3-4, identity collapses. Always re-anchor from original approved studio refs.",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "nbp_positive_framing",
+    "value": "Prefer positive framing over negatives in NBP prompts. \"empty residential street\" > \"no cars\". EXCEPTION: brand-binary explicit exclusions still appropriate (\"No side door on cargo box\") — too critical to leave to inference.",
+    "updated_at": "2026-05-12 12:10:52"
   },
   {
-    "key": "insightface_buffalo_l_benchmarks",
-    "value": "buffalo_l: LFW 99.83%, CFP-FP 99.33%, AgeDB-30 98.23%, IJB-C(E4) 97.25%, 326MB. Preferred over antelopev2 (larger, worse). buffalo_s: LFW 99.70%, CFP-FP 98.00%, 159MB.",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "nbp_trait_locking",
+    "value": "Trait locking: reuse exact same descriptor words verbatim in every prompt to prevent identity drift. \"warm olive skin, short black beard, dark brown eyes, strong jawline\" must not vary — never swap to \"tan skin\" or \"black stubble\".",
+    "updated_at": "2026-05-12 12:10:52"
   },
   {
-    "key": "kling_element_auto_view",
-    "value": "Kling web UI Element Library auto-generates additional angles from 1 ref image. Saves ~0.39 per Type B sheet. Not via AIMLAPI as of 2026-04. Verify auto-views with InsightFace before using.",
-    "updated_at": "2026-04-25 12:33:29"
+    "key": "nbp_character_tag",
+    "value": "Character unique tag: prepend a short tag (e.g. \"Mourad-SV\") + one-line descriptor at the start of every character prompt. Model anchors on named identities. Include tag before scene description.",
+    "updated_at": "2026-05-12 12:10:52"
+  },
+  {
+    "key": "nbp_font_naming",
+    "value": "Named fonts work in NBP: \"Century Gothic 12px\", \"Impact-style\", \"bold clean sans-serif\". Use for CTA card designs. Text-first hack: converse to generate text concepts, then request image. Do NOT use for truck-surface text — post-overlay only.",
+    "updated_at": "2026-05-12 12:10:52"
+  },
+  {
+    "key": "nbp_veo_keyframe_bridge",
+    "value": "Official Google workflow: generate shot start+end keyframes with NBP Edit, pass start frame as image_url to Veo I2V. Veo animates between. Brand accuracy from hero-frame QA gate carries through. Best for predictable action pairs.",
+    "updated_at": "2026-05-12 12:10:52"
+  },
+  {
+    "key": "study_cycle_14_topic",
+    "value": "Post-production pass 2",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "study_cycle_14_commit",
+    "value": "658efe1",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_rife_model_update",
+    "value": "Use TNTwise rife-ncnn-vulkan fork (github.com/TNTwise/rife-ncnn-vulkan). Latest model is rife-v4.25 vs v4.6 in nihui original. TTA mode (-x flag) deprecated in v4.25 — omit it.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_vmaf_scoring",
+    "value": "FFmpeg libvmaf filter scores export quality vs reference. Command: ffmpeg -i ref.mp4 -i encoded.mp4 -lavfi libvmaf=log_fmt=json:log_path=score.json:n_subsample=5 -f null -. n_subsample=5 = 4x faster. Threshold: >=90 for delivery.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hw_encode_nvenc",
+    "value": "NVIDIA NVENC: -c:v h264_nvenc -preset p7 -tune hq -cq 20. 3-5x faster than libx264 slow. Use for review copies; use libx264 for archive master.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hw_encode_vaapi",
+    "value": "VAAPI (Intel/AMD Linux): -vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 19. Check device: ls /dev/dri/renderD*",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_whatsapp_delivery",
+    "value": "WhatsApp video message = 16MB limit with lossy recompression. Document share (paperclip > Document) = 2GB no-recompression. Always deliver master as document share to owner.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_whatsapp_2pass_formula",
+    "value": "For 16MB video message: bitrate_kbps = (target_MB x 8 x 1024 / duration_sec) - audio_kbps. For 30s to 15MB: (15x8x1024/30)-128 = 3900k video. Use 2-pass encoding.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "postprod_hevc_platform",
+    "value": "H.265/HEVC: TikTok accepts HEVC but re-compresses it anyway. Instagram does NOT reliably accept H.265. Use H.264 universally for all platforms.",
+    "updated_at": "2026-04-26 06:24:34"
+  },
+  {
+    "key": "study_cycle_13_commit",
+    "value": "65dfc03",
+    "updated_at": "2026-04-26 00:45:11"
   },
   {
     "key": "study_cycle_13_topic",
@@ -80,68 +140,33 @@
     "updated_at": "2026-04-26 00:44:59"
   },
   {
-    "key": "study_cycle_13_commit",
-    "value": "65dfc03",
-    "updated_at": "2026-04-26 00:45:11"
+    "key": "study_cycle_12_topic",
+    "value": "Character consistency pass 2",
+    "updated_at": "2026-04-25 12:33:29"
   },
   {
-    "key": "study_cycle_14_topic",
-    "value": "Post-production pass 2",
-    "updated_at": "2026-04-26 06:24:34"
+    "key": "char_consistency_blank_bg",
+    "value": "Kling Element tokenization binds entire image region. Environmental content in ref image leaks into generated shots. MUST use pure flat white or green screen background for ALL Kling element refs.",
+    "updated_at": "2026-04-25 12:33:29"
   },
   {
-    "key": "study_cycle_14_commit",
-    "value": "658efe1",
-    "updated_at": "2026-04-26 06:24:34"
+    "key": "char_consistency_frame_chaining",
+    "value": "Multi-shot: extract last frame of clip N (ffmpeg -sseof -0.1), use as image_url for clip N+1 alongside elements for identity lock. Separate from tail_image_url stationarity technique.",
+    "updated_at": "2026-04-25 12:33:29"
   },
   {
-    "key": "postprod_rife_model_update",
-    "value": "Use TNTwise rife-ncnn-vulkan fork (github.com/TNTwise/rife-ncnn-vulkan). Latest model is rife-v4.25 vs v4.6 in nihui original. TTA mode (-x flag) deprecated in v4.25 — omit it.",
-    "updated_at": "2026-04-26 06:24:34"
+    "key": "char_consistency_regen_drift",
+    "value": "Do NOT use generated frames as refs. Each round-trip through 3D latent compounds geometry errors. By shot 3-4, identity collapses. Always re-anchor from original approved studio refs.",
+    "updated_at": "2026-04-25 12:33:29"
   },
   {
-    "key": "postprod_vmaf_scoring",
-    "value": "FFmpeg libvmaf filter scores export quality vs reference. Command: ffmpeg -i ref.mp4 -i encoded.mp4 -lavfi libvmaf=log_fmt=json:log_path=score.json:n_subsample=5 -f null -. n_subsample=5 = 4x faster. Threshold: >=90 for delivery.",
-    "updated_at": "2026-04-26 06:24:34"
+    "key": "insightface_buffalo_l_benchmarks",
+    "value": "buffalo_l: LFW 99.83%, CFP-FP 99.33%, AgeDB-30 98.23%, IJB-C(E4) 97.25%, 326MB. Preferred over antelopev2 (larger, worse). buffalo_s: LFW 99.70%, CFP-FP 98.00%, 159MB.",
+    "updated_at": "2026-04-25 12:33:29"
   },
   {
-    "key": "postprod_hw_encode_nvenc",
-    "value": "NVIDIA NVENC: -c:v h264_nvenc -preset p7 -tune hq -cq 20. 3-5x faster than libx264 slow. Use for review copies; use libx264 for archive master.",
-    "updated_at": "2026-04-26 06:24:34"
-  },
-  {
-    "key": "postprod_hw_encode_vaapi",
-    "value": "VAAPI (Intel/AMD Linux): -vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp 19. Check device: ls /dev/dri/renderD*",
-    "updated_at": "2026-04-26 06:24:34"
-  },
-  {
-    "key": "postprod_whatsapp_delivery",
-    "value": "WhatsApp video message = 16MB limit with lossy recompression. Document share (paperclip > Document) = 2GB no-recompression. Always deliver master as document share to owner.",
-    "updated_at": "2026-04-26 06:24:34"
-  },
-  {
-    "key": "postprod_whatsapp_2pass_formula",
-    "value": "For 16MB video message: bitrate_kbps = (target_MB x 8 x 1024 / duration_sec) - audio_kbps. For 30s to 15MB: (15x8x1024/30)-128 = 3900k video. Use 2-pass encoding.",
-    "updated_at": "2026-04-26 06:24:34"
-  },
-  {
-    "key": "postprod_hevc_platform",
-    "value": "H.265/HEVC: TikTok accepts HEVC but re-compresses it anyway. Instagram does NOT reliably accept H.265. Use H.264 universally for all platforms.",
-    "updated_at": "2026-04-26 06:24:34"
-  },
-  {
-    "key": "study_cycle_28_topic",
-    "value": "post-production (pass 2)",
-    "updated_at": "2026-05-11T06:15:28.910956"
-  },
-  {
-    "key": "study_cycle_28_date",
-    "value": "2026-05-11",
-    "updated_at": "2026-05-11T06:15:28.910956"
-  },
-  {
-    "key": "study_cycle_28_findings",
-    "value": "RIFE: v4.22 is best for diffusion/AI-generated video (Kling output) per maintainer. v4.26 is NOT anime-only (SC21 error corrected) — it is the current general recommended. Scene detection required before RIFE to prevent cut-blending ghost frames. REAL-Video-Enhancer latest stable: v2.4.1 (2025-01-02). Instagram safe zone: bottom 320px (was 280px), right 120px. TikTok safe zone: right 164px (wider than Instagram 120px; Add to Playlist button Jan 2026). Upload bitrates: Instagram 10-20 Mbps, TikTok 8-15 Mbps (below 5 Mbps = quality flag). Both platforms transcode H.264 to AV1 internally; upload H.264 only.",
-    "updated_at": "2026-05-11T06:15:28.910956"
+    "key": "kling_element_auto_view",
+    "value": "Kling web UI Element Library auto-generates additional angles from 1 ref image. Saves ~0.39 per Type B sheet. Not via AIMLAPI as of 2026-04. Verify auto-views with InsightFace before using.",
+    "updated_at": "2026-04-25 12:33:29"
   }
 ]
