@@ -103,19 +103,33 @@ for i in range(30):
 | Truck / product hero | 0.7 | Strict adherence to preserve branding |
 | Branded transitions | 0.7 | Preserve specific visual elements |
 
+## Motion Strength Guidelines
+
+`motion_strength` (0–1) controls how aggressively the model animates. Low values = stable/frozen; high values = aggressive action. **Omit the parameter to use the model default** — do not set it unless you have a specific reason.
+
+| Shot Type | motion_strength | Notes |
+|-----------|----------------|-------|
+| Stationary truck (primary) | 0.3–0.4 | Prevents physics artifacts on rigid objects |
+| Character face close-up | 0.3 | Micro-motion only — blink, hair |
+| Character walking / action | 0.5–0.6 | Natural movement range |
+| Establishing / B-roll (no character) | Omit | Let model default drive environment motion |
+| Aggressive action shot | 0.7–1.0 | Rarely needed; risks jitter above 0.8 |
+
+**Interaction with cfg_scale:** These parameters are NOT redundant. `cfg_scale` controls how strictly the model follows the TEXT prompt; `motion_strength` controls the QUANTITY of motion regardless of prompt adherence. High cfg_scale + high motion_strength = lots of motion rigidly following prompt. Low cfg_scale + low motion_strength = minimal, freely interpreted motion. For truck shots use `cfg_scale 0.7 + motion_strength 0.3` — maximum prompt control + minimum motion budget.
+
 ## Camera Control
 
 **camera_control.type options:**
 
 | Type | Description | AIMLAPI Status |
 |------|-------------|---------------|
-| `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **Confirmed on AIMLAPI** |
-| `"down_back"` | Camera descends and pulls backward | In base Kling API; **unverified on AIMLAPI v3** |
-| `"forward_up"` | Camera moves forward and tilts upward | In base Kling API; **unverified on AIMLAPI v3** |
-| `"right_turn_forward"` | Camera rotates right while moving forward | In base Kling API; **unverified on AIMLAPI v3** |
-| `"left_turn_forward"` | Camera rotates left while moving forward | In base Kling API; **unverified on AIMLAPI v3** |
+| `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **CONFIRMED — use this** |
+| `"down_back"` | Camera descends and pulls backward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
+| `"forward_up"` | Camera moves forward and tilts upward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
+| `"right_turn_forward"` | Camera rotates right while moving forward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
+| `"left_turn_forward"` | Camera rotates left while moving forward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
 
-**Use `"simple"` for all AIMLAPI calls.** Named presets are documented in the base Kling API but not verified to work on AIMLAPI v3 — do not use until tested.
+**Use `"simple"` for ALL AIMLAPI calls — it is the only confirmed type.** Named presets are documented in the base Kling API (klingai.com) but do NOT pass them to AIMLAPI until tested. AIMLAPI may silently ignore or error on unknown preset names.
 
 **Simple config:** all values range -10 to 10. Recommended for cinematic work: 2-5.
 
@@ -396,7 +410,7 @@ Separate from I2V. Kling v3 Motion Control animates a character image to match t
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. Not confirmed on AIMLAPI as of May 2026 — Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 is available on fal.ai and Runware but not AIMLAPI. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 

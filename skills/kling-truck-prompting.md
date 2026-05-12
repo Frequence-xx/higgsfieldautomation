@@ -122,7 +122,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 ## Motion Parameters for Truck Scenes
 
 | Parameter | Value | Reasoning |
-|-----------|-------|-----------|
+|-----------|-------|----------|
 | cfg_scale | **0.5** (people primary) / **0.7** (truck primary) | Higher adherence for branded asset |
 | motion_strength | **0.3-0.4** (optional, 0-1 range) | Low motion prevents physics artifacts on rigid objects. Omit to use model default. |
 | duration | **5s** | Minimize time for artifacts to accumulate |
@@ -131,7 +131,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 
 **motion_strength range guide:** 0.1-0.3 = nearly frozen (good for stationary truck), 0.4-0.6 = moderate (walking crew), 0.7-1.0 = aggressive action (not for truck shots).
 
-## Camera Control Presets — Complete List (verified 2026-04-29)
+## Camera Control Presets — Reference List (simple type only is confirmed on AIMLAPI; named presets below are from Kling base API docs, unverified on AIMLAPI)
 
 Use `camera_control.type` to choose camera movement. For truck shots prefer `simple` with low values (2–5) or all-zero lock.
 
