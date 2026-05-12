@@ -80,7 +80,7 @@ Paint the ENTIRE vehicle body WHITE (frozen). Leave the environment (sky, trees,
 
 ### Layer 4: Endpoint Frame (Tail Image)
 
-Use the SAME hero frame as both `image_url` (start) and `tail_image_url` (end). This forces the model to return to the identical composition, making any truck movement a round-trip (which the model resolves by keeping it still).
+Use the SAME hero frame as both `image_url` (start) and `tail_image_url` (end). This forces the model to return to the identical composition at the final frame — preventing net displacement. **Important:** this does NOT guarantee zero motion during the clip. The truck can still drift forward and back between the start and end frames. Use tail_image_url as a second-order safeguard; primary stationarity control must be in the prompt (Layer 1) and negative prompt (Layer 2).
 
 ```python
 {

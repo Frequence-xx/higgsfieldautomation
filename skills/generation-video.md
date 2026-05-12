@@ -117,6 +117,8 @@ for i in range(30):
 
 **Interaction with cfg_scale:** These parameters are NOT redundant. `cfg_scale` controls how strictly the model follows the TEXT prompt; `motion_strength` controls the QUANTITY of motion regardless of prompt adherence. High cfg_scale + high motion_strength = lots of motion rigidly following prompt. Low cfg_scale + low motion_strength = minimal, freely interpreted motion. For truck shots use `cfg_scale 0.7 + motion_strength 0.3` — maximum prompt control + minimum motion budget.
 
+**CAUTION — parameter name unverified:** `motion_strength` by this exact name is not confirmed in the official Kuaishou Kling v3 I2V API schema (as of May 2026 research). It appears in some third-party wrappers and UI sliders but may be a wrapper abstraction. If AIMLAPI returns a parameter error, omit `motion_strength` and rely on `cfg_scale` + prompt anchors for motion control. Verify against AIMLAPI's live schema before relying on it.
+
 ## Camera Control
 
 **camera_control.type options:**
@@ -131,7 +133,7 @@ for i in range(30):
 
 **Use `"simple"` for ALL AIMLAPI calls — it is the only confirmed type.** Named presets are documented in the base Kling API (klingai.com) but do NOT pass them to AIMLAPI until tested. AIMLAPI may silently ignore or error on unknown preset names.
 
-**Simple config:** all values range -10 to 10. Recommended for cinematic work: 2-5.
+**Simple config:** all values range -10 to 10. Recommended for cinematic work: 2-5. **Only ONE config value should be non-zero at a time** — the official Kling API spec is explicit about this constraint. Setting multiple non-zero values simultaneously is undefined behavior.
 
 ```python
 "camera_control": {
@@ -152,7 +154,7 @@ for i in range(30):
 | Lateral tracking | `horizontal: 3` to `5` | Smooth side tracking |
 | Static (prompt-driven) | All zeros | Use prompt for micro-motion only |
 
-**Rules:** Max 2 simultaneous movements. Values 7-10 are dramatic but unstable. Camera control overrides prompt-based camera direction — use one or the other.
+**Rules:** Only 1 simultaneous movement (one non-zero value). Values 7-10 are dramatic but unstable. Camera control overrides prompt-based camera direction — use one or the other.
 
 ## Negative Prompt Templates
 
@@ -345,7 +347,8 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 **Constraints:**
 - Main `prompt` field MUST be empty when `multi_prompt` is used
 - `tail_image_url` is INCOMPATIBLE with multi-shot — omit it
-- Total video duration = sum of all shot durations
+- Total video duration = sum of all shot durations (max 15s total)
+- Each shot minimum duration: **3 seconds** — do not set individual shot durations below 3s
 - Each entry takes `prompt` and `duration` — no `index` field required on AIMLAPI
 
 ```python
@@ -387,7 +390,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 ]
 ```
 
-**Coordinate system:** Origin (0,0) top-left; x-axis right; y-axis down. Floating-point coordinates allowed. Minimum 2 points; 10+ recommended for smooth motion.
+**Coordinate system:** Origin (0,0) top-left; x-axis right; y-axis down. Floating-point coordinates allowed. Minimum 2 points; 10+ recommended for smooth motion. **Mask image background must be fully transparent (alpha=0), not black** — uncolored regions must have alpha=0; colored regions must be fully opaque. Use PNG with alpha channel.
 
 **static_mask_url notes:**
 - Must match source image aspect ratio exactly — task fails otherwise
@@ -410,9 +413,11 @@ Separate from I2V. Kling v3 Motion Control animates a character image to match t
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 is available on fal.ai and Runware but not AIMLAPI. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 migrated to fal.ai in April 2026 and is also on PiAPI and Atlas Cloud, but not AIMLAPI. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
+
+**BREAKING CHANGE for O3:** When O3 is added, `cfg_scale` and `negative_prompt` are BOTH REMOVED — O3 handles them internally. Every gen script using these parameters will break. Update scripts before switching.
 
 ## Error Handling
 
