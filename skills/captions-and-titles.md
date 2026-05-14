@@ -30,19 +30,21 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - Recommended model: `eleven_multilingual_v2` (most emotionally rich, proven stable for Dutch)
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
-   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.4`** — v3.8.2 (March 2025) fixed a wildcard alignment bug that anchored ALL word timestamps to segment start instead of actual speech; v3.8.4 fixed blank_id for HuggingFace models. Older versions silently produce wrong timestamps.
+   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.5`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility. Older versions silently produce wrong timestamps.
 
-   **Dependency requirement (v3.8.4+):** `faster-whisper>=1.2.0` is required. Install both:
+   **Dependency requirement (v3.8.5+):** `faster-whisper>=1.2.0` is required. Install both:
    ```bash
-   pip install "faster-whisper>=1.2.0" "whisperx>=3.8.4"
+   pip install "faster-whisper>=1.2.0" "whisperx>=3.8.5"
    ```
-   **Digit/symbol timestamp fix (v3.8.4):** Words with digits or symbols — "085 3331133", "4,9 ster" — now get proper word-level timestamps via restored wildcard emission column. Prior versions silently anchored these words to segment start, causing caption drift on phone numbers and ratings in Dutch copy.
+   **Model recommendation for Dutch:** Use `large-v3-turbo` instead of `large-v2` — performs identically to large-v2 on Dutch (v3 pure has Dutch regression; turbo reverts to v2-level accuracy) but transcribes ~3–4x faster on CPU. Pass `--model large-v3-turbo` in the CLI.
 
    ```bash
    # CPU usage — always specify --device cpu explicitly
+   # large-v3-turbo: same Dutch accuracy as v2, ~3x faster on CPU (via faster-whisper)
    # Add --max_line_width 40 --max_line_count 2 to enforce 42-char line limit in ASS/SRT output
-   whisperx voiceover.wav --model large-v2 --language nl --batch_size 4 --compute_type int8 --device cpu \
+   whisperx voiceover.wav --model large-v3-turbo --language nl --batch_size 4 --compute_type int8 --device cpu \
      --max_line_width 40 --max_line_count 2
+   # Fallback if turbo produces hallucinations on this recording: --model large-v2
    # Output: voiceover.json → segments[].words → [{word, start, end, score}]
    ```
 
@@ -61,19 +63,22 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **WhisperX hallucination prevention (automatic):**
    - VAD pre-processing enabled by default — strips silence, eliminates phantom hallucinations
    - `condition_on_prev_text=False` by default — prevents context bleeding between segments
-   - Use `large-v2` not `large-v3` for Dutch (v3 has more hallucination tendency on non-English)
+   - Use `large-v3-turbo` (preferred) or `large-v2` for Dutch. Do NOT use `large-v3` — it regresses on Dutch vs v2. Turbo is based on v3 architecture but with 4 decoder layers (vs 32 in v3/v2) and reverts to v2-level accuracy while being ~3x faster.
 
    **Option C: @remotion/install-whisper-cpp with DTW (free, Remotion-native, no Python needed)**
    Uses whisper.cpp with Dynamic Time Warping on attention weights — no separate language model. Works for Dutch without a wav2vec2 model. Integrates directly with `toCaptions()`.
 
+   **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
+
    ```typescript
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
-   await installWhisperCpp({ version: '1.5.5', printOutput: false }); // once
+   await installWhisperCpp({ version: '1.8.4', printOutput: false }); // once; v1.8.4 required for large-v3-turbo
    const result = await transcribe({
      inputPath: 'voiceover.wav',
-     model: 'large-v2',
+     model: 'large-v3-turbo',    // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
      tokenLevelTimestamps: true,  // enables --dtw for word-level accuracy
+     flashAttention: false,       // keep false on CPU; set true only with CUDA GPU
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // captions → Caption[] ready for createTikTokStyleCaptions()
@@ -81,6 +86,9 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    // this is the most accurate single-point timestamp available from whisper.cpp.
    // Without tokenLevelTimestamps, timestampMs falls back to (startMs + endMs) / 2.
    ```
+
+   **`additionalArgs` escape hatch:** Pass custom whisper.cpp CLI flags via `additionalArgs: ['--no-prints', '--print-special']` (string[] or key-value pair arrays). Only needed for non-standard whisper.cpp builds.
+
    Choose Option C when: no Python env available, CPU-only server (avoids loading second neural network), or pure TypeScript pipeline.
 
 2. **Parse timestamps** into frame-number arrays:
@@ -258,7 +266,7 @@ Three mutually exclusive vertical zones prevent spatial overlap:
 ### Conflict Resolution
 
 | Scenario | Solution |
-|----------|----------|
+|----------|---------|
 | Name card + voiceover caption at same time | Name in Zone B, caption in Zone C |
 | Title + voiceover caption | Title in Zone A, caption in Zone C |
 | Title + name card | Show sequentially (title first, then name card) |
@@ -503,7 +511,7 @@ When Remotion is unavailable, WhisperX can generate ASS subtitle files with word
 
 ```bash
 whisperx voiceover.wav \
-  --model large-v2 \
+  --model large-v3-turbo \
   --language nl \
   --device cpu --compute_type int8 --batch_size 4 \
   --highlight_words True \
@@ -512,6 +520,7 @@ whisperx voiceover.wav \
   --max_line_count 2 \
   --output_dir .
 # Output: voiceover.ass — contains \k tags with per-word timing
+# Fallback: --model large-v2 if turbo hallucinates on this recording
 ```
 
 Burn subtitles into video:
