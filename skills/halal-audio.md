@@ -88,7 +88,7 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 [sincere] Verhuizen zonder zorgen? [warm] Snel Verhuizen regelt alles. [professional] Bel nu: 085 333 11 33.
 ```
 
-**Note:** Audio tags and `<prosody rate="95%">` SSML can be used together in eleven_v3.
+**SSML in eleven_v3:** eleven_v3 does NOT support SSML `<break>` tags. Use audio tags for pacing control instead (`[calm]`, `[conversational]`, `[professional]`). Limited `<prosody rate="...%">` wrapping may still apply, but test each script — break tags will be silently ignored or spoken as text. The SSML section below (§SSML) applies to `eleven_multilingual_v2` and Flash only, NOT v3.
 
 ### eleven_v3 Character Limit and Multi-Chunk Continuity
 
@@ -121,7 +121,11 @@ r2 = client.text_to_speech.convert(
 
 **Split rule:** Break at sentence boundaries (full stop + capital). Never split mid-sentence. Crossfade the joined audio clips by 5–10 ms in FFmpeg to eliminate any click at the join point.
 
-### SSML for natural Dutch pacing (all models)
+### SSML for natural Dutch pacing (eleven_multilingual_v2 and Flash v2.5 ONLY — NOT v3)
+
+**eleven_v3 does not support `<break>` tags.** For v3, use audio tags (`[calm]`, `[conversational]`) for pacing and pauses.
+
+For multilingual_v2 / Flash v2.5:
 ```xml
 <speak>
   <prosody rate="95%">
@@ -166,11 +170,18 @@ yt-dlp -x --audio-format mp3 --audio-quality 0 \
 
 ## 2. SFX Libraries
 
-### Tier 1: Pixabay SFX (Primary — No Attribution Required)
+### Tier 1a: Mixkit SFX (Primary — Fastest, No Sign-Up)
+
+- **URL:** `mixkit.co/free-sound-effects/`
+- **License:** Mixkit Sound Effects Free License — free for commercial use, no attribution required, no registration
+- **Best for:** Quick one-off sounds; smaller library than Pixabay but zero friction (no account, direct download)
+- Categories useful for Snelverhuizen: "city", "ambience", "home", "household"
+
+### Tier 1b: Pixabay SFX (Primary — Larger Catalogue)
 
 - **URL:** `pixabay.com/sound-effects/`
 - **License:** Pixabay License — free for commercial use, no attribution required
-- Preferred over Freesound: no API key needed, direct browser/curl download
+- Preferred for broader search coverage; no API key needed, direct browser/curl download
 
 **Search terms by scene:**
 
@@ -246,12 +257,14 @@ Quick reference for recurring scenes:
 | Voiceover (ElevenLabs) | -6 to -10 dBFS | -14 LUFS | Normalize first. Always loudest. |
 | Ambient SFX bed | -25 to -30 dBFS | -35 LUFS | 25-30% of VO level |
 | Nasheed (if approved) | -20 to -22 dBFS | -28 LUFS | Never louder than ambient bed |
-| Mixed master output | -3 dBFS peak | -14 to -16 LUFS | Instagram/TikTok target |
+| Mixed master output | -3 dBFS peak | **-16 LUFS** | TikTok official spec; safe floor for all social platforms |
 
 **Platform loudness targets:**
-- Instagram Reels / TikTok: -16 LUFS integrated, -1 dBTP true peak
+- Instagram Reels: -14 to -16 LUFS integrated, -1.5 dBTP true peak (Meta uses xHE-AAC; target -16 to be safe)
+- TikTok: -16 LUFS integrated, -1 dBTP true peak (official TikTok spec)
 - YouTube: -14 LUFS integrated
 - ElevenLabs output default: ~-24 LUFS (always normalize before mixing)
+- **Safe universal master for all platforms:** -16 LUFS integrated, -1 dBTP (prevents downward normalization on any platform)
 
 ---
 
@@ -300,18 +313,37 @@ Replace `DURATION` with total video length in seconds:
 ```
 
 ### 4c. Auto-ducking: ambient ducks when voiceover is active
+
+**Standard (natural ducking):**
 ```bash
 ffmpeg -i voiceover_normalized.mp3 -i ambient.wav \
   -filter_complex \
-    "[0:a]asplit=2[narr][sc]; \
-     [1:a][sc]sidechaincompress=threshold=0.02:ratio=10:attack=50:release=500[ducked]; \
+    "[1:a]aformat=channel_layouts=stereo[amb]; \
+     [0:a]asplit=2[narr][sc]; \
+     [amb][sc]sidechaincompress=threshold=0.02:ratio=10:attack=50:release=500:knee=2.82843[ducked]; \
      [narr][ducked]amix=inputs=2:duration=first:normalize=0[out]" \
   -map "[out]" -c:a aac -b:a 192k \
   audio_ducked.aac
 ```
-- `threshold=0.02` triggers when VO is present
-- `attack=50ms` — quick duck on speech start
-- `release=500ms` — smooth fade-back after speech
+
+**Aggressive (ads — VO must dominate completely):**
+```bash
+ffmpeg -i voiceover_normalized.mp3 -i ambient.wav \
+  -filter_complex \
+    "[1:a]aformat=channel_layouts=stereo[amb]; \
+     [0:a]asplit=2[narr][sc]; \
+     [amb][sc]sidechaincompress=threshold=0.015:ratio=15:attack=30:release=800:makeup=1:knee=6[ducked]; \
+     [narr][ducked]amix=inputs=2:duration=first:normalize=0[out]" \
+  -map "[out]" -c:a aac -b:a 192k \
+  audio_ducked.aac
+```
+
+- `aformat=channel_layouts=stereo` on ambient — required before sidechain to avoid channel-layout errors in FFmpeg 7+
+- `threshold=0.02` / `0.015` — triggers when VO signal is present
+- `attack=30–50ms` — quick duck at speech start; faster = less music surge on pauses
+- `release=500–800ms` — smooth fade-back; shorter = pumping artifact risk; longer = more natural
+- `knee=2.82843` (standard) / `knee=6` (aggressive) — soft knee smooths the compression onset
+- Use aggressive variant for social ads where ambient must not compete with VO
 
 ### 4d. Attach audio to video (preserving video stream)
 ```bash
@@ -392,6 +424,46 @@ If mono RMS is >3 dB lower than stereo RMS, there is phase cancellation — chec
 
 ---
 
+### 4i. De-esser for Dutch ElevenLabs VO (removes sibilance before mixing)
+
+Dutch has heavy /s/ consonants. ElevenLabs VO is often sibilant in the 5–8 kHz range — audible as harshness on phone speakers. Run this ONCE after the dynaudnorm stage (§4h stage 1) and BEFORE loudnorm.
+
+**Basic de-ess (start here):**
+```bash
+ffmpeg -i voiceover_dynorm.mp3 \
+  -af "deesser=i=0.5:m=0.6:f=0.4" \
+  voiceover_deessed.mp3
+```
+
+Parameters:
+- `i=0.5` — intensity (0–1): how readily sibilance triggers reduction; start here, raise to 0.7 if still harsh
+- `m=0.6` — max reduction (0–1): amount of treble cut applied; 0.6 is audible but not lispy
+- `f=0.4` — frequency keep (0–1): lower = more high-freq removed; 0.4 good for Dutch /s/
+
+**If deesser alone is insufficient — chain with 7 kHz shelf cut:**
+```bash
+ffmpeg -i voiceover_dynorm.mp3 \
+  -af "deesser=i=0.5:m=0.6:f=0.4,equalizer=f=7000:width_type=o:width=2:g=-3" \
+  voiceover_deessed.mp3
+```
+
+**Caution:** Do NOT use `i=1.0` — creates a dull, lispy result. Always A/B test against the unprocessed VO before committing.
+
+**Full chain order for VO processing:** raw → dynaudnorm → deesser → dialoguenhance (optional, see below) → phone EQ (§4e) → loudnorm → mix
+
+**Optional: `dialoguenhance` for stereo VO clarity (FFmpeg 5.1+):**
+Lifts dialogue presence in stereo field. Use before loudnorm on stereo VO; skip for mono VO.
+```bash
+ffmpeg -i voiceover_deessed.mp3 \
+  -af "dialoguenhance=original=0.5:enhance=3:voice=5" \
+  voiceover_enhanced.mp3
+```
+- `original=0.5` — weight of original signal (0.0–1.0)
+- `enhance=3` — enhancement factor (1–3 is subtle; 5+ is aggressive)
+- `voice=5` — voice band sensitivity (1–3 is conservative)
+
+---
+
 ### 4h. Two-stage voiceover normalization (preferred over single loudnorm pass)
 
 **Why two stages?**  
@@ -463,7 +535,7 @@ Before delivery, confirm all items:
 - [ ] Master normalized to -14 to -16 LUFS integrated
 - [ ] True peak does not exceed -1 dBTP
 - [ ] No clipping anywhere (check with `ffmpeg -i output.mp4 -af astats -f null -`)
-- [ ] Freesound sounds are CC0 or CC-BY (not CC-BY-NC for commercial ads)
+- [ ] Freesound/Mixkit sounds are CC0 or CC-BY (not CC-BY-NC for commercial ads)
 - [ ] Attribution logged for any CC-BY sounds used
 - [ ] Audio plays correctly on phone speaker (test mono compatibility)
 
@@ -488,12 +560,12 @@ The audio QA must also pass shariah-compliance.md hard gate:
 
 | Platform | Target LUFS | True Peak | Notes |
 |----------|-------------|-----------|-------|
-| Instagram Reels | -14 LUFS | -1.5 dBTP | Platform normalizes louder content down |
-| TikTok | -14 LUFS | -1.5 dBTP | Same normalization behavior |
+| Instagram Reels | -14 to -16 LUFS | -1.5 dBTP | Meta xHE-AAC; exact target not published; -16 is safe floor |
+| TikTok | **-16 LUFS** | -1.0 dBTP | Official TikTok spec (NOT -14) |
 | YouTube Shorts | -14 LUFS | -1.0 dBTP | YouTube target |
 | WhatsApp / Telegram | -16 LUFS | -1.0 dBTP | Voice-first, slightly lower |
 
-**Rule:** Always export at -14 LUFS. Platforms normalize louder content DOWN (losing dynamics). Do not push louder to "cut through" — it triggers more limiting and sounds worse.
+**Rule:** Master to **-16 LUFS / -1 dBTP** for all social media deliverables — this satisfies TikTok's official target AND avoids Instagram downward normalization. Do NOT push louder to "cut through" — triggers limiting and sounds worse. YouTube can accept -14 LUFS if delivering there exclusively.
 
 ---
 
@@ -561,6 +633,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Audio tags ignored / flat delivery with tags | Stability ≥60 suppresses tag headroom | Lower stability to 50–55 when script uses `[tag]` markers (see §0) |
 | Tag emotion bleeds into CTA line | Tags persist until next tag | Explicitly add `[professional]` before CTA line to reset (see §0) |
 | Mobile ambient sounds buzzy/distorted | Sub-bass in ambient SFX hitting phone speaker | Highpass ambient at 100 Hz (see §4g) |
+| VO sounds harsh/hissy on phone (Dutch /s/) | ElevenLabs sibilance in 5–8 kHz range | Run `deesser=i=0.5:m=0.6:f=0.4` before loudnorm (see §4i) |
+| sidechaincompress errors in FFmpeg 7+ | Channel layout mismatch on ambient input | Add `aformat=channel_layouts=stereo` before sidechain (see §4c) |
+| SFX library requires sign-up | Pixabay/Freesound account friction slows workflow | Use Mixkit (mixkit.co) — no account, CC0 commercial, instant download (see §2 Tier 1a) |
 | Dutch phonemes sound off | Wrong model | Use `eleven_v3` (production) or `eleven_multilingual_v2` (fallback). Never monolingual v1. |
 | Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
 | VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
