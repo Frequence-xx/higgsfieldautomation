@@ -194,7 +194,7 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 ### 3a. REAL Video Enhancer (Preferred — GUI, scene-detection, multi-backend)
 
-**TNTwise REAL Video Enhancer v2.4.1** (stable, 2025-01-02) is the recommended tool. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
+**TNTwise REAL Video Enhancer v2.4.1** (stable, 2026-01-02) is the recommended tool. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
@@ -493,11 +493,77 @@ ffmpeg -vaapi_device /dev/dri/renderD128 \
 
 ---
 
+## 8. AI Video Artifact Correction (Conditional — Only When Visible Problems Present)
+
+Kling and Veo clips occasionally show two specific issues. Only apply these fixes when the artifact is visible — running them unconditionally degrades clean clips.
+
+### 8a. Temporal Brightness Flicker
+
+**Symptom:** Clip brightness pulses or flickers between frames — visible as a rapid "flash" or inconsistent exposure. Most common on dark interior shots or clips with moving shadows.
+
+**Cause:** Diffusion model inconsistency in per-frame brightness values.
+
+**Fix — FFmpeg `normalize` with temporal smoothing:**
+```bash
+# smoothing=15 = rolling average over 15 frames (0.5s at 30fps)
+# For severe flicker, increase to smoothing=30
+ffmpeg -i clip.mp4 \
+  -vf "normalize=blackpt=black:whitept=white:smoothing=15:strength=0.7" \
+  -c:v libx264 -crf 18 -preset slow \
+  -pix_fmt yuv420p -c:a copy \
+  clip_deflickered.mp4
+```
+
+**Parameter guide:**
+- `smoothing` — number of previous frames in rolling average. 15 (0.5s) for mild flicker, 30 (1s) for severe. Higher values = more lag in tracking true exposure changes.
+- `strength` — 0.0 to 1.0. Start at 0.7; reduce if the filter over-normalizes skin tones.
+- `independence=0.0` — linked mode (preserves color balance). Default is 1.0 (independent per-channel, causes color shifts). Add `:independence=0.0` for skin tones.
+
+**Full form for character close-ups (preserves skin tone):**
+```bash
+-vf "normalize=blackpt=black:whitept=white:smoothing=15:strength=0.7:independence=0.0"
+```
+
+### 8b. Blocking / Compression Artifacts (Light Denoise + Sharpen)
+
+**Symptom:** Visible macroblock edges or mosquito noise, typically on backgrounds or smooth gradient areas. Distinct from temporal flicker — it's spatial, not temporal.
+
+**Fix — hqdn3d denoise followed by unsharp:**
+```bash
+# Light: preserves detail, removes mosquito noise
+ffmpeg -i clip.mp4 \
+  -vf "hqdn3d=4:4:3:3,unsharp=5:5:0.8:5:5:0.4" \
+  -c:v libx264 -crf 18 -preset slow \
+  -pix_fmt yuv420p -c:a copy \
+  clip_cleaned.mp4
+
+# Moderate: more aggressive denoise (use only on backgrounds, not faces)
+ffmpeg -i clip.mp4 \
+  -vf "hqdn3d=8:6:6:6,unsharp=5:5:1.0:5:5:0.4" \
+  -c:v libx264 -crf 18 -preset slow \
+  -pix_fmt yuv420p -c:a copy \
+  clip_cleaned_moderate.mp4
+```
+
+**hqdn3d parameter order:** `luma_spatial:chroma_spatial:luma_temporal:chroma_temporal`
+- Light (4:4:3:3): safe for all shots including faces
+- Moderate (8:6:6:6): backgrounds and truck shots only — can soften faces
+
+**unsharp parameter order:** `luma_msize_x:luma_msize_y:luma_amount:chroma_msize_x:chroma_msize_y:chroma_amount`
+- `0.8` luma amount = gentle sharpening to recover edge detail lost to denoise
+- Do NOT increase above 1.5 — produces ringing halos on AI-generated faces
+
+**Warning:** Never apply both flicker fix (§8a) and denoise (§8b) in a single command to a clip that doesn't need both. Chain them only if needed: `"normalize=...,hqdn3d=...,unsharp=..."`
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
 
 - [ ] ffprobe colorspace check on each AI clip (see §1a) — tag BT.709 if metadata missing
+- [ ] Check for temporal brightness flicker (pulsing exposure) — if present, apply §8a normalize filter (smoothing=15, strength=0.7, independence=0.0 for faces)
+- [ ] Check for blocking/mosquito noise artifacts — if present, apply §8b hqdn3d=4:4:3:3 + unsharp (light mode for faces, moderate for backgrounds)
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
