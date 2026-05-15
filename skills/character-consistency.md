@@ -207,27 +207,41 @@ THRESHOLDS = {
 }
 ```
 
-**Why buffalo_l (not antelopev2):** LFW 99.83%, 326MB, auto-downloads. antelopev2 requires manual download and is slightly less accurate. Do not switch.
+**buffalo_l vs antelopev2 (pass 5 finding):** antelopev2 uses an R100 backbone (vs buffalo_l's R50) and outperforms buffalo_l on IJB-C per InsightFace's own model table. Upgrade path:
+```python
+# Upgrade: R100 backbone, better identity accuracy on harder cases
+app = FaceAnalysis(name='antelopev2')
+app.prepare(ctx_id=-1, det_size=(640, 640))
+# NOTE: antelopev2 produces lower raw cosine values than buffalo_l for the same identity.
+# Re-tune thresholds starting at 0.3 (retry) rather than 0.42-0.50.
+# Requires manual model download: pip install insightface then run prepare() once to auto-fetch.
+```
+**Current production model stays buffalo_l** (auto-downloads, validated thresholds). Upgrade to antelopev2 only after re-calibrating thresholds on approved character sheets.
 
-**AuraFace** (open-source, diverse demographic training) may outperform buffalo_l for olive/brown skin — benchmark candidate. GitHub: `minchul/cvlface`. Not yet production-validated on this pipeline.
+**AuraFace** (open-source, commercially licensed): ResNet100 + ArcFace, drop-in ONNX replacement for buffalo_l's recognition head. Key advantage: BSD license (buffalo_l ONNX models carry non-commercial restriction). No per-demographic benchmark published yet. Not production-validated. Watch `fal/AuraFace-v1` on HuggingFace for benchmark updates.
 
 ### FaceFusion Fallback (identity score < 0.50)
+
+FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `headless-run`. The old `python facefusion.py run --headless` syntax is broken in v3.
 
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion && python install.py
 
-python facefusion.py run \
+# v3.6.0+ syntax (headless-run, NOT run)
+python facefusion.py headless-run \
   --source-paths /path/to/approved_character_front.png \
   --target-path /path/to/failed_clip.mp4 \
   --output-path /path/to/fixed_clip.mp4 \
   --processors face_swapper face_enhancer \
+  --face-swapper-model inswapper_128_fp16 \
   --face-selector-mode reference \
   --reference-face-position 0 \
   --face-enhancer-model gfpgan_1.4 \
-  --face-enhancer-blend 80 \
-  --headless
+  --face-enhancer-blend 80
 ```
+
+**v3 model change:** `hyperswap_1a_256` is the new default face swapper. Use `inswapper_128_fp16` explicitly for highest quality (especially for non-white skin fidelity).
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
@@ -276,7 +290,9 @@ Nano Banana Pro text-only. Not reusable. Best for wide shots, back-of-head, silh
 - **Background:** Pure flat white or green screen — MANDATORY for Kling Element binding
 - **Lighting:** Soft, even, diffused. All 4 angles MUST be from the same lighting setup
 - **Expression:** Neutral across ALL reference images
-- **Ref count sweet spot:** 2–4 refs optimal; 12-15+ refs degrades consistency
+- **Ref count sweet spot:** 3–4 refs optimal; cap at 4 (Kling hard limit). More than 4 increases copy-paste artifact risk ("view-dependent copy-paste," per arXiv 2508.09476 Mixture of Facial Experts research).
+- **Angular diversity > expression diversity:** front + 3/4 + profile is the minimal effective multi-view set (confirmed by Mv²ID and MoFE research). Do NOT replace an angle ref with an expression variant — cover angles first.
+- **Array order does not matter for Kling elements binding.** No published evidence of order sensitivity. Focus on angle coverage.
 - **Do NOT feed generated frames back as references.** Always re-anchor from original approved photos
 - **Each clip in a video sequence MUST independently derive character identity** from original approved reference photos
 
