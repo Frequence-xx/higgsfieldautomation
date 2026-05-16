@@ -264,7 +264,7 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 
 | Complexity | Optimal Duration | Notes |
 |------------|-----------------|-------|
-| Simple (single subject) | Up to 10s | Full coherence maintained |
+| Simple (single subject) | Up to 15s | v3 supports 15s max; coherence holds for single-subject |
 | Medium (multiple elements) | 6-8s | Sweet spot |
 | Complex (multiple subjects) | 5s | Chain clips in post |
 
@@ -337,6 +337,7 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 - **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources)
 - **More refs ≠ better**: 1-4 focused images optimal. More than 4 confuses the model and weakens binding
 - **frontal_image_url is mandatory** — reference_image_urls alone (without frontal) will not bind correctly
+- **Pose matters**: simple neutral poses (standing, arms at sides) produce far less identity drift than complex poses or strong non-frontal angles. Use complex reference poses only as supplemental refs, not as the frontal anchor.
 
 **Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
 
@@ -401,7 +402,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). v3 motion control not yet confirmed on AIMLAPI — canary test before using.
+**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control released March 5, 2026 and is available on WaveSpeedAI, Replicate, and fal.ai — but **NOT yet confirmed on AIMLAPI**. Continue using v2.6 string on AIMLAPI; do a canary test before switching if it appears in the model list.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)

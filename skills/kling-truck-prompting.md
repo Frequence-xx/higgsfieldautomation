@@ -149,7 +149,7 @@ Use `camera_control.type` to choose camera movement. For truck shots prefer `sim
 - `pan` — horizontal scan/rotation (x-axis)
 - `tilt` — vertical angle change (y-axis)
 - `roll` — z-axis tilt (rarely useful)
-- `zoom` — zoom in (+) / out (−)
+- `zoom` — push-in/zoom in (−) / pull-back/zoom out (+)  ← negative = narrower FOV = zoom in
 
 **Gentle cinematic orbit:** `tilt: 2–3, pan: 2–3` — enough movement to feel alive, low enough to avoid physics artifacts.
 
