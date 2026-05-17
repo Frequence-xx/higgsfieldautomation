@@ -196,6 +196,54 @@ yt-dlp -x --audio-format mp3 --audio-quality 0 \
 | Furniture settling | `furniture drag wood floor` | 3–6s |
 | Family arrival warmth | `birds chirping morning quiet` | 30–60s loop |
 
+### Tier 1c: ElevenLabs SFX v2 (Generated — Use When Pixabay/Mixkit Come Up Empty)
+
+Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prompt. Use when Pixabay/Mixkit don't return a suitable match for a specific scene — this lets you specify exactly what the scene needs.
+
+**Halal advantage over library search:** you control the prompt, so you can explicitly exclude music descriptors → zero risk of hidden instruments in the ambient bed.
+
+**Key parameters:**
+
+| Parameter | Type | Range | Notes |
+|-----------|------|-------|-------|
+| `text` | str | — | Scene description; avoid music words |
+| `duration_seconds` | float | 0.5–30 | Set explicitly for ambient loops; leave None for short one-shots |
+| `loop` | bool | — | `True` = seamless loop output (no acrossfade post-processing needed) |
+| `prompt_influence` | float | 0–1 | Default 0.3; raise to 0.6+ if output drifts from description |
+| `model_id` | str | — | `"eleven_text_to_sound_v2"` |
+
+**Cost:** 200 credits (auto-duration) or 40 credits/second (custom). Uses the same ElevenLabs credit pool as TTS — not an additional subscription. Free plan: ~10,000 credits/month (~50 auto-gen or ~12 × 20s custom SFX free/month).
+
+**Prompt patterns for Snelverhuizen scenes:**
+
+| Scene | SFX v2 prompt |
+|-------|---------------|
+| Neighborhood establishing | `quiet Dutch residential street, birds chirping softly, distant light traffic, calm morning ambience, no music` |
+| Truck exterior | `diesel truck engine idling at low rpm, steady rumble, outdoor ambience, no music` |
+| Loading / boxes | `cardboard box being placed on wooden floor, single thud, no music` |
+| Front door | `wooden front door opening slowly, quiet house interior, no music` |
+| Tape being applied | `packing tape pulled from dispenser, sticky tear sound, no music` |
+
+**Python SDK example:**
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+audio = b"".join(client.text_to_sound_effects.convert(
+    text="quiet Dutch residential street, birds chirping, distant light traffic, no music",
+    model_id="eleven_text_to_sound_v2",
+    duration_seconds=20.0,  # 20-second ambient bed: 800 credits
+    loop=True,              # native seamless loop — skip acrossfade post-processing
+    prompt_influence=0.4,   # slightly higher adherence for descriptive prompts
+))
+
+with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
+    f.write(audio)
+```
+
+**When `loop=True` is used:** the output is already seamlessly looped — do NOT additionally run the `acrossfade` command from §4e. Use directly with `aloop=loop=-1:size=2e+09` in the mix commands.
+
 ### Tier 2: Freesound (API, CC0 Filter Only)
 
 Use when Pixabay returns nothing suitable. Requires free API key from `freesound.org/apiv2/apply`.
@@ -640,6 +688,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
 | VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
+| Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
+| Ambient SFX has click at loop point despite acrossfade | Pre-processing acrossfade not applied, or file too short | Use ElevenLabs SFX v2 with `loop=True` instead — output is natively seamless, no post-processing needed |
+| VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
 
 ---
 
@@ -712,6 +763,48 @@ if __name__ == "__main__":
 4. PASS does not guarantee halal compliance — always listen to confirm NO instruments, NO beat patterns
 
 **Limitations:** A cappella groups with hand-clap percussion (allowed by some scholars, not by Snelverhuizen policy) may score PASS. Always confirm by ear.
+
+---
+
+## 11. Dutch VO Transcription QA (Scribe v2)
+
+Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch.
+
+**When to run:** after every `eleven_v3` generation before mixing, to catch mispronounced proper nouns (SNELVERHUIZEN, 085 3331133) and confirm Dutch text normalisation applied correctly.
+
+**API call:**
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+with open("voiceover_raw.mp3", "rb") as f:
+    result = client.speech_to_text.convert(
+        file=f,
+        model_id="scribe_v2",
+        language_code="nld",           # Dutch
+        timestamps_granularity="word", # word-level start/end times
+    )
+
+# Check transcript against script
+print(result.text)
+
+# Word-level timestamps (for caption alignment)
+for word in result.words:
+    print(f"{word.text:20s}  {word.start:.3f}s → {word.end:.3f}s")
+```
+
+**Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
+
+**Cost:** ~1 credit/character of transcribed audio (Scribe v2 uses character-based billing at the same rate as TTS Multilingual v2). A 30-second VO (~200 spoken characters) costs ~200 credits.
+
+**QA checklist:**
+- [ ] Transcript contains "SNELVERHUIZEN" (not garbled)
+- [ ] Phone number "085 3331133" transcribed in Dutch digit form ("nul-acht-vijf...")
+- [ ] No extra/dropped words vs. approved script
+- [ ] Total duration within ±0.5 s of target video slot length
+
+**Caption reuse:** the word timestamps from Scribe v2 can be passed directly to `captions-and-titles.md` §2 pipeline (whisper → timecode → Remotion). No separate Whisper run needed.
 
 ---
 
