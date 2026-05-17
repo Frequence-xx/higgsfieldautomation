@@ -30,7 +30,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - Recommended model: `eleven_multilingual_v2` (most emotionally rich, proven stable for Dutch)
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
-   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.5`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility. Older versions silently produce wrong timestamps.
+   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.5`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display). Older versions silently produce wrong timestamps.
 
    **Dependency requirement (v3.8.5+):** `faster-whisper>=1.2.0` is required. Install both:
    ```bash
@@ -48,11 +48,43 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    # Output: voiceover.json → segments[].words → [{word, start, end, score}]
    ```
 
+   **⚠️ Dutch last-word timestamp bug (WhisperX issue #749 — open, unfixed):** For Dutch (`nl`), wav2vec2 alignment extends the `end` of the final word (and sometimes mid-segment words) into trailing silence — overestimating duration by 4–5 seconds. This is a known unfixed issue with the Dutch alignment model. **Always run this post-processing fix before converting to Remotion format:**
+
+   ```python
+   import json, subprocess
+
+   def _audio_duration(path):
+       r = subprocess.run(
+           ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path],
+           capture_output=True, text=True
+       )
+       for s in json.loads(r.stdout)["streams"]:
+           if s["codec_type"] == "audio":
+               return float(s["duration"])
+       return None
+
+   def fix_dutch_whisperx_timestamps(words, audio_path):
+       """Cap last-word end to audio duration; enforce monotonic ordering."""
+       duration = _audio_duration(audio_path)
+       fixed = [dict(w) for w in words]
+       if duration:
+           for w in fixed:
+               if "end" in w:
+                   w["end"] = min(w["end"], duration)
+       for i in range(len(fixed) - 1):
+           if "end" in fixed[i] and "start" in fixed[i + 1]:
+               fixed[i]["end"] = min(fixed[i]["end"], fixed[i + 1]["start"])
+       return fixed
+   ```
+
+   Call this on the flat word list BEFORE the Remotion converter below.
+
    Convert to Remotion Caption format (use startMs/endMs, not frame numbers):
    ```python
    import json
    result = json.load(open("voiceover.json"))
    words = [w for seg in result["segments"] for w in seg.get("words", [])]
+   words = fix_dutch_whisperx_timestamps(words, "voiceover.wav")  # Dutch bug fix
    captions = [
        {"text": w["word"], "startMs": int(w["start"] * 1000), "endMs": int(w["end"] * 1000),
         "timestampMs": int((w["start"] + w["end"]) / 2 * 1000), "confidence": w.get("score", 1)}
