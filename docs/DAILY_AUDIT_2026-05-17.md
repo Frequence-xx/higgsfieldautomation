@@ -1,6 +1,6 @@
 # Daily Audit — 2026-05-17
 
-**Basis:** git log since 2026-05-16 (Study cycles 36–38 — no new video productions)
+**Basis:** git log since 2026-05-16 (Study cycles 36–39 — no new video productions)
 **Previous scores (2026-05-16):** Operator 4.27/5.0 · Skills 94.38% · Creative 4.10/5.0
 **Reference scores (2026-04-12):** Operator 3.85/5.0 · Skills 91.5% · Creative 4.4/5.0
 **$0 spent — read-only audit**
@@ -16,10 +16,11 @@
 | `64e95dc` | SC36: generation-image.md — NB2 canary removed (confirmed AIMLAPI $0.067/1K); `thinking_level` guidance (minimal vs high); GPT Image 2 matrix entry + API template; Kontext `guidance_scale` split (2.5 character / 3.5-4.0 text); NB2 as primary iteration model in decision flow |
 | `b3cf711` | SC37: generation-video.md — duration max 15s (corrected from 10s for single-subject); pose drift note for frontal anchor; Motion Control v3 availability (NOT AIMLAPI yet); kling-truck-prompting.md — zoom direction doc bug fixed (description said "+" = zoom in; correct: "−" = zoom in / narrower FOV) |
 | `da8c39b` | SC38: captions-and-titles.md — WhisperX issue #749 fix (`fix_dutch_whisperx_timestamps()` post-processing, caps last-word end to audio duration, enforces monotonic ordering); PR #1347 (merged 2026-02-13 in v3.8.5) documented: SRT/ASS cue timestamps now word-level not VAD-boundary; Remotion 4.0.447 changelog (breaking change scoped to @remotion/web-renderer — does NOT affect caption pipeline) |
+| `47eb15e` | SC39: halal-audio.md — ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) added as Tier 1c SFX source (`loop=True` → seamless ambient, 40 credits/sec); Scribe v2 Dutch QA added §11 (model_id=scribe_v2, `language_code=nld`, word timestamps reusable for caption pipeline, ≤5% WER on Dutch); 3 Known Issues rows added. **CRITICAL: halal-audio.md now at 5353 words — exceeds 5000-word limit. Length ❌ triggered.** |
 
 No new video productions. Family lock: 3/6. **21 days** without a delivered video (last: V3-Tarik-v2-couple, 2026-04-26).
 
-**Notable this cycle:** SC36–38 include three bug/error corrections — NB2 cost confirmation (removes iteration uncertainty), zoom direction documentation (prevents directional error in manual camera config), WhisperX Dutch timestamp extension (prevents 4-5s cue desync in captions). All caught pre-production.
+**Notable this cycle:** SC36–38 include three bug/error corrections — NB2 cost confirmation, zoom direction documentation, WhisperX Dutch timestamp extension. SC39 adds two SFX/QA capabilities to halal-audio.md but **pushes it to 5353 words, triggering the predicted Length ❌**. The predicted failure arrived exactly as projected (was at 93.2% of limit on 2026-05-16 audit).
 
 ---
 
@@ -182,7 +183,7 @@ No new production interactions this cycle. SC38 commit correctly notes "Telegram
 | captions-and-titles.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
 | production-checklist.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
 | character-consistency.md | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 8/8 | 0 |
-| halal-audio.md | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 7/8 | 0 |
+| halal-audio.md | ✅ | ✅ | ✅ | ⚠️ | ✅ | ❌ | ✅ | ✅ | 6/8 | **-1** |
 | brief-intake.md | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 7/8 | 0 |
 | cinematic-standards.md | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 7/8 | 0 |
 | higgsfield-generation.md | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | 7/8 | 0 |
@@ -199,6 +200,11 @@ No new production interactions this cycle. SC38 commit correctly notes "Telegram
 
 **generation-image.md** (SC36, **4015 words**, 8/8 unchanged):
 NB2 confirmed on AIMLAPI (canary removed). thinking_level parameter added with clear decision rule. GPT Image 2 entry with CANARY requirement. Kontext guidance_scale split for character vs text editing. Decision flow restructured with NB2 as primary iteration tier. Word count: 4015 (was ~3800 before SC36 additions — healthy). All 8 criteria maintained. No 8-criteria impact.
+
+**halal-audio.md** (SC39, **5353 words — ⚠️ EXCEEDED 5000-word limit, 6/8 -1**):
+SC39 added SFX v2 §2 Tier 1c (~200 words) and Scribe v2 §11 Dutch QA (~400 words) plus Known Issues rows (~95 words). Total addition: ~695 words. File jumps from 4658 to 5353 words — **107% of 5000-word limit**. Length criterion: ❌ (was ✅). Score drops from 7/8 to 6/8. This was predicted in the 2026-05-09, 2026-05-12, 2026-05-14, and 2026-05-16 audits. The RFC2119 gap (§4h "preferred over") remains open — 8th consecutive audit.
+
+SC39 value assessment: both additions are high-quality. SFX v2 `loop=True` for seamless ambient SFX eliminates an acrossfade post-processing step — genuine workflow value. Scribe v2 Dutch QA (≤5% WER, word timestamps reusable for caption pipeline) eliminates a redundant Whisper run if ElevenLabs TTS is used — genuine pipeline efficiency. The content is correct; the structural problem is file architecture, not content quality. Split is now mandatory.
 
 **generation-video.md** (SC37, **3145 words**, 8/8 unchanged):
 Duration max corrected to 15s. Pose drift note added to elements section. Motion Control v3 AIMLAPI availability documented. Minor wording cleanup. All 8 criteria maintained.
@@ -220,19 +226,19 @@ zoom direction description corrected (was "zoom in (+)" → now "zoom in (−) =
 | Explicit defaults | 18/20 | 18/20 | 0 |
 | RFC 2119 | 18/20 | 18/20 | 0 |
 | Approval gates | 18/20 | 18/20 | 0 |
-| Length (<5000 words) | 18/20 | 18/20 | 0 |
+| Length (<5000 words) | 18/20 | **17/20** | **-1** |
 | Negative triggers | 20/20 | 20/20 | 0 |
 | Consistency with CLAUDE.md | 20/20 | 20/20 | 0 |
-| **TOTAL** | **151/160 (94.38%)** | **151/160 (94.38%)** | **0** |
+| **TOTAL** | **151/160 (94.38%)** | **150/160 (93.75%)** | **-1 (-0.63%)** |
 
-**Score: 94.38%** — unchanged. **7th consecutive audit below 95% target.**
+**Score: 93.75%** — **DECLINING. 8th consecutive audit below 95% target.** First decline in 5 audits.
 
 **Word count watch:**
-- halal-audio.md: **4658 words (93.2% of 5000-word limit) — URGENT.** Unchanged from SC35. No SC36–38 additions — but one more heavy study cycle will exceed 5000 words. Split planning remains urgent.
+- halal-audio.md: **5353 words — ❌ EXCEEDS 5000-word limit (107%).** SC39 added ~695 words in one pass. Predicted failure has arrived. Split is now mandatory before next halal/audio SC. Split plan: §11 Scribe v2 (~400 words) → `scribe-v2-dutch-qa.md`; §9 Nasheed Detection (~400 words) → `nasheed-qa.md`. This would reduce halal-audio.md to ~4500 words and add two new 8/8 files → net gain of +15/16 vs current -1 situation.
 - credit-efficiency.md: 4188 words (83.8%) — healthy. Monitor.
-- generation-image.md: 4015 words (80.3%) — SC36 added ~215 words (NB2, GPT Image 2, thinking_level). Growing. Monitor.
-- model-prompting-guide.md: Length ❌ (legacy reference doc, no active updates). Not counted in 8-criteria table row beyond file-length failure.
-- higgsfield-generation.md: 3738 words — Length ❌. Archive = single fastest path to 95%.
+- generation-image.md: 4015 words (80.3%) — SC36 added ~215 words. Growing. Monitor.
+- model-prompting-guide.md: Length ❌ (legacy reference doc, not actively updated).
+- higgsfield-generation.md: 3738 words — Length ❌. Archive = single fastest path to +1 on Length criterion.
 
 ---
 
@@ -275,8 +281,8 @@ Now 3 confirmed models absent: Hailuo 02, Imagen 4 Fast, NB2. SC36 added NB2 to 
 **GAP-004: halal-audio.md RFC2119 (MEDIUM — 8th audit)**
 §4h uses "preferred over" not MUST. One-line fix unchanged for 8 audits.
 
-**GAP-004b: halal-audio.md approaching word limit (URGENT — 2nd audit)**
-4658/5000 words (93.2%). Unchanged from SC35 — SC36–38 did not touch this file. Still urgent. At current growth rate (~582 words per heavy SC), one heavy halal/audio cycle = Length ❌. Split recommended: §9 nasheed detection (~400 words) → `nasheed-qa.md`, §6 shariah cross-check (~200 words) → note in shariah-compliance.md.
+**GAP-004b: halal-audio.md EXCEEDED word limit (CRITICAL — triggered this cycle)**
+5353/5000 words (107%). SC39 added ~695 words. Length ❌ now active — reduced Skills score from 94.38% to 93.75%. Split required before any further halal/audio SC: §11 Scribe v2 (~400 words) → `elevenlabs-scribe-qa.md`; §9 Nasheed Detection (~400 words) → `nasheed-qa.md`. Reduces halal-audio.md to ~4500 words + adds 2 new 8/8 files → 153/160 = 95.6% (first time above 95%).
 
 **GAP-005: shariah-compliance.md defaults (MEDIUM — unchanged)**
 No dress-standard default for unspecified briefs.
@@ -441,7 +447,7 @@ Carried forward (all still open — updated numbering):
 | Audit | Score | Δ vs 2026-05-16 | Δ vs 2026-04-12 | Status |
 |-------|-------|-----------------|-----------------|--------|
 | Operator | 4.27/5.0 | 0.00 | +0.42 | ✅ Above 4.0 target |
-| Skills | 94.38% | 0.00% | +2.88% | ⚠️ Below 95% target (7th consecutive audit) |
+| Skills | **93.75%** | **-0.63%** | +2.25% | ❌ Below 95% target (8th consecutive audit) — **DECLINING** |
 | Creative | 4.10/5.0 | 0.00 | -0.30 | ✅ All tiers pass |
 
 ---
@@ -451,10 +457,14 @@ Carried forward (all still open — updated numbering):
 **ACTION 1 (CRITICAL — 10th audit, day 36): Start Hindsight daemon**
 36 days down. Memory 3.0/5 immovable. V5 must not start without Hindsight running. Treat as SC39 step 0: `pip install hindsight-ai`, then (1) `which hindsight` or `~/.local/bin/hindsight`; (2) add `hindsight start &` to SessionStart hook; (3) `hindsight-monitor.sh` shows RUNNING. Ten consecutive audits. The daily cost is a production session without semantic recall of 38 study cycles.
 
-**ACTION 2 (HIGH — two 10-minute fixes → 95%): Archive higgsfield.md + update CLAUDE.md routing matrix**
-Two changes:
-- Archive `skills/higgsfield-generation.md` (3738 words, `autoInvoke: false`) → `docs/deprecated/higgsfield-generation.md`. Replace with 10-line redirect stub → 152/160 = **95.0%**. 7th consecutive audit without action.
-- Update CLAUDE.md routing matrix: add 3 rows (NB2 $0.067 iteration tier, Hailuo 02 $0.28 B-roll, Imagen 4 Fast $0.02 draft). SC36 confirmed NB2 — a Planner without this row overspends $1.995 per V5 on iteration. Under 10 minutes total.
+**ACTION 2 (CRITICAL — halal-audio.md exceeded 5000 words + higgsfield.md): Split halal-audio.md immediately**
+Score declined -0.63% today due to SC39 pushing halal-audio.md to 5353 words (Length ❌).
+- Split §11 Scribe v2 Dutch QA (~400 words) → new `nasheed-scribe-qa.md` (or `elevenlabs-qa.md`)
+- Split §9 Nasheed Detection (~400 words) → new `nasheed-qa.md`
+- Reduction: halal-audio.md ~5353 → ~4500 words (Length ✅ restored) + 2 new files at 8/8 → net: 150/160 + 3 = 153/160 = **95.6%** — first time above 95% target
+- Archive `skills/higgsfield-generation.md` → `docs/deprecated/higgsfield-generation.md` + redirect stub = additional +1 → 154/160 = 96.25%
+- Update CLAUDE.md routing matrix: add 3 rows (NB2 $0.067, Hailuo 02 $0.28, Imagen 4 Fast $0.02). Under 10 minutes total.
+**This is the first audit where halal-audio.md has actively hurt the score (not just a warning).**
 
 **ACTION 3 (HIGH — V5 + caption fix): Wire Dutch timestamp fix into script, then produce V5**
 Before V5 production:
@@ -466,7 +476,7 @@ Before V5 production:
 
 ### New Minor Actions (not in Top 3)
 
-- **halal-audio.md split (GAP-004b, 2nd urgent audit):** Split §9 nasheed detection (~400 words) to `nasheed-qa.md` before next heavy SC. 4658/5000 words (93.2%) — one pass away from Length ❌ on the highest-traffic audio SOP.
+- **halal-audio.md split (GAP-004b — NOW CRITICAL, triggered):** Length ❌ active. 5353/5000 words. Split §11 Scribe v2 + §9 Nasheed Detection before next SC. This is no longer a "minor action" — it is blocking 95% target.
 - **halal-audio.md RFC2119 (GAP-004, 8th audit):** §4h "preferred over" → "MUST use" — one-line fix.
 - **GPT Image 2 canary:** One test call before V5 CTA card generation. Verify `size` parameter values accepted by AIMLAPI and confirm cost per image (token-based pricing, estimate $0.07–0.35/image).
 - **motion_strength canary:** One $1.09 Standard I2V truck shot with `motion_strength: 0.3`. If accepted → ✅. If error → remove from SOP.
@@ -477,7 +487,7 @@ Before V5 production:
 
 ### Pipeline Status
 
-**OPERATIONAL.** Three approved videos in testimonial family. Operator at 4.27 — highest since launch (+0.42 vs baseline). Skills at 94.38% — stalled one legacy-file archive away from 95% for 7 consecutive audits. Creative at 4.10 — stable, all tiers pass. SC36–38 delivered three precision corrections (NB2 iteration cost, zoom direction documentation, Dutch caption timestamp bug) before production exposure. Main constraints unchanged: Hindsight semantic recall missing (10th audit, CRITICAL, day 36), two legacy/length files blocking 95%, halal-audio.md split urgency, 21 days of production stagnation, and three routing matrix omissions (now including NB2) affecting planner cost decisions. SC38 Dutch timestamp fix is the most directly production-impacting change — it prevents a visible caption desync artifact in V5 Dutch VO, but it must be wired into a script before the fix is reliable.
+**OPERATIONAL.** Three approved videos in testimonial family. Operator at 4.27 — highest since launch (+0.42 vs baseline). Skills at **93.75% — first decline in 5 audits** — SC39 pushed halal-audio.md to 5353 words (Length ❌ triggered, as predicted for 2 audits). The path to >95%: split halal-audio.md (§11+§9 → 2 new files) + archive higgsfield.md → 95.6%. Creative at 4.10 — stable, all tiers pass. SC36–39 delivered three bug corrections and two SFX/QA additions; SFX v2 and Scribe v2 Dutch are genuinely useful capabilities, but SOP architecture didn't scale. Main constraints: Hindsight missing (10th audit, CRITICAL, day 36), halal-audio.md over-limit (Skills declining for first time), routing matrix missing 3 models, 21 days of production stagnation. SC38 Dutch timestamp fix must be embedded in script — not doc-only — before V5 caption run.
 
 ---
 
@@ -487,22 +497,21 @@ Before V5 production:
 Audit 2026-05-17 | $0 spent
 
 Scores vs 2026-05-16:
-• Operator:  4.27/5.0  (0.00)   ✅
-• Skills:   94.38%    (0.00%)   ⚠️ 7e audit — 1 edit van 95%
-• Creative:  4.10/5.0  (0.00)   ✅
+• Operator:  4.27/5.0  (0.00)     ✅
+• Skills:   93.75%    (-0.63%) ❌ DALEND — 8e audit
+• Creative:  4.10/5.0  (0.00)     ✅
 
-SC36: NB2 bevestigd AIMLAPI $0.067 + thinking_level ✅
-SC36: GPT Image 2 voor CTA-kaarten (99% NL tekst) ✅
-SC37: Kling duur 10s→15s fix + zoom documentatiefout ✅
-SC38: WhisperX NL bug fix (4-5s timestamp overflow) ✅
-SC38: PR #1347 gedocumenteerd (cue timing fix in 3.8.5) ✅
+SC36: NB2 $0.067 bevestigd + thinking_level + GPT Img 2 ✅
+SC37: Kling duur 15s fix + zoom doc bug + pose drift ✅
+SC38: WhisperX NL #749 fix + PR #1347 + Remotion 4.0.447 ✅
+SC39: SFX v2 + Scribe v2 Dutch — maar halal-audio.md ❌
+      5353 words > 5000 limit — Length ❌ GETRIGGERD
 Hindsight: STILL DOWN — 10e audit ❌ KRITIEK dag 36
-Routing matrix: 3 modellen absent (NB2 erbij SC36) ❌
 
 Top 3 acties:
 1. START HINDSIGHT — dag 36, Memory 3.0 onbewegelijk
-2. Archive higgsfield.md + routing matrix +3 rijen → 95%
+2. SPLIT halal-audio.md NU (§11+§9 → 2 bestanden) → 95.6%
 3. Wire WhisperX fix in script + produceer V5 — 21 dagen idle
 
-Pipeline: OPERATIONEEL | Family lock 3/6 | 38 SC's
+Pipeline: OPERATIONEEL | Family lock 3/6 | 39 SC's
 ```
