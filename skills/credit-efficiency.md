@@ -37,7 +37,7 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 
 For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference still first via NBP to confirm composition, then proceed to T2V generation with the same prompt intent.
 
-## Model Routing — Updated 2026-05-15
+## Model Routing — Updated 2026-05-17
 
 | Shot Type | Image Model | Video Model | Cost/clip | Notes |
 |-----------|------------|------------|-----------|-------|
@@ -46,7 +46,8 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 | Wide establishing (no character, draft) | NBP (T2I, $0.13) | Veo 3.1 Lite T2V 720p ($0.26/4s) | **~$0.39** | Draft at 720p 4s — cheapest B-roll |
 | Wide establishing (no character, final) | NBP (T2I, $0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | CANARY REQUIRED — 1080p, no char, 9:16 confirmed |
 | B-roll / texture (no character) | NBP ($0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | No audio param needed — no surcharge risk |
-| Truck/product (no char, draft) | NBP Edit ($0.195) | Hailuo 02 I2V 6s ($0.28) | **~$0.48** | CANARY REQUIRED — 81% cheaper than Kling Pro |
+| Truck/product (no char, draft) | NBP Edit ($0.195) | Veo 3.1 Fast I2V (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-i2v-fast`, camelCase params |
+| Truck/product (ghost-driving lock) | NBP Edit ($0.195) | Veo 3.1 First+Last Fast (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-first-last-image-to-video-fast`, same first+last frame = stationary truck |
 | Truck/product hero | NBP Edit ($0.195) | Kling v3 Pro I2V ($1.46) | **~$1.66** | cfg_scale 0.7, ghost-driving locks |
 | Brand color still (#FC8434) | FLUX.2 Pro ($0.07) | — | $0.07 | HEX matching; T2I only |
 | Typography/text still | Flux Kontext Max ($0.10) | — | $0.10 | Best text rendering |
@@ -55,6 +56,7 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 **CRITICAL: Always use I2V (image-to-video) for character shots — I2V preserves hero frame composition.**
 **CRITICAL: Veo 3.1 Lite is T2V only (no character). Its `image_url` parameter behavior on AIMLAPI is UNVERIFIED — do NOT use for character or hero-frame animation until tested.**
 **CRITICAL: Always generate with audio OFF on ALL models. Audio adds 33–85% surcharge depending on model.**
+**CRITICAL: New Veo 3.1 Fast models use camelCase params like Veo 3.1 Lite (`generateAudio`, `aspectRatio`, `durationSeconds`) — NOT snake_case.**
 
 ## Draft → Final Tiering (Kling only)
 
@@ -99,13 +101,14 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Veo 3.1 Lite T2V 720p | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.33** ($0.065/sec, 5s equiv) | ~$0.26 (4s) |
 | Veo 3.1 Lite T2V 1080p | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.83** ($0.104/sec × 8s) | — |
 | Veo 3.1 I2V | `google/veo-3.1-i2v` | 720p/1080p | **~$1.00** ($0.20/sec × 5s) | ~$0.60 (3s) |
+| Veo 3.1 Fast I2V (canary) | `google/veo-3.1-i2v-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | ~$0.39 (3s) |
+| Veo 3.1 First+Last Fast (canary) | `google/veo-3.1-first-last-image-to-video-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | — |
 | Wan 2.6 I2V (fallback) | `alibaba/wan-2-6-i2v` | TBD | **~$0.65** ($0.13/sec, min 5s) | — |
-| Wan 2.7 I2V/T2V | `alibaba/wan-2-7` | TBD | **~$0.65** ($0.13/sec) | — |
+| Wan 2.7 I2V/T2V/R2V | `alibaba/wan-2-7-i2v` etc. | TBD | ~$0.40-0.65/5s | **COMING SOON on AIMLAPI — not live** |
 | Kling 2.6 Pro I2V (canary) | `klingai/video-v2-6-pro-image-to-video` | TBD | **~$0.46** ($0.091/sec) | ~$0.27 |
 | Hailuo 02 I2V (6s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.28** (flat price/clip) | No audio param — best value 6s |
 | Hailuo 02 I2V (10s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.28** (flat price/clip) | Same price as 6s — **$0.028/sec, cheapest non-char option** |
 | Hailuo 2.3 Fast (canary) | `minimax/hailuo-2.3-fast` | 768p | **~$0.08/sec** (AIMLAPI string confirmed) | Draft tier candidate |
-| Wan 2.7 I2V (canary) | `alibaba/wan-2-7-i2v` | 720p/1080p | **~$0.40/5s** ($0.08/sec at 720p confirmed) | R2V variant for identity lock |
 
 **Veo 3.1 Lite pricing update (2026-05-06):** Resolution-tiered pricing confirmed. 720p: $0.05/sec (Vertex) → ~$0.065/sec on AIMLAPI (estimated, ~1.3× markup). 1080p: $0.08/sec (Vertex) → ~$0.104/sec on AIMLAPI (production-verified ✓). **Use 720p for B-roll drafts — saves ~37% vs 1080p.** Duration valid values: **4, 6, or 8 seconds ONLY** — 5 is invalid. 1080p requires duration=8.
 
@@ -117,7 +120,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 **Wan 2.6 note (web research 2026-04-26, medium confidence):** $0.13/sec confirmed from AIMLAPI pricing page snippet. Minimum clip is 5 seconds — no 3s option. Slightly more expensive than Veo 3.1 Lite 720p but provides I2V capability (Veo Lite is T2V only). Use as fallback when Veo is unavailable.
 
-**Wan 2.7 (NEW — 2026-05-06):** Available on AIMLAPI (has dedicated model page). Priced at $0.13/sec — same cost as Wan 2.6 but with improved instruction following and motion quality. Model string unverified on AIMLAPI — canary required. Blog post: https://aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model
+**Wan 2.7 (COMING SOON on AIMLAPI — 2026-05-17 update):** Wan 2.7 T2V, I2V, and R2V are confirmed "Coming Soon" in AIMLAPI docs — not yet live. Do NOT attempt API calls. When released, expected pricing ~$0.13/sec I2V. R2V (Reference-to-Video) accepts up to 5 mixed refs (images, clips, audio). First+last frame I2V also planned. Blog: https://aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model
 
 **Kling 2.6 Pro I2V (CANARY REQUIRED):** At $0.091/sec it is 58% cheaper than Kling v3 Standard and 69% cheaper than Kling v3 Pro. Older model generation — quality vs. v3 unverified for character identity retention. Do NOT use on character shots without canary validation. May be appropriate for truck-only shots where identity drift is not a concern.
 
@@ -327,11 +330,44 @@ $0.20/sec = $1.00/5s. 32% cheaper than Kling v3 Pro. I2V (image-to-video). No Su
 
 **DO NOT use for character face close-ups** — no Subject Binding = identity drift risk.
 
-### Wan 2.7 (`alibaba/wan-2-7`) — NEW 2026-05-06
+### Veo 3.1 Fast I2V (`google/veo-3.1-i2v-fast`) — NEW 2026-05-17
 
-Same pricing as Wan 2.6 ($0.13/sec) but improved instruction following and motion quality. Available on AIMLAPI. Model string unverified — check AIMLAPI model page for exact string. Potential drop-in replacement for Wan 2.6 fallback with better output quality at same cost.
+**~$0.13/sec estimated** (Vertex AI price $0.10/sec + ~1.3× AIMLAPI markup) = ~$0.65/5s. 55% cheaper than Kling v3 Pro ($1.46). Same camelCase parameter names as Veo 3.1 Lite: `aspectRatio`, `durationSeconds`, `generateAudio: false`, `enhancePrompt: false`. Has `image_url` for I2V. No Subject Binding, no face-consistency.
 
-**Canary test:** One B-roll generation with scenery prompt, verify model string, cost, and resolution.
+**Use case:** Truck/product shots and B-roll with an anchor image — cheaper than Veo 3.1 Standard I2V at same estimated $0.65/5s but with 2× speed. Replacing Kling v3 Standard 3s drafts (also $0.65) with a 5s clip at potentially equal cost.
+
+**Canary test:**
+1. Submit one 5s I2V call to `google/veo-3.1-i2v-fast` with truck hero frame, `generateAudio: false`, `aspectRatio: "9:16"`
+2. Record actual cost from AIMLAPI dashboard (verify ~$0.13/sec estimate)
+3. Run brand binary checklist: box sealed, logo orange, no ghost driving
+4. If passes → use as truck-only draft alternative to Kling Standard (same cost, full 5s, higher res)
+
+**DO NOT use for character face close-ups.** Verify pricing before routing production shots.
+
+### Veo 3.1 First+Last Frame Fast (`google/veo-3.1-first-last-image-to-video-fast`) — NEW 2026-05-17
+
+**~$0.13/sec estimated** (Vertex AI $0.10/sec + ~1.3× markup) = ~$0.65/5s. Parameters: `image_url` (first frame), `last_image_url` (last frame), `prompt`. Both standard and Fast variants exist; Fast is the cost-efficient choice.
+
+**Key use case — ghost-driving elimination for truck shots:** Set `image_url` = parked truck hero frame AND `last_image_url` = same image. Model must interpolate between two identical frames → truck stays stationary. Add ambient motion in prompt only ("autumn leaves drift past, sunlight shifts across the hood"). This achieves zero truck movement at ~$0.13/sec without needing Kling's `camera_fixed` + anti-ghost-driving prompt locks.
+
+**Expected savings:** If truck final shot moves from Kling Pro ($1.46/5s) to Veo 3.1 First+Last Fast (~$0.65/5s) = saves $0.81/final truck shot. Over a 3-clip truck sequence: saves ~$2.43.
+
+**Canary test:**
+1. Submit 5s call: `image_url` = truck hero, `last_image_url` = same truck hero, prompt = minimal ambient motion only, `generateAudio: false`, `aspectRatio: "9:16"`
+2. Verify truck is stationary, box sealed, no ghost driving
+3. If passes → route truck final shots here instead of Kling Pro
+
+**CAUTION:** No Subject Binding — do NOT use when character face must appear.
+
+### Veo 3.1 Reference-to-Video (`google/veo-3.1-reference-to-video`) — NEW 2026-05-17
+
+Standard (not Fast) model. Estimated **~$0.40/sec = $3.20/8s run** (WaveSpeedAI confirmed, medium confidence). Parameter: `image_urls` (array, up to 3 reference images). Accepts character reference images to guide identity — Google calls this "Ingredients to Video." No explicit Subject Binding strength parameter.
+
+**Use case assessment:** Too expensive at ~$3.20/8s for draft iterations. May be viable as a final-pass character shot model IF identity lock matches Kling Subject Binding quality — saves zero vs Kling Pro if pricing is correct. SKIP until pricing drops or Kling identity retention degrades. Note: Veo 3.1 FAST does NOT have the multi-reference capability — only standard model.
+
+### Wan 2.7 (`alibaba/wan-2-7`) — COMING SOON ON AIMLAPI (updated 2026-05-17)
+
+AIMLAPI docs confirm all Wan 2.7 variants are "Coming Soon" — not live. Do NOT attempt. See full section below.
 
 ### Wan 2.6 I2V (`alibaba/wan-2-6-i2v`)
 
@@ -342,23 +378,18 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 2. Record actual cost and resolution from AIMLAPI response
 3. If cost ≤ $0.75/5s and 9:16 confirmed → document as verified
 
-### Wan 2.7 — T2V / I2V / R2V (CANARY REQUIRED)
+### Wan 2.7 — T2V / I2V / R2V (NOT YET ON AIMLAPI — 2026-05-17)
 
-Three video variants confirmed on AIMLAPI blog (model strings medium confidence — derived from naming convention, docs blocked):
+AIMLAPI docs confirm all three Wan 2.7 variants are "Coming Soon" — not live. Do NOT attempt API calls.
+
+Expected model strings when released:
 - T2V: `alibaba/wan-2-7-t2v`
 - I2V: `alibaba/wan-2-7-i2v`
 - R2V: `alibaba/wan-2-7-r2v`
 
-**R2V (Reference-to-Video) capability:** Accepts up to 5 mixed references (images, video clips, audio files) and extracts identity embeddings simultaneously. Can lock character face geometry + camera motion style + voice sync in one call. If identity retention matches Subject Binding, this could replace Kling for character draft passes.
+**Planned capabilities when live:** R2V accepts up to 5 mixed references (images, clips, audio). I2V supports first+last frame control. Expected price: ~$0.08/sec at 720p = $0.40/5s — 73% cheaper than Kling Pro. R2V could replace Kling Standard for character draft passes if identity lock matches Subject Binding.
 
-**I2V first+last frame control:** Wan 2.7 I2V lets you specify both the first AND last frame — model infers the motion between them, keeping subject identity stable. Could reduce ghost-driving by anchoring the end state.
-
-Price: **$0.08/sec at 720p confirmed** (Wan 2.6 is $0.07/sec at 720p; Wan 2.7 carries a modest premium for improved instruction following). 5s = $0.40 vs Kling Pro $1.46 — **73% cheaper** for character drafts if quality matches.
-
-**Canary test:**
-1. Submit one 5s I2V call to `alibaba/wan-2-7-i2v` with character hero frame — verify 9:16, actual cost, identity retention
-2. If I2V passes: test R2V with 3 reference images of the same character — compare identity lock vs Subject Binding
-3. If R2V passes → evaluate as Kling Standard replacement for character draft passes (saves ~$0.44/draft pass)
+**Action:** Monitor AIMLAPI docs. When status changes from "Coming Soon," run canary: one 5s I2V with character hero frame, verify 9:16, cost, identity retention.
 
 **Wan 2.6 pricing resolved (2026-05-15):** $0.07/sec is the **720p rate**; $0.13/sec is the **1080p rate**. Both figures were correct — they reflect resolution tiers, not conflicting data. AIMLAPI's listed $0.13 is for 1080p. Use 720p ($0.07/sec, $0.35/5s) for all B-roll and fallback use cases.
 
@@ -374,18 +405,19 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 3. If all pass → route truck-only shots to Kling 2.6 Pro during draft phase
 4. Savings: $0.63/truck draft (vs $1.09 Kling v3 Standard)
 
-### LTXV 2 Fast (`ltxv-2-fast`) — NEW 2026-05-15
+### LTXV 2 Fast (`ltxv-2-fast`) — STATUS UNCERTAIN 2026-05-17
 
-On AIMLAPI: `ltxv-2-fast-image-to-video` (I2V variant confirmed on model page). T2V variant likely `ltxv-2-fast`. Lightricks open-source model, 30fps, generates faster than real-time.
+AIMLAPI search results indicate LTXV variants may be "Coming Soon" (unverified — docs blocked). The `ltxv-2-fast-image-to-video` model page exists on AIMLAPI but availability is unclear. Lightricks open-source model, 30fps, faster than real-time generation.
 
-Pricing: $0.04–0.10/sec depending on resolution and variant (Low on AIMLAPI-specific pricing — verify canary). At $0.05/sec: 5s = $0.25 — **cheaper than Veo 3.1 Lite at 720p**. Potentially the cheapest non-character B-roll option if quality holds.
+Pricing (fal.ai confirmed): **$0.04/sec at 1080p** = $0.20/5s — potentially cheapest non-character B-roll if available on AIMLAPI. AIMLAPI pricing may differ.
 
-**Use case:** Abstract B-roll, environmental motion, scenery, transitions — anything without character faces. NOT suited for character close-ups (faces degrade). I2V capability gives it an edge over Veo 3.1 Lite T2V for scene-locked composition.
+**Use case:** Abstract B-roll, environmental motion, scenery, transitions — nothing with character faces. I2V capability (if available) gives it an edge over Veo 3.1 Lite T2V for scene-locked composition.
 
-**Canary test:**
-1. Submit one 5s I2V scenery call, verify model string, cost, and 9:16 output
-2. Compare quality vs Veo 3.1 Lite 720p for a standard establishing shot
-3. If passes → route non-character B-roll to LTXV 2 Fast (may be cheapest B-roll option)
+**Canary test (verify availability first):**
+1. Check AIMLAPI model page for `ltxv-2-fast-image-to-video` status before submitting
+2. Submit one 5s I2V scenery call, verify model string, actual cost, and 9:16 output
+3. Compare quality vs Veo 3.1 Lite 720p ($0.05/sec) for a standard establishing shot
+4. If passes at ≤$0.05/sec → cheapest non-character B-roll option in pipeline
 
 ---
 
