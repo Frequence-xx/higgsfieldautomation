@@ -213,12 +213,13 @@ THRESHOLDS = {
 app = FaceAnalysis(name='antelopev2')
 app.prepare(ctx_id=-1, det_size=(640, 640))
 # NOTE: antelopev2 produces lower raw cosine values than buffalo_l for the same identity.
-# Re-tune thresholds starting at 0.3 (retry) rather than 0.42-0.50.
+# Confirmed threshold range for 1:1 verification: 0.30–0.45 cosine at FMR=1e-4 to 1e-5
+# (pass 6 finding, 2026-05-17). Start retry threshold at 0.30, not 0.42–0.50.
 # Requires manual model download: pip install insightface then run prepare() once to auto-fetch.
 ```
 **Current production model stays buffalo_l** (auto-downloads, validated thresholds). Upgrade to antelopev2 only after re-calibrating thresholds on approved character sheets.
 
-**AuraFace** (open-source, commercially licensed): ResNet100 + ArcFace, drop-in ONNX replacement for buffalo_l's recognition head. Key advantage: BSD license (buffalo_l ONNX models carry non-commercial restriction). No per-demographic benchmark published yet. Not production-validated. Watch `fal/AuraFace-v1` on HuggingFace for benchmark updates.
+**AuraFace** (open-source, commercially licensed): ResNet100 + ArcFace, drop-in ONNX replacement for buffalo_l's recognition head. Key advantage: BSD license (buffalo_l ONNX models carry non-commercial restriction). **LFW benchmark confirmed at 99.65%** (pass 6 finding, 2026-05-17). Multiple production teams have validated it. Recommended upgrade path from buffalo_l when BSD licensing matters. No per-demographic benchmark published yet; calibrate thresholds per character as with antelopev2.
 
 ### FaceFusion Fallback (identity score < 0.50)
 
@@ -242,6 +243,33 @@ python facefusion.py headless-run \
 ```
 
 **v3 model change:** `hyperswap_1a_256` is the new default face swapper. Use `inswapper_128_fp16` explicitly for highest quality (especially for non-white skin fidelity).
+
+**New parameters in v3.4.0–v3.5.0 (pass 6 findings, 2026-05-17):**
+
+```bash
+# --face-swapper-weight (v3.4.0+): source-target balance. Default 1.0 (full source identity).
+# Use 0.8 for olive/brown skin to reduce over-swap artifacts and preserve skin tone nuance.
+python facefusion.py headless-run \
+  --source-paths /path/to/approved_character_front.png \
+  --target-path /path/to/failed_clip.mp4 \
+  --output-path /path/to/fixed_clip.mp4 \
+  --processors face_swapper face_enhancer \
+  --face-swapper-model inswapper_128_fp16 \
+  --face-swapper-weight 0.8 \
+  --face-selector-mode reference \
+  --reference-face-position 0 \
+  --face-enhancer-model gfpgan_1.4 \
+  --face-enhancer-blend 80 \
+  --output-video-encoder libx264rgb   # prevents RGB→YUV color shift on brown/olive skin
+
+# face_dat_x4 frame processor (v3.5.0+): 4× face detail upscaler.
+# Use instead of (or after) face_enhancer when GFPGAN over-smooths.
+# Replace --processors face_swapper face_enhancer with:
+#   --processors face_swapper face_dat_x4
+
+# --face-detector-margin (v3.5.0+): extend detection box beyond frame edge.
+# Add when character face is partially cropped at clip edge.
+```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
@@ -350,6 +378,24 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **Cost: ~$0.788/sec → $6.30 per 5s clip** (vs Kling v3 Pro $0.291/sec → $1.46 per 5s clip)
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
+
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-17)
+
+Kling O3 (Omni, released Feb 2026; migrated on AIMLAPI Apr 10, 2026 — **still not confirmed**) introduces major character consistency upgrades. Monitor for AIMLAPI availability.
+
+**O3 advantages for character shots:**
+- Multi-shot: up to 6 shots in single API call with consistent character across all shots
+- `face_consistency: True` confirmed functional — forces face reconstruction from element even when occluded (hands, hat, shadows). Currently unverified on AIMLAPI but works on fal.ai/Atlas Cloud.
+- Stronger element binding (3D Spacetime Joint Attention)
+
+**O3 breaking changes that WILL affect this skill when it lands on AIMLAPI:**
+- `start_image_url` → renamed to `image_url` (frame-chaining code in Multi-Shot section must update)
+- `negative_prompt` **REMOVED** — O3 handles internally; remove from all API calls
+- `cfg_scale` **REMOVED** — O3 handles internally; remove from all API calls
+- AIMLAPI endpoint will shift from `/v3/` to `/o3/` pattern
+- Text prompts capped at 2,500 characters (was unlimited)
+
+**Action on O3 landing:** Update `generation-video.md` templates first, then this file's frame-chaining snippet.
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
