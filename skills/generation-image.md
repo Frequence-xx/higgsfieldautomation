@@ -40,14 +40,19 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | Nano Banana 2 Edit | `google/nano-banana-2` | Draft iterations with refs; Pro-quality at Flash speed — use before NBP for prompt iteration | 14† | ~$0.07 | 768x1344 |
 | Nano Banana Pro | `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | 0 | ~$0.13 | 768x1344 |
 | Nano Banana Pro Edit | `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) — final quality | 14 | ~$0.20 | 768x1344 |
-| Flux Kontext Max | `flux/kontext-max/image-to-image` | Character identity lock across scenes | 8 | ~$0.10 | 752x1392 |
+| Flux Kontext Max | `flux/kontext-max/image-to-image` | Character identity lock across scenes; text/typography edits | 8 | ~$0.10 | 752x1392 |
+| Flux Kontext Pro | `flux/kontext-pro/image-to-image` | Character identity chain-editing (4+ iterations) — better face stability, lower cost than Max | 8 | ~$0.05 | 752x1392 |
 | Flux Kontext Max T2I | `flux/kontext-max/text-to-image` | Brand color stills without input ref | 0 | ~$0.08 | 768x1344 |
-| FLUX.2 Pro Edit | `blackforestlabs/flux-2-pro-edit` | Multi-ref brand asset compositing, up to 8 refs | 8 | ~$0.07 | native |
+| FLUX.2 Pro Edit | `blackforestlabs/flux-2-pro-edit` | Multi-ref brand asset compositing, up to 3 refs on AIMLAPI | 3 | ~$0.07 | native |
 | GPT Image 2 | `gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K | 0‡ | ~$0.07-0.35§ | 1K–2K |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 
 †NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. Supports `thinking_level` parameter (see NB2 Prompting section below). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
+
+**NB2 resolution tiers (Google official rates):** `"resolution": "512"` ($0.045/img, ~4-6s) → `"1K"` ($0.067/img) → `"2K"` ($0.101/img) → `"4K"` ($0.151/img). Use `"512"` for layout/composition checks before committing to 1K — saves ~33% per draft pass. Note: 512px is specified as `"512"` (no K suffix), not `"0.5K"`. AIMLAPI may map this to their own pricing tier — run a canary if using 512 for the first time.
+
+**NB2 Image Search Grounding:** NB2 can pull real photos from Google Image Search before generating (e.g., Dutch residential streets, specific truck models). This uses a `google_search` tool with `search_types: ["image_search"]` in the native Gemini Interactions API format. **NOT available via AIMLAPI's OpenAI-compatible endpoint.** If you need real-world visual references, supply downloaded images as explicit refs instead.
 
 ‡GPT Image 2 is T2I only on AIMLAPI (no reference image input, same as Imagen 4). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. Do NOT use for character shots needing ref consistency.
 
@@ -58,15 +63,16 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 ### Decision Flow
 
 ```
-Shot has characters, need to iterate prompt? → NB2 Edit first ($0.07/iter), then NBP Edit for approved final ($0.20)
+Shot has characters, need to iterate prompt? → NB2 Edit first ($0.07 at 1K, or $0.045 at 512px draft), then NBP Edit for approved final ($0.20)
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
-Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 8 refs)
+Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 3 refs on AIMLAPI)
 Shot is pure scenery / B-roll? → Imagen 4 Fast ($0.02, cheapest) or Nano Banana Pro
 Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering) or Imagen 4 Ultra (2K)
 Shot needs brand-color still without input? → Flux Kontext Max T2I or Imagen 4
 Shot is the money shot / CTA hero? → Imagen 4 Ultra (2K, max adherence) or Flux Pro v1.1 Ultra
 Shot needs flawless Dutch text (CTA card)? → GPT Image 2 (99% text accuracy) — run canary first
+Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over Kontext Max ($0.10) — better face stability, lower cost
 ```
 
 ## API Call Templates
@@ -349,8 +355,9 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
 - `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Two regimes: (1) character/face editing → use 2.5 (more image-preserving, prevents face warp); (2) text/typography editing → use 3.5–4.0 (more prompt-literal for letter accuracy). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
 - `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
+- **`prompt_upsampling`**: When `true`, an LLM rewrites the prompt for richer output — but results are NOT reproducible across calls. For character editing and brand-critical shots, set `prompt_upsampling: false` to maintain reproducibility. For T2I scenery shots where variation is acceptable, leaving it true may improve output. Status on AIMLAPI's Kontext endpoint: UNVERIFIED — may be handled server-side. Use `false` explicitly if the parameter is exposed.
 
-### Max vs Pro — When to Use Which (2026-04-27)
+### Max vs Pro — When to Use Which (2026-05-18)
 
 | Capability | Kontext Max | Kontext Pro |
 |-----------|-------------|-------------|
@@ -359,7 +366,7 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 | Character identity across ≥4 chain edits | Pro more reliable | **Pro wins** — fewer subtle face drifts |
 | Complex multi-attribute edits | **Max wins** — handles priority better | Sometimes deprioritizes elements |
 
-**Pipeline routing:** Use Max for all text/typography shots (SNELVERHUIZEN.NL renders). For pure character edits requiring 4+ iterations from one ref, Kontext Pro may yield more stable face identity — but Max remains default on AIMLAPI per current model string.
+**Pipeline routing (2026-05-18):** Use **Max** for text/typography shots (SNELVERHUIZEN.NL renders), style transfers, and complex multi-attribute edits. Use **Pro** (`flux/kontext-pro/image-to-image`, $0.052 on AIMLAPI) for pure character chain-editing requiring 4+ sequential iterations — Pro delivers more stable face identity at half the cost. Both confirmed on AIMLAPI. For new characters: start with Pro to build identity chain, switch to Max only if you need text-on-image precision.
 
 ### Chain Edit Checkpoint Workflow (2026-04-27)
 
