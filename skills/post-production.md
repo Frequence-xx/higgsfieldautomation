@@ -506,7 +506,7 @@ wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin
 
 ---
 
-## 8. VMAF Quality Scoring (Optional QA)
+## 7. VMAF Quality Scoring (Optional QA)
 
 Objective quality scoring of the exported file vs. the assembled pre-export reference. Requires FFmpeg built with `--enable-libvmaf` (check: `ffmpeg -filters 2>/dev/null | grep vmaf`).
 
@@ -531,11 +531,11 @@ VMAF score interpretation:
 
 ---
 
-## 9. Hardware-Accelerated Export (Speed Optimization)
+## 8. Hardware-Accelerated Export (Speed Optimization)
 
 For faster export on long or repeated encodes. Output quality matches libx264 at equivalent settings.
 
-### 9a. NVIDIA NVENC (NVIDIA GPU)
+### 8a. NVIDIA NVENC (NVIDIA GPU)
 
 ```bash
 # Check availability
@@ -552,7 +552,7 @@ ffmpeg -i normalized.mp4 \
 
 Speed: ~3-5x faster than `libx264 -preset slow`.
 
-### 9b. VAAPI (Intel/AMD GPU, Linux)
+### 8b. VAAPI (Intel/AMD GPU, Linux)
 
 ```bash
 # Check device
@@ -572,11 +572,11 @@ ffmpeg -vaapi_device /dev/dri/renderD128 \
 
 ---
 
-## 10. AI Video Artifact Correction (Conditional — Only When Visible Problems Present)
+## 9. AI Video Artifact Correction (Conditional — Only When Visible Problems Present)
 
 Kling and Veo clips occasionally show two specific issues. Only apply these fixes when the artifact is visible — running them unconditionally degrades clean clips.
 
-### 10a. Temporal Brightness Flicker
+### 9a. Temporal Brightness Flicker
 
 **Symptom:** Clip brightness pulses or flickers between frames — visible as a rapid "flash" or inconsistent exposure. Most common on dark interior shots or clips with moving shadows.
 
@@ -603,7 +603,7 @@ ffmpeg -i clip.mp4 \
 -vf "normalize=blackpt=black:whitept=white:smoothing=15:strength=0.7:independence=0.0"
 ```
 
-### 10b. Blocking / Compression Artifacts (Light Denoise + Sharpen)
+### 9b. Blocking / Compression Artifacts (Light Denoise + Sharpen)
 
 **Symptom:** Visible macroblock edges or mosquito noise, typically on backgrounds or smooth gradient areas. Distinct from temporal flicker — it's spatial, not temporal.
 
@@ -632,7 +632,7 @@ ffmpeg -i clip.mp4 \
 - `0.8` luma amount = gentle sharpening to recover edge detail lost to denoise
 - Do NOT increase above 1.5 — produces ringing halos on AI-generated faces
 
-**Warning:** Never apply both flicker fix (§10a) and denoise (§10b) in a single command to a clip that doesn't need both. Chain them only if needed: `"normalize=...,hqdn3d=...,unsharp=..."`
+**Warning:** Never apply both flicker fix (§9a) and denoise (§9b) in a single command to a clip that doesn't need both. Chain them only if needed: `"normalize=...,hqdn3d=...,unsharp=..."`
 
 ---
 
@@ -641,8 +641,8 @@ ffmpeg -i clip.mp4 \
 Before marking video as delivered:
 
 - [ ] ffprobe colorspace check on each AI clip (see §1a) — tag BT.709 if metadata missing
-- [ ] Check for temporal brightness flicker (pulsing exposure) — if present, apply §10a normalize filter (smoothing=15, strength=0.7, independence=0.0 for faces)
-- [ ] Check for blocking/mosquito noise artifacts — if present, apply §10b hqdn3d=4:4:3:3 + unsharp (light mode for faces, moderate for backgrounds)
+- [ ] Check for temporal brightness flicker (pulsing exposure) — if present, apply §9a normalize filter (smoothing=15, strength=0.7, independence=0.0 for faces)
+- [ ] Check for blocking/mosquito noise artifacts — if present, apply §9b hqdn3d=4:4:3:3 + unsharp (light mode for faces, moderate for backgrounds)
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
@@ -654,6 +654,6 @@ Before marking video as delivered:
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
 - [ ] Export: H.264, -pix_fmt yuv420p, -movflags +faststart, AAC 48kHz 256kbps
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
-- [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §8
+- [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
