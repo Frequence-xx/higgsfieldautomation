@@ -23,11 +23,11 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
 1. **Extract word-level timestamps** — three options in priority order:
 
-   **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE returns word-level timestamps:
-   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports Dutch natively (150+ languages, introduced 2025-04).
-   - ❌ **WRONG: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — only CHARACTER-level timestamps (root cause of V2 caption sync issues 2026-04-09/10)
+   **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE is fully verified for word-level timestamps:
+   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports Dutch natively (150+ languages, introduced 2025-04). Works with both `eleven_multilingual_v2` and `eleven_v3`.
+   - ⚠️ **CONDITIONAL: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — returns only CHARACTER-level timestamps with `eleven_multilingual_v2` (root cause of V2 caption sync issues 2026-04-09/10). With `eleven_v3` (launched Feb 2026), this endpoint appears to return per-character AND per-word timestamps — but this is **unverified in production**. Do NOT rely on it for word-by-word highlighting until tested; fall back to `/v1/forced-alignment`.
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
-   - Recommended model: `eleven_multilingual_v2` (most emotionally rich, proven stable for Dutch)
+   - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.5`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display). Older versions silently produce wrong timestamps.
@@ -122,6 +122,23 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **`additionalArgs` escape hatch:** Pass custom whisper.cpp CLI flags via `additionalArgs: ['--no-prints', '--print-special']` (string[] or key-value pair arrays). Only needed for non-standard whisper.cpp builds.
 
    Choose Option C when: no Python env available, CPU-only server (avoids loading second neural network), or pure TypeScript pipeline.
+
+   **Option D: @remotion/whisper-web (browser/WASM, free, NOT for Dutch production)**
+   Browser-side transcription via WebAssembly. No Node.js or Python required. Uses whisper.cpp compiled to WASM.
+
+   **⚠️ HARD LIMIT — do NOT use for Snel Verhuizen Dutch voiceovers:** Supported models are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en` only. No `large-v3-turbo` in WASM. Small models produce significantly worse Dutch accuracy than large-v3-turbo. Word alignment will drift and caption sync will be poor.
+
+   ```typescript
+   import { transcribe, toCaptions, canUseWhisperWeb } from '@remotion/whisper-web';
+   // Requires: cross-origin isolation headers (COOP + COEP) for SharedArrayBuffer
+   const check = await canUseWhisperWeb();
+   if (check.supported) {
+     const result = await transcribe({ audioData: float32Array, model: 'small', language: 'nl' });
+     const { captions } = toCaptions({ whisperWebOutput: result });
+   }
+   ```
+
+   Version: 4.0.448 (May 2026). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
 2. **Parse timestamps** into frame-number arrays:
    ```
