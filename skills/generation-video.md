@@ -117,7 +117,7 @@ for i in range(30):
 
 **Interaction with cfg_scale:** These parameters are NOT redundant. `cfg_scale` controls how strictly the model follows the TEXT prompt; `motion_strength` controls the QUANTITY of motion regardless of prompt adherence. High cfg_scale + high motion_strength = lots of motion rigidly following prompt. Low cfg_scale + low motion_strength = minimal, freely interpreted motion. For truck shots use `cfg_scale 0.7 + motion_strength 0.3` — maximum prompt control + minimum motion budget.
 
-**CAUTION — parameter name unverified:** `motion_strength` by this exact name is not confirmed in the official Kuaishou Kling v3 I2V API schema (as of May 2026 research). It appears in some third-party wrappers and UI sliders but may be a wrapper abstraction. If AIMLAPI returns a parameter error, omit `motion_strength` and rely on `cfg_scale` + prompt anchors for motion control. Verify against AIMLAPI's live schema before relying on it.
+**motion_strength status (May 2026):** Confirmed as a real parameter in Kling v3 Motion Control API docs (range 0.1–1.0 cited across Kling 3.0 guides). Still not explicitly listed in AIMLAPI's v3 I2V schema page. Treat as **CANARY on AIMLAPI**: include it on a test call before any prod use. If AIMLAPI returns a parameter error, omit it and rely on `cfg_scale` + prompt anchors instead.
 
 ## Camera Control
 
@@ -126,14 +126,14 @@ for i in range(30):
 | Type | Description | AIMLAPI Status |
 |------|-------------|---------------|
 | `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **CONFIRMED — use this** |
-| `"down_back"` | Camera descends and pulls backward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
-| `"forward_up"` | Camera moves forward and tilts upward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
-| `"right_turn_forward"` | Camera rotates right while moving forward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
-| `"left_turn_forward"` | Camera rotates left while moving forward | **UNVERIFIED on AIMLAPI** (Kling base API only) |
+| `"down_back"` | Camera descends and pulls backward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
+| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
+| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
+| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
 
-**Use `"simple"` for ALL AIMLAPI calls — it is the only confirmed type.** Named presets are documented in the base Kling API (klingai.com) but do NOT pass them to AIMLAPI until tested. AIMLAPI may silently ignore or error on unknown preset names.
+**Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are confirmed in the official Kling API and ComfyUI node docs, but AIMLAPI's wrapper may silently ignore or error on them. Do ONE canary test per preset before using in production.
 
-**Simple config:** all values range -10 to 10. Recommended for cinematic work: 2-5. **Only ONE config value should be non-zero at a time** — the official Kling API spec is explicit about this constraint. Setting multiple non-zero values simultaneously is undefined behavior.
+**Simple config:** all values range -10 to 10. Recommended for cinematic work: **1-2** (Kling 3 Pro guides confirm lower values = cleaner, more stable motion; values ≥3 risk instability). **Only ONE config value should be non-zero at a time** — the official Kling API spec is explicit about this constraint. Setting multiple non-zero values simultaneously is undefined behavior.
 
 ```python
 "camera_control": {
@@ -147,14 +147,14 @@ for i in range(30):
 
 | Shot Type | Config | Notes |
 |-----------|--------|-------|
-| Gentle push-in | `zoom: -2` or `-3` | Emotional close-ups, intimacy |
-| Slow pull-back reveal | `zoom: 2` or `3` | Reveals environment |
-| Product orbit | `tilt: 3` to `5` | Moderate rotation around subject |
-| Crane up | `vertical: 3, pan: -2` | Rise with slight downward angle |
-| Lateral tracking | `horizontal: 3` to `5` | Smooth side tracking |
+| Gentle push-in | `zoom: -1` or `-2` | Emotional close-ups, intimacy |
+| Slow pull-back reveal | `zoom: 1` or `2` | Reveals environment |
+| Product orbit | `tilt: 1` to `2` | Slow rotation around subject |
+| Crane up | `vertical: 1` to `2` | Smooth upward rise |
+| Lateral tracking | `horizontal: 1` to `2` | Smooth side tracking |
 | Static (prompt-driven) | All zeros | Use prompt for micro-motion only |
 
-**Rules:** Only 1 simultaneous movement (one non-zero value). Values 7-10 are dramatic but unstable. Camera control overrides prompt-based camera direction — use one or the other.
+**Rules:** Only 1 simultaneous movement (one non-zero value). Values ≥3 risk instability; 7-10 are rarely usable. Camera control overrides prompt-based camera direction — use one or the other.
 
 ## Negative Prompt Templates
 
@@ -339,6 +339,10 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 - **frontal_image_url is mandatory** — reference_image_urls alone (without frontal) will not bind correctly
 - **Pose matters**: simple neutral poses (standing, arms at sides) produce far less identity drift than complex poses or strong non-frontal angles. Use complex reference poses only as supplemental refs, not as the frontal anchor.
 
+**Prompt budget:** Each `@ElementN` reference consumes approximately 37 characters of the 2500-char prompt limit. With 3 elements, reserve ~111 chars for references before writing motion instructions.
+
+**Motion Control limit:** When using Motion Control V2V, max 1 element is supported (vs 3 for standard I2V). Element binding in Motion Control also requires `character_orientation: "video"`.
+
 **Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
 
 ## Multi-Shot Prompting (multi_prompt on AIMLAPI)
@@ -402,11 +406,13 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control released March 5, 2026 and is available on WaveSpeedAI, Replicate, and fal.ai — but **NOT yet confirmed on AIMLAPI**. Continue using v2.6 string on AIMLAPI; do a canary test before switching if it appears in the model list.
+**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI, Replicate, fal.ai, and Kie AI — but **NOT yet confirmed on AIMLAPI** as of May 2026. Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control` (following v2.6 naming pattern). Do a canary test before any production use.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
 - `"image"` — output character keeps orientation from source image (better for camera-led shots, max 10s)
+
+**Element limit:** Max 1 element per Motion Control call. Element binding requires `character_orientation: "video"` — image orientation mode does not support elements.
 
 **Framing rule:** Half-body image → pair with half-body motion reference. Full-body image → pair with full-body reference. Mismatch degrades motion transfer quality.
 
@@ -419,6 +425,10 @@ Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. *
 **O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
 **BREAKING CHANGE for O3:** When O3 is added, `cfg_scale` and `negative_prompt` are BOTH REMOVED — O3 handles them internally. Every gen script using these parameters will break. Update scripts before switching.
+
+## Kling 3.0 4K Variant — Future Watch (Not Yet on AIMLAPI)
+
+Kling 3.0 supports native 4K output (up to 4K resolution, up to 60fps). Available on fal.ai as `fal-ai/kling-video/v3/4k/image-to-video` — NOT on AIMLAPI as of May 2026. The 4K variant uses the same elements structure as Pro but with a `mode: "4k"` or equivalent parameter. Monitor AIMLAPI's model list; if added, use for final-delivery hero clips only (cost will be significantly higher than Pro).
 
 ## Error Handling
 
