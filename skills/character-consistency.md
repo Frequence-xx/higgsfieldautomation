@@ -26,6 +26,7 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 | Stage | Model | Param | Max Refs | Use For |
 |-------|-------|-------|----------|---------|
 | Hero frame with character lock | `flux/kontext-max/image-to-image` | `image_url` (array) | 4 | Lock character identity across scenes |
+| Hero frame — cheaper multi-ref | `klingai/image-o1` | `image_urls` (array) | **10** | $0.040/img — UNVERIFIED for production; test before adopting |
 | Compositing character into scene | `google/nano-banana-pro-edit` | `image_urls` (array) | **14** | Place character into any background |
 | Character-consistent video | `klingai/video-o1-reference-to-video` | `elements` + `image_list` | 4 elements, 7 total | Video with locked character identity |
 | High-quality character video | `google/veo-3.1-reference-to-video` | `image_urls` (array) | ~3+ | Premium character video |
@@ -124,6 +125,33 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "resolution": "1K",
 }, headers=headers, timeout=60)
 ```
+
+### Step 2b: Kling Image O1 — Cheaper Multi-Ref Hero Frame (UNVERIFIED — do not use in production until tested)
+
+Kling Image O1 (`klingai/image-o1`) is an MVL-based image model on AIMLAPI that supports up to 10 reference images at **$0.040/image** — 5× cheaper than NBP Edit ($0.195) and 2.5× cheaper than Flux Kontext Max ($0.10). It uses the same `/v1/images/generations` endpoint.
+
+**Before adopting:** run one draft hero frame, score with InsightFace buffalo_l, compare score vs NBP Edit baseline on the same refs. Only switch routing matrix entry after owner-reviewed output passes brand binary checklist.
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "klingai/image-o1",
+    "prompt": "The man with short dark brown hair and medium olive skin, wearing a navy blue polo with company logo on left chest and dark grey cargo trousers, stands confidently on a Dutch suburban street next to a white moving truck, golden hour lighting, cinematic vertical composition, 35mm lens",
+    "image_urls": [
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+        "https://cdn.example.com/characters/crew_lead/profile.png"
+    ],
+    "aspect_ratio": "9:16",
+    "resolution": "1K",
+}, headers=headers, timeout=90)
+# Note: same noun-phrase prompt rule applies — no pronouns (see Step 4b below)
+```
+
+**Key parameter differences vs NBP Edit:**
+- `image_urls` (not `image_url` singular) — array, same as NBP Edit
+- `resolution`: `"1K"` or `"2K"` (not `"1024"` or numeric)
+- `aspect_ratio`: same string format as other AIMLAPI models (`"9:16"`)
+- **No `num_images` param** — generates 1 image per call
 
 ### Step 4b: Flux Kontext Max — Noun-Phrase Prompts (no pronouns)
 
@@ -269,6 +297,27 @@ python facefusion.py headless-run \
 
 # --face-detector-margin (v3.5.0+): extend detection box beyond frame edge.
 # Add when character face is partially cropped at clip edge.
+
+# expression_restorer processor (v3.6.0+, pass 7 finding, 2026-05-19):
+# After face_swapper, faces can look stiff/frozen. expression_restorer (Live Portrait)
+# re-injects natural expression motion. Add AFTER face_swapper and face_enhancer.
+# --expression-restorer-factor 80: default. Range 0-100. Lower (60) for dark/olive skin
+# to avoid over-driving expression artifacts. --expression-restorer-areas: all/upper-face/lower-face.
+python facefusion.py headless-run \
+  --source-paths /path/to/approved_character_front.png \
+  --target-path /path/to/failed_clip.mp4 \
+  --output-path /path/to/fixed_clip.mp4 \
+  --processors face_swapper face_enhancer expression_restorer \
+  --face-swapper-model inswapper_128_fp16 \
+  --face-swapper-weight 0.8 \
+  --face-selector-mode reference \
+  --reference-face-position 0 \
+  --face-enhancer-model gfpgan_1.4 \
+  --face-enhancer-blend 80 \
+  --expression-restorer-model live_portrait \
+  --expression-restorer-factor 60 \
+  --expression-restorer-areas all \
+  --output-video-encoder libx264rgb
 ```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
@@ -379,7 +428,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-17)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-19)
 
 Kling O3 (Omni, released Feb 2026; migrated on AIMLAPI Apr 10, 2026 — **still not confirmed**) introduces major character consistency upgrades. Monitor for AIMLAPI availability.
 
