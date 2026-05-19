@@ -155,6 +155,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), confirm licensing before use or use CC0 from Internet Archive only.
 
+**Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
+
 **Halal Sounds (SoundCloud):** Channel `soundcloud.com/hasib-mahfin-777406511` — explicit "No Copyright Vocals Only Background Nasheed" tracks (Destiny, Grateful, Lost In Dreams, Beauty Of Creation). SoundCloud's ToS permits streaming only; verify license in track description before downloading for commercial use.
 
 **Finding vocals-only tracks on NCN:** Search for "acapella", "vocals only", or "no instrument" in the track title on the NCN channel page.
@@ -686,6 +688,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | SFX library requires sign-up | Pixabay/Freesound account friction slows workflow | Use Mixkit (mixkit.co) — no account, CC0 commercial, instant download (see §2 Tier 1a) |
 | Dutch phonemes sound off | Wrong model | Use `eleven_v3` (production) or `eleven_multilingual_v2` (fallback). Never monolingual v1. |
 | Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
+| Draft VO (Flash v2.5) mispronounces "085 3331133" despite `apply_text_normalization="on"` | `apply_text_normalization` is **Enterprise-only for Flash v2.5** — ignored on standard plans | On non-Enterprise plans, Flash v2.5 always outputs unnormalized phone numbers. Do NOT use Flash v2.5 to QA Dutch phone number pronunciation — use eleven_v3 for that verification step only. |
 | VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
@@ -778,12 +781,22 @@ from elevenlabs import ElevenLabs
 
 client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
+# Brand-specific keyterms: bias Scribe toward Snelverhuizen proper nouns
+BRAND_KEYTERMS = [
+    "SNELVERHUIZEN",
+    "SNELVERHUIZEN.NL",
+    "085 3331133",
+    "VERHUIZEN ZONDER ZORGEN",
+]
+
 with open("voiceover_raw.mp3", "rb") as f:
     result = client.speech_to_text.convert(
         file=f,
         model_id="scribe_v2",
-        language_code="nld",           # Dutch
-        timestamps_granularity="word", # word-level start/end times
+        language_code="nld",            # Dutch
+        timestamps_granularity="word",  # word-level start/end times
+        keyterms=BRAND_KEYTERMS,        # biases model toward brand names (see note below)
+        no_verbatim=True,               # strips filler words for clean script comparison
     )
 
 # Check transcript against script
@@ -794,9 +807,17 @@ for word in result.words:
     print(f"{word.text:20s}  {word.start:.3f}s → {word.end:.3f}s")
 ```
 
+**`keyterms` (Scribe v2 batch — confirmed 2026):**
+- Biases the model toward recognising the listed terms. Up to 1000 keyterms per call; each ≤50 characters and ≤5 words.
+- **+20% cost surcharge** applies when `keyterms` is set.
+- Characters not supported in keyterms: `< > { } [ ] \`
+- Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
+
+**`no_verbatim=True`:** removes filler words, false starts, and disfluencies from the transcript — makes script diff cleaner. Use for VO QA (comparing against intended script). Omit for caption timing use (fillers shift word timestamps).
+
 **Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
 
-**Cost:** ~1 credit/character of transcribed audio (Scribe v2 uses character-based billing at the same rate as TTS Multilingual v2). A 30-second VO (~200 spoken characters) costs ~200 credits.
+**Cost:** ~1 credit/character of transcribed audio (Scribe v2 uses character-based billing at the same rate as TTS Multilingual v2). A 30-second VO (~200 spoken characters) costs ~200 credits base + 20% surcharge (~240 credits total) when `keyterms` is used.
 
 **QA checklist:**
 - [ ] Transcript contains "SNELVERHUIZEN" (not garbled)
@@ -808,9 +829,13 @@ for word in result.words:
 
 ---
 
-## 10. SFX Noise Reduction (arnndn)
+## 10. SFX Noise Reduction
 
-ElevenLabs voiceover is already clean — skip for VO. Use this to remove background hiss, HVAC hum, or room noise from Pixabay/Freesound SFX files before mixing.
+ElevenLabs voiceover is already clean — skip for VO. Use these filters to remove background hiss, HVAC hum, or room noise from Pixabay/Freesound SFX files before mixing.
+
+### Option A: arnndn (neural network — best for preserving ambient texture)
+
+Requires a one-time model file download. Better at retaining room character while removing hiss.
 
 **One-time setup — download model files:**
 ```bash
@@ -826,5 +851,24 @@ ffmpeg -i sfx_noisy.wav \
 ```
 
 **mix parameter:** `0.8` = good balance (removes hiss, keeps room character). `1.0` = maximum (may flatten ambience texture). `0.5` = light touch for subtle noise.
+
+### Option B: afwtdn (wavelet-based — no model download, good for tonal/HVAC noise)
+
+Pure FFmpeg, no external model file. Works on broadband and tonal periodic noise (HVAC hum, room modes). Simpler to deploy in environments where model files aren't available.
+
+```bash
+ffmpeg -i sfx_noisy.wav \
+  -af "afwtdn=sigma=-45dB:nb=10:percent=85" \
+  sfx_clean.wav
+```
+
+**Parameters:**
+- `sigma` — noise level in dB (set to match noise floor; `-45dB` is typical for light hiss; `-35dB` for louder HVAC hum). Default 0 = no denoising — must set explicitly.
+- `nb` — wavelet decomposition levels (1–12, default 10). Higher = more thorough but slower.
+- `percent` — percent of full denoising applied (0–100, default 85). 85 is a safe partial denoise that retains room character.
+
+**When to use afwtdn vs arnndn:**
+- **afwtdn**: HVAC/room hum, mains hum (50/60 Hz); no model download needed; first choice on fresh deployment
+- **arnndn**: broadband digital hiss, microphone noise; better speech/voice preservation if any voice content is present in the SFX
 
 **Workflow:** Pre-process once, save as `_clean.wav` in the SFX library for reuse.
