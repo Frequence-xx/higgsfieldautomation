@@ -411,7 +411,7 @@ ffmpeg -i normalized.mp4 \
 
 ### 5h. AV1 Archive Encoding (Internal Storage Only — NOT for Platform Upload)
 
-SVT-AV1 v4.0 (January 2026) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
+SVT-AV1 v4.1 (2026-03-16) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
 
 ```bash
 # Check SVT-AV1 availability
@@ -420,6 +420,7 @@ ffmpeg -encoders 2>/dev/null | grep svtav1
 # Archive encode (internal storage only)
 ffmpeg -i normalized.mp4 \
   -c:v libsvtav1 -crf 30 -preset 6 \
+  -svtav1-params tune=3 \
   -pix_fmt yuv420p \
   -c:a aac -ar 48000 -b:a 256k \
   archive_av1.mp4
@@ -430,6 +431,17 @@ ffmpeg -i normalized.mp4 \
 | 22–25 | Near-transparent | Long-term production archive |
 | 28–32 | High | Review copies, reference cache |
 | 35+ | Acceptable | Low-priority storage |
+
+**SVT-AV1 4.0+ `tune` options (set via `-svtav1-params tune=N`):**
+| Value | Name | When to use |
+|-------|------|------------|
+| `0` | VQ (default) | General video quality — PSNR-optimized |
+| `1` | PSNR | Max PSNR for metrics; not perceptual |
+| `2` | SSIM | SSIM-optimized; good for detailed textures |
+| `3` | IQ (Image Quality) | Best perceptual quality, psychovisual. **Use this for our archive.**|
+| `4` | MS-SSIM | Multi-scale SSIM; alternative to IQ for stills |
+
+Use `tune=3` (IQ) for all Snelverhuizen archive encodes. SVT-AV1 4.0 also extended CRF range to 70 with quarter-step granularity — CRF 22–32 range remains our sweet spot.
 
 **CRITICAL:** Do NOT upload AV1 to Instagram (rejected) or TikTok (triggers double-transcode). AV1 archive is for internal reference only — always deliver H.264 to platforms and owners.
 
@@ -636,6 +648,58 @@ ffmpeg -i clip.mp4 \
 
 ---
 
+## 10. drawvg Vector Graphics Filter (FFmpeg 8.1+)
+
+**Available since FFmpeg 8.1 "Hoare" (2026-03-16).** `drawvg` renders vector graphics on video frames using a scripting language (VGS — Vector Graphics Script) powered by the Cairo library. Unlike `drawtext`, it supports full vector shapes: rounded rectangles, arcs, paths, and arbitrary fill colors with exact HEX values.
+
+**Why this matters for Snelverhuizen:**
+- Draws the orange #FC8434 pill badge / CTA overlay natively in FFmpeg (no Remotion/AE required for simple shapes)
+- Coordinates computed dynamically from frame dimensions — works correctly at any resolution
+- Avoids font-rendering inconsistencies of `drawtext` for complex badge shapes
+
+**Check availability:**
+```bash
+ffmpeg -version 2>&1 | grep -i "version"
+ffmpeg -filters 2>/dev/null | grep drawvg
+```
+
+**Basic rounded-rectangle brand badge (orange pill with text):**
+```bash
+# badge.vgs — save this file first
+cat > /opt/pipeline/overlays/brand_badge.vgs << 'EOF'
+# Orange pill CTA badge — bottom-center placement
+# Frame: 1080x1920. Badge: 600px wide, 80px tall, centered at y=1550
+set_source_rgb 0.988 0.518 0.204   # #FC8434
+arc  240 1550 40 1.5708 -1.5708    # left cap
+rectangle 240 1510 600 80          # body
+arc  840 1550 40 -1.5708 1.5708    # right cap
+fill
+# Text uses cairo pango layout — requires drawtext for actual text layer
+EOF
+
+ffmpeg -i graded.mp4 \
+  -vf "drawvg=file=/opt/pipeline/overlays/brand_badge.vgs" \
+  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy \
+  with_badge.mp4
+```
+
+**Practical workflow — badge shape + drawtext layer:**
+For our typical branded overlay (orange pill + white text), layer `drawvg` (shape) then `drawtext` (text) in the same `-vf` chain:
+```bash
+ffmpeg -i graded.mp4 \
+  -vf "drawvg=file=/opt/pipeline/overlays/brand_badge.vgs, \
+       drawtext=text='SNELVERHUIZEN.NL':fontfile=/opt/pipeline/fonts/Montserrat-Bold.ttf:\
+       fontsize=42:fontcolor=white:x=(w-text_w)/2:y=1535" \
+  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy \
+  with_overlay.mp4
+```
+
+**Limitation:** VGS is NOT SVG — it uses its own language. Static SVG files cannot be directly imported. Use for programmatically-defined shapes (rectangles, arcs, lines) where dynamic coordinates or exact brand colors matter. For complex imported vector art, continue using the PNG overlay workflow.
+
+**Documentation:** https://ffmpeg.org/drawvg-reference.html
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -655,5 +719,7 @@ Before marking video as delivered:
 - [ ] Export: H.264, -pix_fmt yuv420p, -movflags +faststart, AAC 48kHz 256kbps
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
+- [ ] AV1 archive: use `-svtav1-params tune=3` (IQ) for perceptual quality — see §5h
+- [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
