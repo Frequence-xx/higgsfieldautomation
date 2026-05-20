@@ -34,10 +34,11 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) |
 |-------|---------------|------------|---------------------|
+| Kling O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.56** |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$1.46** |
 
-**Use Standard for iteration/testing, Pro for final output.**
+**Use Standard for iteration/testing, Pro for final output. O1 Reference-to-Video is the cheapest option for character shots requiring multi-image identity lock — see Kling O1 section below.**
 
 ## Complete API Call Template
 
@@ -126,12 +127,12 @@ for i in range(30):
 | Type | Description | AIMLAPI Status |
 |------|-------------|---------------|
 | `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **CONFIRMED — use this** |
-| `"down_back"` | Camera descends and pulls backward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
-| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
-| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
-| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED in Kling API + ComfyUI — UNVERIFIED on AIMLAPI wrapper** |
+| `"down_back"` | Camera descends and pulls backward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
+| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
+| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
+| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
 
-**Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are confirmed in the official Kling API and ComfyUI node docs, but AIMLAPI's wrapper may silently ignore or error on them. Do ONE canary test per preset before using in production.
+**Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are now confirmed across 5+ platforms including fal.ai, Kie AI, and WaveSpeedAI for Kling v3 — high confidence they will work on AIMLAPI too, but AIMLAPI's wrapper should still get one canary call per preset before production use.
 
 **Simple config:** all values range -10 to 10. Recommended for cinematic work: **1-2** (Kling 3 Pro guides confirm lower values = cleaner, more stable motion; values ≥3 risk instability). **Only ONE config value should be non-zero at a time** — the official Kling API spec is explicit about this constraint. Setting multiple non-zero values simultaneously is undefined behavior.
 
@@ -406,7 +407,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Confirmed for v2.6 (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI, Replicate, fal.ai, and Kie AI — but **NOT yet confirmed on AIMLAPI** as of May 2026. Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control` (following v2.6 naming pattern). Do a canary test before any production use.
+**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI, Replicate, fal.ai, Kie AI, ModelsLab, and Eachlabs — but **NOT on AIMLAPI as of May 2026** (AIMLAPI docs index shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Do a canary test before any production use — Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -418,9 +419,65 @@ Separate from I2V. Kling v3 Motion Control animates a character image to match t
 
 **When to use:** Walking shots where motion prompting alone produces robotic or sliding feet artifacts. Requires a royalty-free motion reference clip (3-30s, clear body movement, moderate speed).
 
+## Kling O1 Series — Available on AIMLAPI (Confirmed May 2026)
+
+Three Kling O1 models are live on AIMLAPI. All use the `/v2/video/generations` endpoint.
+
+| Model | AIMLAPI String | Cost | Primary Use |
+|-------|---------------|------|------------|
+| O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | **$0.112/s ≈ $0.56/5s** | Multi-image → video with character lock |
+| O1 Video-to-Video Reference | `klingai/video-o1-video-to-video-reference` | ~$0.111/s | Apply reference style/identity to existing footage |
+| O1 Video-to-Video Edit | `klingai/video-o1-video-to-video-edit` | ~$0.111/s | Text-guided editing of existing video |
+
+### O1 Reference-to-Video — Key Parameters
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/video-o1-reference-to-video",
+    "prompt": "The crew member walks confidently toward the truck carrying a box, natural stride",
+    "image_list": [                          # 1–7 reference images (identity input)
+        "https://cdn.example.com/crew/front.png",
+        "https://cdn.example.com/crew/three_quarter.png",
+        "https://cdn.example.com/crew/profile.png"
+    ],
+    "duration": 5,
+    "aspect_ratio": "9:16",
+    "generate_audio": False,
+}, headers=headers, timeout=30)
+```
+
+**`image_list` vs `elements`:** O1 reference-to-video uses `image_list` (array, 1–7 images) as the identity input — this is different from the `elements` structure used by v3 Pro. The character-consistency.md Step 3 shows `elements` syntax for this model — canary test both; `image_list` is confirmed from AIMLAPI docs. **Do NOT assume `elements` syntax transfers from v3 Pro without a canary test.**
+
+### O1 Video-to-Video Edit — Additional Parameters
+
+- `video_url` (required): source video URL
+- `image_list` (optional, 1–7): additional reference images
+- `elements` (optional, max 4): character elements — max 4 (vs 3 for v3 Pro)
+- `keep_audio` (bool, default false): preserve original audio
+
+### O1 Cost vs v3 — When to Use
+
+| Scenario | Model | 5s Cost | Savings |
+|----------|-------|---------|---------|
+| Draft character iteration | O1 Reference-to-Video | **$0.56** | 49% vs v3 Standard |
+| Final character shot | v3 Pro | $1.46 | — |
+| Multi-image identity lock (draft) | O1 Reference-to-Video | **$0.56** | 61% vs v3 Pro |
+
+**Quality note:** v3 Pro has a slight edge for maintaining character identity across multi-shot sequences. O1 Reference-to-Video is the better cost choice for draft iterations where prompt tuning is still ongoing. Switch to v3 Pro for final approved takes per CLAUDE.md routing matrix. Do not change the routing matrix in CLAUDE.md without owner approval.
+
+### O1 CANARY CHECKLIST (before production use)
+
+- [ ] Test `image_list` parameter: 3 reference images → verify identity locked in output
+- [ ] Test `elements` syntax — does O1 accept it or only `image_list`?
+- [ ] Run InsightFace buffalo_l cosine similarity vs v3 Pro baseline on same refs
+- [ ] Confirm 9:16 aspect ratio renders correctly (1080p)
+- [ ] Confirm `generate_audio: false` accepted (no surcharge)
+
+---
+
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 migrated to fal.ai in April 2026 and is also on PiAPI and Atlas Cloud, but not AIMLAPI. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 (model string on other platforms: `kwaivgi/kling-v3-omni-video`) is available on fal.ai, Replicate, PiAPI, and Atlas Cloud, but not AIMLAPI docs index. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
