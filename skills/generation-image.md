@@ -165,6 +165,23 @@ hero_url = resp.json()["data"][0]["url"]
 
 NBP/NB2 are "Thinking" models. Natural language outperforms tag soup.
 
+### Face Identity Header Rule (2026-05-20)
+
+**Gemini processes prompts sequentially — earlier text carries more weight.** For character shots, ALWAYS open with a compact identity header BEFORE the scene description:
+
+```
+IDENTITY LOCK — Mourad-SV: warm olive skin, strong jawline, dark brown eyes, short black beard, mid-30s.
+Maintain exact facial structure from Image 1: same eye spacing, nose width, jaw contour, skin texture.
+Do not modify facial proportions. Do not age or beautify. No freckles. No beard modifications.
+[Scene description follows here...]
+```
+
+**Hard constraint format** (confirmed effective per Google AI Developers Forum):
+- "Do not change facial proportions, eye spacing, nose width, jawline contour"
+- "Do not age the character. No freckles. No beauty filter."
+
+**Single-subject shots** preserve identity at acceptable rates (~85-90%). **Multi-person shots** have consistent identity preservation failures — never place Mourad AND Karel in the same NBP generation. Generate each character separately and composite in post.
+
 ### 6-Component Structure (2026-04-27)
 
 Structure every NBP prompt using these six components — each adds ~15-20% more control:
@@ -353,7 +370,9 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 - **ONE change per call** — progressive editing only. Change background first → then lighting → then details. Stacking multiple changes in one prompt degrades quality.
 - Refer to subjects by description, not pronouns: "the man with the black crewneck" not "him"
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
-- `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Two regimes: (1) character/face editing → use 2.5 (more image-preserving, prevents face warp); (2) text/typography editing → use 3.5–4.0 (more prompt-literal for letter accuracy). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
+- `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Two regimes: (1) character/face editing → use 2.0–2.5 (more image-preserving, prevents face warp; 2.0 is the confirmed lower bound for stable face output); (2) text/typography editing → use 3.5–4.0 (more prompt-literal for letter accuracy). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
+- **`image_strength`** (0–1, default 0.1): Controls how much the reference image influences the output. **Status: UNVERIFIED on AIMLAPI Kontext endpoint** — may not be exposed. If available: increase to 0.3–0.5 for stronger face identity lock (higher = more reference-faithful, less prompt flexibility). Run canary to confirm parameter is accepted before relying on it.
+- **Multi-image on AIMLAPI**: `image_url` accepts an array. AIMLAPI docs confirm **2 reference images** in examples. BFL-native supports up to 8-10, but higher counts on AIMLAPI are UNVERIFIED. Do not assume 8 slots — treat 2 as confirmed max until canary proves otherwise.
 - `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
 - **`prompt_upsampling`**: When `true`, an LLM rewrites the prompt for richer output — but results are NOT reproducible across calls. For character editing and brand-critical shots, set `prompt_upsampling: false` to maintain reproducibility. For T2I scenery shots where variation is acceptable, leaving it true may improve output. Status on AIMLAPI's Kontext endpoint: UNVERIFIED — may be handled server-side. Use `false` explicitly if the parameter is exposed.
 
@@ -427,9 +446,17 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "prompt": "CTA card: clean white background, large bold orange text 'SNELVERHUIZEN.NL', orange #FC8434, professional Dutch design, 9:16 vertical. No people. No additional text.",
     "aspect_ratio": "9:16",
     "num_images": 1,
+    "enhance_prompt": False,      # FALSE for brand-critical prompts — prevents LLM rewriting HEX colors and exact text
+    "person_generation": "allow_adult",  # Required for shots with Mourad/Karel; default is "allow_adult" but set explicitly
+    # "seed": 12345,             # Uncomment to reproduce an approved composition
+    # "add_watermark": False,    # Removes SynthID watermark — unverified on AIMLAPI, canary before production use
 }, headers=headers, timeout=90)
 hero_url = resp.json()["data"][0]["url"]
 ```
+
+**`enhance_prompt` guidance (2026-05-20):**
+- `True` (default): Gemini LLM rewrites the prompt to add richness — good for scenery and B-roll where variation is acceptable
+- `False`: Prompt sent verbatim — **always use for brand-critical shots** (truck text, phone numbers, HEX colors, CTA cards). Prevents the model from substituting your exact #FC8434 or "085 3331133" with paraphrased equivalents.
 
 **CANARY NOTE:** Imagen 4 pricing on AIMLAPI — run a $0.10 test before batch production use to verify exact cost per image and response structure. Model strings confirmed in AIMLAPI docs as of 2026-05.
 
