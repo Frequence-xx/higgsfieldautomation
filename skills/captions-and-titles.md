@@ -102,6 +102,10 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
+   **Two transcription modes — pick one:**
+
+   **Mode A (DTW, recommended):** `tokenLevelTimestamps: true` adds `--dtw` to whisper.cpp. Produces the most accurate single-point timestamp per word (`t_dtw`). `tokensPerItem` and `splitOnWord` have **no effect** in DTW mode.
+
    ```typescript
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
    await installWhisperCpp({ version: '1.8.4', printOutput: false }); // once; v1.8.4 required for large-v3-turbo
@@ -109,14 +113,31 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      inputPath: 'voiceover.wav',
      model: 'large-v3-turbo',    // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
-     tokenLevelTimestamps: true,  // enables --dtw for word-level accuracy
+     tokenLevelTimestamps: true,  // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
      flashAttention: false,       // keep false on CPU; set true only with CUDA GPU
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // captions → Caption[] ready for createTikTokStyleCaptions()
    // timestampMs field uses t_dtw (DTW-derived) when tokenLevelTimestamps: true —
-   // this is the most accurate single-point timestamp available from whisper.cpp.
+   // most accurate single-point timestamp available from whisper.cpp.
    // Without tokenLevelTimestamps, timestampMs falls back to (startMs + endMs) / 2.
+   ```
+
+   **Mode B (non-DTW, one-word-per-segment):** Use when DTW produces errors or you need strict 1-word-per-Caption output. `tokensPerItem: 1` sets `--max-len 1` (one word per segment); `splitOnWord: true` adds `--split-on-word` to prevent a word being split across two segments at the `max-len` boundary. **Only works with `tokenLevelTimestamps: false`.**
+
+   ```typescript
+   const result = await transcribe({
+     inputPath: 'voiceover.wav',
+     model: 'large-v3-turbo',
+     language: 'nl',
+     tokenLevelTimestamps: false, // DTW off; enables tokensPerItem + splitOnWord
+     tokensPerItem: 1,            // --max-len 1 → one word per Caption
+     splitOnWord: true,           // --split-on-word → no mid-word segment breaks
+     flashAttention: false,
+   });
+   const { captions } = toCaptions({ whisperCppOutput: result });
+   // Each Caption covers exactly one word — good for createTikTokStyleCaptions()
+   // timestampMs = (startMs + endMs) / 2 (no DTW), timing slightly less accurate
    ```
 
    **`additionalArgs` escape hatch:** Pass custom whisper.cpp CLI flags via `additionalArgs: ['--no-prints', '--print-special']` (string[] or key-value pair arrays). Only needed for non-standard whisper.cpp builds.
