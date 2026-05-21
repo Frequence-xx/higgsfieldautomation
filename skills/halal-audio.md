@@ -57,6 +57,16 @@ No music. No instruments. Ever. Audio is restricted to:
 | **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
+**Willem voice_id**: The `voice_id` string for Willem is not published in any SDK reference or public list — it is a Voice Library community voice. Retrieve it once and store in project config:
+```python
+import requests
+r = requests.get("https://api.elevenlabs.io/v1/voices",
+                 headers={"xi-api-key": ELEVENLABS_API_KEY},
+                 params={"search": "Willem"})
+VOICE_ID = r.json()["voices"][0]["voice_id"]
+```
+Alternatively: elevenlabs.io → Voices → search "Willem" → three-dot menu → Copy voice ID. **Voice Library community voices are NOT subject to the Dec 31, 2026 ElevenLabs default-voice expiry** (that applies only to the original 38 pre-made English defaults). Willem will persist unless its creator removes it — save the ID to project config as a precaution.
+
 **eleven_v3 + audio tags**: lower stability to **50–55** when the script uses `[tag]` markers. Stability ≥60 suppresses the headroom the model needs to act on tags — they will be ignored or weakened. For plain prose with no tags, keep at 60.
 
 ### eleven_v3 Audio Tags
@@ -74,6 +84,8 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[newsreader]` — clean broadcast delivery; use for factual claims
 - `[professional]` — neutral authority; safe default for any line
 - `[direct]` — punchy, no-nonsense; use for price/offer lines
+- `[pauses]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores)
+- `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel
 
 **Avoid for Snelverhuizen brand:**
 - `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
@@ -152,14 +164,18 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
 | **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download |
+| **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download |
+| **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 
-**Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), confirm licensing before use or use CC0 from Internet Archive only.
+**Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
 
 **Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
 
 **Halal Sounds (SoundCloud):** Channel `soundcloud.com/hasib-mahfin-777406511` — explicit "No Copyright Vocals Only Background Nasheed" tracks (Destiny, Grateful, Lost In Dreams, Beauty Of Creation). SoundCloud's ToS permits streaming only; verify license in track description before downloading for commercial use.
 
 **Finding vocals-only tracks on NCN:** Search for "acapella", "vocals only", or "no instrument" in the track title on the NCN channel page.
+
+**Pixabay Islamic Nasheed category:** Pixabay (Tier 1b SFX library, §2) also has a dedicated Islamic nasheed music category — royalty-free, no attribution, commercial OK. Search `pixabay.com/music/search/islamic%20nasheed/`. Useful when Pixabay is already open for SFX and a light background track is needed. Always screen with nasheed_check.py (§9) before use.
 
 **yt-dlp to extract audio from NCN YouTube video (free, no API cost):**
 ```bash
@@ -693,6 +709,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
 | Ambient SFX has click at loop point despite acrossfade | Pre-processing acrossfade not applied, or file too short | Use ElevenLabs SFX v2 with `loop=True` instead — output is natively seamless, no post-processing needed |
+| Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
+| ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
+| FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
 
 ---
