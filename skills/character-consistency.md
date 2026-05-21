@@ -251,6 +251,8 @@ app.prepare(ctx_id=-1, det_size=(640, 640))
 
 ### FaceFusion Fallback (identity score < 0.50)
 
+FaceFusion **v3.6.1** is the current stable release (April 19, 2026). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). No new face-swapper or expression-restorer features since v3.6.0.
+
 FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `headless-run`. The old `python facefusion.py run --headless` syntax is broken in v3.
 
 ```bash
@@ -428,23 +430,67 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-19)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-21)
 
-Kling O3 (Omni, released Feb 2026; migrated on AIMLAPI Apr 10, 2026 — **still not confirmed**) introduces major character consistency upgrades. Monitor for AIMLAPI availability.
+Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **The April 10, 2026 migration was to fal.ai / Atlas Cloud / Leonardo — NOT AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. Monitor for AIMLAPI O3 landing.
 
 **O3 advantages for character shots:**
-- Multi-shot: up to 6 shots in single API call with consistent character across all shots
-- `face_consistency: True` confirmed functional — forces face reconstruction from element even when occluded (hands, hat, shadows). Currently unverified on AIMLAPI but works on fal.ai/Atlas Cloud.
+- Multi-shot: up to 6 shots in a single API call with consistent character across all shots (max 15s total, each shot ≥ 3s)
+- `face_consistency: True` confirmed functional on fal.ai/Atlas Cloud — forces face reconstruction from image_reference even when occluded (hands, hat, shadows)
+- `image_reference` replaces O1's `elements` array — up to 4 images (Front, 45°, Profile, Back) as spatial anchor
 - Stronger element binding (3D Spacetime Joint Attention)
 
-**O3 breaking changes that WILL affect this skill when it lands on AIMLAPI:**
-- `start_image_url` → renamed to `image_url` (frame-chaining code in Multi-Shot section must update)
-- `negative_prompt` **REMOVED** — O3 handles internally; remove from all API calls
-- `cfg_scale` **REMOVED** — O3 handles internally; remove from all API calls
-- AIMLAPI endpoint will shift from `/v3/` to `/o3/` pattern
-- Text prompts capped at 2,500 characters (was unlimited)
+**O3 multi-shot `multi_prompt` parameter structure (for when O3 lands on AIMLAPI):**
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/video-o3-reference-to-video",   # model ID TBC on AIMLAPI
+    "image_url": last_frame_url,                       # renamed from start_image_url
+    "image_reference": [                               # replaces elements[] in O3
+        "https://cdn/crew_lead/front.png",
+        "https://cdn/crew_lead/three_quarter.png",
+        "https://cdn/crew_lead/profile.png",
+        "https://cdn/crew_lead/full_body.png"
+    ],
+    "multi_prompt": [                                  # multi-shot control (O3 only)
+        {"prompt": "crew member lifts a box from the truck, golden hour", "duration": 5},
+        {"prompt": "crew member carries box to doorway, focus pull", "duration": 5}
+    ],
+    "face_consistency": True,
+    "generate_audio": False,   # CRITICAL: O3 audio defaults ON — must set explicitly
+    "aspect_ratio": "9:16"
+    # NOTE: negative_prompt and cfg_scale are REMOVED in O3
+}, headers=headers)
+```
 
-**Action on O3 landing:** Update `generation-video.md` templates first, then this file's frame-chaining snippet.
+**O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas):**
+- `start_image_url` → renamed to `image_url`
+- `elements` array → replaced by `image_reference` array (up to 4 images)
+- `negative_prompt` **REMOVED** — bake avoidance into positive prompt instead
+- `cfg_scale` **REMOVED** — handled internally
+- `generate_audio` defaults **ON** in O3 (was off by default in O1) — ALWAYS set `False` explicitly
+- Text prompts capped at 2,500 characters
+- AIMLAPI endpoint pattern will shift from `/v3/` to `/o3/`
+
+**Avoidance prompting for O3 (no negative_prompt):** Instead of `negative_prompt: "ghost driving, blurry"`, write: `"stationary truck, sharp focus throughout, no vehicle movement, no motion blur"`
+
+**Action on O3 landing on AIMLAPI:** Update `generation-video.md` templates first (remove negative_prompt/cfg_scale), then this file's frame-chaining snippet (`start_image_url` → `image_url`), then confirm `image_reference` parameter passthrough with a draft test.
+
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-05-21)
+
+Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
+
+**Key advantages over Kling Image O1 for hero frames:**
+- **Native 4K output** — no upscaling needed, ready for commercial print
+- **Up to 10 reference images** with `image_reference` array (vs O1's standard multi-ref)
+- **@ tag syntax** in prompts: `@Character1 carries a box toward @Character2` — identity tagging prevents feature swapping in multi-character scenes
+- **Reference Attention Mechanism** — locks face, build, clothing across different seeds and scenes
+- **Visual Chain-of-Thought (vCoT)** — model "plans" before rendering; reduces anatomy errors and clothing drift
+
+**When O3 image lands on AIMLAPI — routing matrix change:**
+- Kling Image O3 would replace Kling Image O1 ($0.040/img) for production hero frames
+- Check pricing: if ≤ $0.10/img → upgrade immediately; if > $0.195/img → keep NBP Edit
+
+**Current hero frame routing stays unchanged until Kling Image O3 confirms on AIMLAPI.**
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
