@@ -34,9 +34,9 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 | Model | AIMLAPI String | Best For | Max Refs | Cost | 9:16 Output |
 |-------|---------------|----------|----------|------|-------------|
-| Imagen 4 Fast (DRAFT) | `google/imagen-4.0-fast-generate-001` | Cheap prompt iteration — $0.02/img | 0 | $0.02 | native |
-| Imagen 4 | `google/imagen-4.0-generate-001` | High-quality hero frames, superior text rendering | 0 | ~$0.04 | native |
-| Imagen 4 Ultra | `google/imagen-4.0-ultra-generate-001` | Money shots, max prompt adherence, 2K | 0 | ~$0.06 | 2K native |
+| Imagen 4 Fast (DRAFT) | `google/imagen-4.0-fast-generate-001` | **⚠️ RETIRES 2026-06-24** — cheap prompt iteration, $0.02/img. Migrate to NBP now. | 0 | $0.02 | native |
+| Imagen 4 | `google/imagen-4.0-generate-001` | **⚠️ RETIRES 2026-06-24** — use NBP Pro instead | 0 | ~$0.04 | native |
+| Imagen 4 Ultra | `google/imagen-4.0-ultra-generate-001` | **⚠️ RETIRES 2026-06-24** — migrate to NBP Pro immediately | 0 | ~$0.06 | 2K native |
 | Nano Banana 2 Edit | `google/nano-banana-2` | Draft iterations with refs; Pro-quality at Flash speed — use before NBP for prompt iteration | 14† | ~$0.07 | 768x1344 |
 | Nano Banana Pro | `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | 0 | ~$0.13 | 768x1344 |
 | Nano Banana Pro Edit | `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) — final quality | 14 | ~$0.20 | 768x1344 |
@@ -48,17 +48,19 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 
-†NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. Supports `thinking_level` parameter (see NB2 Prompting section below). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
+†NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction — previously documented incorrectly). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
 
 **NB2 resolution tiers (Google official rates):** `"resolution": "512"` ($0.045/img, ~4-6s) → `"1K"` ($0.067/img) → `"2K"` ($0.101/img) → `"4K"` ($0.151/img). Use `"512"` for layout/composition checks before committing to 1K — saves ~33% per draft pass. Note: 512px is specified as `"512"` (no K suffix), not `"0.5K"`. AIMLAPI may map this to their own pricing tier — run a canary if using 512 for the first time.
 
 **NB2 Image Search Grounding:** NB2 can pull real photos from Google Image Search before generating (e.g., Dutch residential streets, specific truck models). This uses a `google_search` tool with `search_types: ["image_search"]` in the native Gemini Interactions API format. **NOT available via AIMLAPI's OpenAI-compatible endpoint.** If you need real-world visual references, supply downloaded images as explicit refs instead.
 
-‡GPT Image 2 is T2I only on AIMLAPI (no reference image input, same as Imagen 4). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. Do NOT use for character shots needing ref consistency.
+‡GPT Image 2 supports up to **16 reference images** per call (every reference billed at high-fidelity input rate). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. AIMLAPI model string: `openai/gpt-image-2`. Confirmed `size` values: `1024x1536` (9:16 portrait), `1536x1024` (landscape), `1024x1024` (square). Quality tiers: `low`, `medium`, `high`. Run canary to verify AIMLAPI reference image support before using in production — OpenAI confirms it, AIMLAPI implementation unverified.
 
 §GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Imagen 4 Fast ($0.02) for iteration, GPT Image 2 only for finals requiring superior text accuracy.
 
-**Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier.
+**⚠️ IMAGEN 4 RETIREMENT — URGENT (2026-05-22):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 33 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs).
+
+**Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier. **[DEPRECATED — see retirement notice above]**
 
 ### Decision Flow
 
@@ -67,10 +69,10 @@ Shot has characters, need to iterate prompt? → NB2 Edit first ($0.07 at 1K, or
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
 Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 3 refs on AIMLAPI)
-Shot is pure scenery / B-roll? → Imagen 4 Fast ($0.02, cheapest) or Nano Banana Pro
-Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering) or Imagen 4 Ultra (2K)
-Shot needs brand-color still without input? → Flux Kontext Max T2I or Imagen 4
-Shot is the money shot / CTA hero? → Imagen 4 Ultra (2K, max adherence) or Flux Pro v1.1 Ultra
+Shot is pure scenery / B-roll? → Nano Banana Pro ($0.13) — Imagen 4 Fast RETIRING 2026-06-24
+Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering)
+Shot needs brand-color still without input? → Flux Kontext Max T2I or Nano Banana Pro
+Shot is the money shot / CTA hero? → Nano Banana Pro Edit (14 refs, T2I) — Imagen 4 Ultra RETIRING 2026-06-24
 Shot needs flawless Dutch text (CTA card)? → GPT Image 2 (99% text accuracy) — run canary first
 Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over Kontext Max ($0.10) — better face stability, lower cost
 ```
@@ -80,7 +82,7 @@ Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over 
 ### Nano Banana 2 Edit (draft/iteration — confirmed on AIMLAPI, ~$0.07/img)
 
 Use NB2 for every prompt iteration pass before committing NBP Edit credits. Saves ~$0.13/pass.
-Add `thinking_level: "high"` only for complex multi-ref compositions; omit or use `"minimal"` for speed on simple shots.
+**thinking_level is NOT a valid image API parameter** — do not add it to calls. (2026-05-22 correction)
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
@@ -90,16 +92,16 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "aspect_ratio": "9:16",
     "resolution": "1K",
     "num_images": 1,
-    # Add for complex multi-ref shots (character + truck + boxes). Omit for simple 1-ref shots.
-    # "thinking_level": "high",
+    # NOTE: thinking_level is NOT a confirmed parameter for the image generation API endpoint.
+    # It is a Gemini TEXT model parameter only. Do not add to image generation calls.
 }, headers=headers, timeout=90)
 hero_url = resp.json()["data"][0]["url"]
 ```
 
-**thinking_level guidance (2026-05-16):**
-- `"minimal"` (default/omit): fast generation; good for single-ref shots, scenery, B-roll stills
-- `"high"`: deeper spatial reasoning; reserve for shots with 3+ refs, complex poses, or text rendering — adds 20-30s latency but improves adherence on hard compositions
-- Simple rule: if the shot has only Mourad + 1 background ref → omit. If it has Mourad + truck + box + environment → use `"high"`.
+**thinking_level status (2026-05-22 UPDATE):**
+- **NOT a confirmed API parameter for the image generation endpoint.** `thinking_level` applies to Gemini TEXT models only — the image generation API uses internal reasoning by default that cannot be controlled externally.
+- Remove `thinking_level` from any image generation API calls. Model reasoning is handled server-side.
+- Previous guidance (2026-05-16) was incorrect — it conflated text and image API parameters.
 
 ### Nano Banana Pro (text-to-image)
 
@@ -301,7 +303,9 @@ NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable
 
 - Wrap text in quotes: `displaying "SNELVERHUIZEN" in bold white sans-serif`
 - Prompts over ~200 words trigger internal summarization — keep concise
-- NO seed, guidance scale, or CFG parameters
+- NO seed, guidance scale, or CFG parameters (NBP is autoregressive, not diffusion — seed reproducibility does not apply)
+- **safety_settings (2026-05-22):** Two distinct block behaviors: `blockReason: SAFETY` = pre-generation block (configurable via safety thresholds); `blockReason: IMAGE_SAFETY` = post-generation output block (also configurable). `blockReason: OTHER` is non-configurable. If a generation fails silently, check the response for blockReason field before retrying. For modest-dress character shots, IMAGE_SAFETY false-positives can occur — log the blockReason and escalate to owner rather than retrying blindly.
+- **Gemini 3.5 Flash (2026-05-19):** Text-output-only model. Does NOT generate images. Not an upgrade path for hero frames. Image generation pipeline remains: NB2 (draft) → NBP Edit (final) → Imagen 4 Ultra (CTA/money shots).
 
 ### Reference Image Rules (NBP Edit)
 
@@ -316,6 +320,7 @@ NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable
 - **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
 - **Chain update technique (2026-05-08):** Include the PREVIOUS output as one of the reference images when making incremental edits. This reduces drift across multi-pass generation by giving the model a visual anchor of the last state. Remind it explicitly each call to preserve hair, clothing, and facial features.
+- **Iterative refinement loop (2026-05-22):** After each generation pass, use the BEST output from that pass as an additional reference in the next call — alongside the original character sheet. Community-confirmed: achieves 90%+ consistency across 50+ image batches. Loop: generate batch → pick best → add as Image 2 alongside original sheet → generate next batch → repeat. Stop when identity is locked (face distance < 0.4 cosine).
 
 ### Multi-Reference Role Assignment (2026-04-27)
 
@@ -361,6 +366,8 @@ Step 4 — use character_sheet_mourad.jpg as Image 1 in all future NBP Edit call
 This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates slot pressure.
 
 ## Prompting Rules for Flux Kontext Max
+
+**Flux Kontext Max Multi (2026-05-22):** BFL released a multi-reference variant. On fal.ai: `fal-ai/flux-pro/kontext/max/multi`; on Replicate: `multi-image-kontext-max`. **NOT confirmed on AIMLAPI as of 2026-05-22.** AIMLAPI Kontext endpoints remain single-reference. Workaround: composite character + truck into one reference image (FFmpeg hstack) before calling the API, rather than passing two separate refs. Monitor `docs.aimlapi.com/api-references/image-models/flux` for a multi endpoint.
 
 - 30-80 word sweet spot, maximum 512 tokens
 - FLUX does NOT support CLIP-style weighting — `(keyword:1.5)` is silently ignored
@@ -448,8 +455,8 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "num_images": 1,
     "enhance_prompt": False,      # FALSE for brand-critical prompts — prevents LLM rewriting HEX colors and exact text
     "person_generation": "allow_adult",  # Required for shots with Mourad/Karel; default is "allow_adult" but set explicitly
-    # "seed": 12345,             # Uncomment to reproduce an approved composition
-    # "add_watermark": False,    # Removes SynthID watermark — unverified on AIMLAPI, canary before production use
+    # "seed": 12345,             # CANARY REQUIRED — seed may be supported on Imagen 4 (diffusion); NOT supported on NBP (autoregressive)
+    # NOTE: add_watermark parameter does NOT exist. SynthID invisible watermark is embedded at pixel level and cannot be removed via API.
 }, headers=headers, timeout=90)
 hero_url = resp.json()["data"][0]["url"]
 ```
@@ -468,7 +475,7 @@ Use ONLY for CTA cards and text-heavy brand stills. T2I only, no reference image
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "gpt-image-2",
     "prompt": "Clean professional CTA card on white background. Large bold orange text reading 'SNELVERHUIZEN.NL' centered at top. Below it in smaller text: '085 3331133'. Below that: 'VERHUIZEN ZONDER ZORGEN' in bold. Orange is exactly #FC8434. 9:16 vertical format. Minimal design, no people, no decoration.",
-    "size": "1024x1792",   # closest to 9:16 — verify on AIMLAPI
+    "size": "1024x1536",   # confirmed 9:16 portrait — values must be divisible by 16, ratio 1:3 to 3:1
     "quality": "high",
     "n": 1,
 }, headers=headers, timeout=120)
