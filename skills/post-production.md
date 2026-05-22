@@ -198,6 +198,8 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
+**Model currency check (May 2026):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). The recommendations below remain current — no newer version to upgrade to.
+
 Model selection for live-action / AI-generated video:
 - **rife-v4.22** — **best for diffusion-generated video (Kling, Veo output)**. Maintainer explicitly notes this version for diffusion post-processing. Use this as default for our pipeline.
 - **rife-v4.26.heavy** — highest quality variant of v4.26, significantly more GPU-intensive. Reserve for final delivery polish on important clips only (character close-ups, hero moments). Not in RVE GUI — CLI only via rife-ncnn-vulkan binary.
@@ -245,11 +247,12 @@ RIFE blends across hard cuts, producing ghost frames. Detect and split clips at 
 
 **Option A — PySceneDetect (recommended, handles splitting automatically):**
 ```bash
-# Install: pip install scenedetect[opencv]
+# Install: pip install scenedetect[opencv]  # v0.7 as of May 2026
 # Detect content-aware cuts and auto-split to segment_XXX.mp4 files
 scenedetect -i clip.mp4 detect-content --threshold 27 split-video
 # Lower threshold = more sensitive (catch subtle cuts); default 27 is safe for AI video
 ```
+**v0.7 breaking change note (May 2026):** Frame numbers are now 1-based (was 0-based). The `detect-content --threshold` and `split-video` command syntax is unchanged — this only affects scripts that reference specific frame numbers. Our pipeline command above is unaffected.
 
 **Option B — FFmpeg scdet (no install, timestamps only):**
 ```bash
@@ -333,6 +336,8 @@ ffmpeg -i normalized.mp4 \
   -c:a aac -ar 48000 -b:a 256k -ac 2 \
   upload_tiktok.mp4
 ```
+
+**TikTok 60fps option (high-motion clips):** TikTok supports and recommends 60fps for fast-moving content (truck reveal, panning shots, fast camera moves). For 60fps export, add `-r 60` and raise maxrate: `-b:v 15000k -maxrate 20000k -bufsize 20000k`. Our moving ads are typically 24–30fps from Kling/Veo — only upconvert to 60fps if the source is 60fps or if RIFE frame interpolation was applied.
 
 **Note:** Both platforms transcode H.264 to AV1 internally for delivery — that is Meta/TikTok's pipeline, not ours. Upload H.264; uploading AV1 causes a double-transcode with quality loss.
 
