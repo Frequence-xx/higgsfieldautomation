@@ -124,12 +124,12 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
 | Parameter | Value | Reasoning |
 |-----------|-------|----------|
 | cfg_scale | **0.5** (people primary) / **0.7** (truck primary) | Higher adherence for branded asset |
-| motion_strength | **0.3-0.4** (optional, 0-1 range) | Low motion prevents physics artifacts on rigid objects. Omit to use model default. |
+| motion_strength | **Not a standard I2V parameter** | Motion Control-only; omit from all standard I2V calls. |
 | duration | **5s** | Minimize time for artifacts to accumulate |
 | generate_audio | **false** | Always — add audio in post |
 | face_consistency | **false** | No character face binding needed for truck-primary shots |
 
-**motion_strength range guide:** 0.1-0.3 = nearly frozen (good for stationary truck), 0.4-0.6 = moderate (walking crew), 0.7-1.0 = aggressive action (not for truck shots).
+**motion_strength is NOT a valid standard I2V parameter (confirmed May 2026).** It is Motion Control (V2V) only and absent from the standard Kling I2V schema. Do not pass it. Use `cfg_scale: 0.7` + prompt anchors for truck stationarity.
 
 ## Camera Control Presets — Reference List (simple type only is confirmed on AIMLAPI; named presets below are from Kling base API docs, unverified on AIMLAPI)
 

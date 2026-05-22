@@ -104,21 +104,16 @@ for i in range(30):
 | Truck / product hero | 0.7 | Strict adherence to preserve branding |
 | Branded transitions | 0.7 | Preserve specific visual elements |
 
-## Motion Strength Guidelines
+## Motion Strength — NOT a Standard I2V Parameter
 
-`motion_strength` (0–1) controls how aggressively the model animates. Low values = stable/frozen; high values = aggressive action. **Omit the parameter to use the model default** — do not set it unless you have a specific reason.
+**`motion_strength` does NOT exist in the standard Kling I2V schema (confirmed May 2026).** The Griptape Kling library (authoritative native API wrapper) documents all I2V parameters exhaustively — `motion_strength` is absent. It appears only in the Motion Control (V2V) variant (`video-v2.6-pro-motion-control`). Do NOT pass it in standard I2V calls — it will be ignored or return a parameter error.
 
-| Shot Type | motion_strength | Notes |
-|-----------|----------------|-------|
-| Stationary truck (primary) | 0.3–0.4 | Prevents physics artifacts on rigid objects |
-| Character face close-up | 0.3 | Micro-motion only — blink, hair |
-| Character walking / action | 0.5–0.6 | Natural movement range |
-| Establishing / B-roll (no character) | Omit | Let model default drive environment motion |
-| Aggressive action shot | 0.7–1.0 | Rarely needed; risks jitter above 0.8 |
+**Control motion quantity in standard I2V via:**
+- `cfg_scale` — how strictly the model follows the prompt (0.5 default; 0.7 for branded/truck shots)
+- Prompt anchors — "slowly", "gently", explicit endpoints ("eases to stop")
+- Negative prompt — "jittery", "erratic motion"
 
-**Interaction with cfg_scale:** These parameters are NOT redundant. `cfg_scale` controls how strictly the model follows the TEXT prompt; `motion_strength` controls the QUANTITY of motion regardless of prompt adherence. High cfg_scale + high motion_strength = lots of motion rigidly following prompt. Low cfg_scale + low motion_strength = minimal, freely interpreted motion. For truck shots use `cfg_scale 0.7 + motion_strength 0.3` — maximum prompt control + minimum motion budget.
-
-**motion_strength status (May 2026):** Confirmed as a real parameter in Kling v3 Motion Control API docs (range 0.1–1.0 cited across Kling 3.0 guides). Still not explicitly listed in AIMLAPI's v3 I2V schema page. Treat as **CANARY on AIMLAPI**: include it on a test call before any prod use. If AIMLAPI returns a parameter error, omit it and rely on `cfg_scale` + prompt anchors instead.
+For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "vehicle movement, ghost driving" is the correct substitute for what was previously listed as `motion_strength: 0.3`.
 
 ## Camera Control
 
@@ -282,7 +277,7 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | aspect_ratio | string | "16:9" | "16:9", "9:16", "1:1" |
 | generate_audio | bool | true | **ALWAYS set false** |
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
-| motion_strength | float | — | 0-1. Lower = less motion/more stable (0.3-0.4 for stationary subjects). Higher = more aggressive motion (0.8-1.0). Omit for default. |
+| motion_strength | — | — | **Not a standard I2V parameter.** Motion Control (V2V) variant only. Omit from all I2V calls. |
 | negative_prompt | string | "" | Max 2500 chars |
 | tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** Same image = forces stationarity. |
 | camera_control | object | — | Named preset OR simple config (not both). See camera control section. |
@@ -485,7 +480,7 @@ Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro
 
 ## Kling 3.0 4K Variant — Future Watch (Not Yet on AIMLAPI)
 
-Kling 3.0 supports native 4K output (up to 4K resolution, up to 60fps). Available on fal.ai as `fal-ai/kling-video/v3/4k/image-to-video` — NOT on AIMLAPI as of May 2026. The 4K variant uses the same elements structure as Pro but with a `mode: "4k"` or equivalent parameter. Monitor AIMLAPI's model list; if added, use for final-delivery hero clips only (cost will be significantly higher than Pro).
+Kling 3.0 supports native 4K output (up to 3840×2160, up to 60fps). **Released April 23, 2026.** On the native Kling API and fal.ai, 4K is accessed via `"mode": "4k"` as a top-level parameter (alongside the existing standard/pro modes). Not yet confirmed on AIMLAPI — treat as **CANARY**: do a test call with `"mode": "4k"` before production use; if AIMLAPI returns an error, fall back to Pro 1080p. Use for final-delivery hero clips only (cost will be significantly higher than Pro 1080p).
 
 ## Error Handling
 

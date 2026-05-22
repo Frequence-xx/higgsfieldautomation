@@ -189,22 +189,20 @@ Formula: [Shot type], [focal length], [camera motion]. Subject [does specific mo
 | Parameter | Character shots | Branded/truck shots | B-roll |
 |-----------|----------------|---------------------|--------|
 | cfg_scale | 0.5 (confirmed optimal — 0.8 over-constrains motion) | 0.7 | 0.4 |
-| motion_strength | 0.3 (face close-up) / 0.5 (walking) | 0.3-0.4 | 0.5-0.6 |
 | Duration | 5 sec max | 5 sec | 5-10 sec |
 | generate_audio | false ALWAYS | false ALWAYS | false ALWAYS |
 | aspect_ratio | "9:16" | "9:16" | "9:16" |
-| Face adherence (Subject Binding) | 80-90 | N/A | N/A |
 | face_consistency | true | false | false |
 
 **cfg_scale resolved (2026-04-29):** 0.5 is confirmed optimal for character shots. CFG 0 = maximum creative freedom, CFG 1 = rigid prompt adherence. 0.8 over-constrains natural motion for close-ups. 0.7 stays correct for truck shots where position fidelity is critical.
 
-**motion_strength range 0.0–1.0 (2026-04-29):** Controls how much motion is injected from the base. 0.1–0.3 = nearly frozen (face close-ups), 0.4–0.6 = moderate (walking scenes), 0.7–1.0 = aggressive action. Use explicit values — default behavior is unpredictable.
+**motion_strength — Motion Control only (updated May 2026):** `motion_strength` is NOT part of the standard I2V schema on any platform including native Kling API. It only exists in the Motion Control (V2V) variant. Do NOT pass it in standard I2V calls. Control motion quantity via `cfg_scale` + prompt anchors instead.
 
 **face_consistency: true (2026-04-29):** Forces Kling to refer back to the Element Binding reference to reconstruct the face even when partially occluded. Set `true` for character shots with Subject Binding active. Not needed for truck or B-roll.
 
 **⚠️ CRITICAL (verified 2026-04-16):** AIMLAPI now defaults `generate_audio: true` for Kling v3 Pro I2V. **Every API call MUST explicitly pass `"generate_audio": false`** — silent breakage risk if a code path omits this. Audio in our character clips destroys Shari'ah compliance.
 
-Default face adherence of 42 is FAR too low for Mourad/Karel — MUST bump to 80-90 via Element Library with 3-4 reference photos.
+**⚠️ "Face adherence 80-90" is a Kling web UI slider — NOT an AIMLAPI parameter (confirmed May 2026).** There is no numeric `face_adherence` field in the Kling v3 I2V API schema. The Kling web app exposes a 0–100 adherence slider that the UI translates into internal weighting — this control is not exposed via API. On AIMLAPI, binding strength is determined entirely by reference image quality (frontal + 3-4 angle shots at ≥1024×1024, clean background) and `face_consistency: true`. The CLAUDE.md note "Subject Binding face adherence 80-90" means achieve 80–90% quality output by supplying top-quality refs — it is not a parameter to pass.
 
 **Element Library structure (verified 2026-04-16):** Max 4 elements per call, max 7 character elements per video, 2-4 reference images per element (1 main + 1-3 supplementary). Reference in prompt as `@Element1`, `@Element2`. Max 3 elements bound in start frame.
 
