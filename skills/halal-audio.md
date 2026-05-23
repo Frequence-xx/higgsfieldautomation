@@ -40,7 +40,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 | Model | Model ID | Dutch? | Cost/1K chars | Use case |
 |-------|----------|--------|---------------|----------|
-| **Eleven v3** | `eleven_v3` | ✓ (70+ lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support. NOT real-time capable (larger codec). |
+| **Eleven v3** | `eleven_v3` | ✓ (74 lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support. GA since March 14, 2026. NOT real-time capable (use `eleven_v3_conversational` for agents only). |
 | Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.12/1K chars | Fallback if v3 unavailable (same cost tier) |
 | Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.06/1K chars | **Draft/iteration** — 75ms latency, 50% cheaper |
 
@@ -712,6 +712,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
+| Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
 
 ---
@@ -790,7 +791,7 @@ if __name__ == "__main__":
 
 ## 11. Dutch VO Transcription QA (Scribe v2)
 
-Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch.
+Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch. GA since March 11, 2026: 99 languages, 98% speaker label accuracy.
 
 **When to run:** after every `eleven_v3` generation before mixing, to catch mispronounced proper nouns (SNELVERHUIZEN, 085 3331133) and confirm Dutch text normalisation applied correctly.
 
@@ -832,11 +833,18 @@ for word in result.words:
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
 
+**`entity_detection` (Scribe v2 — new in 2026):**
+Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO QA, but useful for compliance screening of user-submitted audio.
+- `entity_detection="all"` → detect all 56 entity categories across pii/phi/pci/other/offensive_language
+- **+30% cost surcharge** applies when set (already negligible at $0.22/hour base)
+- Returns entities in `result.entities` with text, type, and character positions
+- Skip for Snelverhuizen VO QA — irrelevant for brand voiceover scripts
+
 **`no_verbatim=True`:** removes filler words, false starts, and disfluencies from the transcript — makes script diff cleaner. Use for VO QA (comparing against intended script). Omit for caption timing use (fillers shift word timestamps).
 
 **Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
 
-**Cost:** ~1 credit/character of transcribed audio (Scribe v2 uses character-based billing at the same rate as TTS Multilingual v2). A 30-second VO (~200 spoken characters) costs ~200 credits base + 20% surcharge (~240 credits total) when `keyterms` is used.
+**Cost:** Scribe v2 is billed **per audio hour**, NOT per character. Batch rate: **$0.22/hour** (reduced from $0.40/hour — 45% cut, announced May 7, 2026). Realtime: $0.39/hour. A 30-second VO costs ~$0.0018 base + 20% keyterm surcharge = **~$0.0022 total** — essentially free for VO QA use. Do NOT budget Scribe as if it were TTS credits.
 
 **QA checklist:**
 - [ ] Transcript contains "SNELVERHUIZEN" (not garbled)
