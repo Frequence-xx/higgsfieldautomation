@@ -324,6 +324,28 @@ python facefusion.py headless-run \
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
+**lip_syncer processor (pass 9 finding, 2026-05-23): sync mouth to voiceover**
+
+When a clip needs Dutch/Arabic voiceover, add `lip_syncer` after `face_swapper` to synchronize mouth movements with the audio. Three model choices: `edtalk_256`, `wav2lip_96`, `wav2lip_gan_96` (default). `--lip-syncer-weight` 0.0–1.0 (default 0.5 — higher = stronger sync, lower = less geometry distortion risk).
+
+```bash
+python facefusion.py headless-run \
+  --source-paths /path/to/voiceover.wav /path/to/approved_character_front.png \
+  --target-path /path/to/clip.mp4 \
+  --output-path /path/to/lipped_clip.mp4 \
+  --processors face_swapper lip_syncer \
+  --face-swapper-model inswapper_128_fp16 \
+  --face-swapper-weight 0.8 \
+  --lip-syncer-model wav2lip_gan_96 \
+  --lip-syncer-weight 0.5 \
+  --face-selector-mode reference \
+  --reference-face-position 0 \
+  --output-video-encoder libx264rgb
+# edtalk_256: better for high-res output, less GAN artifacts
+# wav2lip_gan_96: default, generally more natural-looking for talking head
+# Order: pass source audio FIRST in --source-paths, then face reference image
+```
+
 **CodeFormer alternative (better for olive/brown skin):** GFPGAN can whiten/flatten brown skin features at high fidelity. Use CodeFormer with `w=0.5–0.6` instead — lower w preserves skin tone accuracy.
 
 ```bash
@@ -397,10 +419,13 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## InsightFace buffalo_l Benchmarks
 
-| Model | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size |
-|-------|-----|--------|----------|-----------|------|
-| buffalo_l | 99.83% | 99.33% | 98.23% | 97.25% | 326MB |
-| buffalo_s (CPU fallback) | 99.70% | 98.00% | — | — | 159MB |
+| Model | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size | Notes |
+|-------|-----|--------|----------|-----------|------|-------|
+| buffalo_l | 99.83% | 99.33% | 98.23% | 97.25% | 326MB | Production default |
+| buffalo_m | same as buffalo_l | — | — | — | ~200MB | Faster (~900 FPS), balanced server use — good for batch QA of many frames |
+| buffalo_s (CPU fallback) | 99.70% | 98.00% | — | — | 159MB | Edge/mobile only |
+
+**buffalo_m (pass 9 finding, 2026-05-23):** Identical accuracy to buffalo_l but significantly faster throughput (~900 FPS). Use buffalo_m for batch QA pipelines (many frame extractions in one session) where speed matters. Use buffalo_l for per-clip evaluation where accuracy is paramount. Same threshold calibration as buffalo_l applies.
 
 ## Kling Element Library Auto-View Generation
 
@@ -445,16 +470,25 @@ Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrad
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "klingai/video-o3-reference-to-video",   # model ID TBC on AIMLAPI
     "image_url": last_frame_url,                       # renamed from start_image_url
-    "image_reference": [                               # replaces elements[] in O3
-        "https://cdn/crew_lead/front.png",
-        "https://cdn/crew_lead/three_quarter.png",
-        "https://cdn/crew_lead/profile.png",
-        "https://cdn/crew_lead/full_body.png"
+    "kling_elements": [                                # replaces elements[] in O3 (pass 9 correction)
+        {
+            "name": "crew_lead",                       # referenced in prompt as @crew_lead
+            "description": "moving company crew member, olive skin, navy polo, cargo trousers",
+            "element_input_urls": [                    # 2-4 images: front + angles
+                "https://cdn/crew_lead/front.png",
+                "https://cdn/crew_lead/three_quarter.png",
+                "https://cdn/crew_lead/profile.png",
+                "https://cdn/crew_lead/full_body.png"
+            ]
+        }
     ],
-    "multi_prompt": [                                  # multi-shot control (O3 only)
-        {"prompt": "crew member lifts a box from the truck, golden hour", "duration": 5},
-        {"prompt": "crew member carries box to doorway, focus pull", "duration": 5}
+    # max 3 kling_elements per task; each element 2–4 images in element_input_urls
+    # prompt uses @crew_lead (not @Element1) — name must match exactly
+    "multi_prompt": [                                  # multi-shot control (O3 only, requires multi_shots: true)
+        {"prompt": "@crew_lead lifts a box from the truck, golden hour", "duration": 5},
+        {"prompt": "@crew_lead carries box to doorway, focus pull", "duration": 5}
     ],
+    "multi_shots": True,                              # required to activate multi_prompt
     "face_consistency": True,
     "generate_audio": False,   # CRITICAL: O3 audio defaults ON — must set explicitly
     "aspect_ratio": "9:16"
@@ -464,16 +498,18 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas):**
 - `start_image_url` → renamed to `image_url`
-- `elements` array → replaced by `image_reference` array (up to 4 images)
+- `elements` array → replaced by `kling_elements` array (max 3 elements, each with `name`+`description`+`element_input_urls` of 2–4 images) — **NOT `image_reference`**
+- Prompt references elements by `@name` (element name field), not `@Element1`
+- `multi_shots: True` required to activate `multi_prompt` (multi-shot control)
 - `negative_prompt` **REMOVED** — bake avoidance into positive prompt instead
 - `cfg_scale` **REMOVED** — handled internally
 - `generate_audio` defaults **ON** in O3 (was off by default in O1) — ALWAYS set `False` explicitly
-- Text prompts capped at 2,500 characters
+- Text prompts capped at 2,500 characters; each @element reference consumes 37 characters
 - AIMLAPI endpoint pattern will shift from `/v3/` to `/o3/`
 
 **Avoidance prompting for O3 (no negative_prompt):** Instead of `negative_prompt: "ghost driving, blurry"`, write: `"stationary truck, sharp focus throughout, no vehicle movement, no motion blur"`
 
-**Action on O3 landing on AIMLAPI:** Update `generation-video.md` templates first (remove negative_prompt/cfg_scale), then this file's frame-chaining snippet (`start_image_url` → `image_url`), then confirm `image_reference` parameter passthrough with a draft test.
+**Action on O3 landing on AIMLAPI:** Update `generation-video.md` templates first (remove negative_prompt/cfg_scale), then this file's frame-chaining snippet (`start_image_url` → `image_url`), then confirm `kling_elements` parameter passthrough with a draft test.
 
 ## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-05-21)
 
