@@ -23,9 +23,33 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
 1. **Extract word-level timestamps** — three options in priority order:
 
-   **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE is fully verified for word-level timestamps:
+   **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE is verified for word-level timestamps:
    - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports Dutch natively (150+ languages, introduced 2025-04). Works with both `eleven_multilingual_v2` and `eleven_v3`.
-   - ⚠️ **CONDITIONAL: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — returns only CHARACTER-level timestamps with `eleven_multilingual_v2` (root cause of V2 caption sync issues 2026-04-09/10). With `eleven_v3` (launched Feb 2026), this endpoint appears to return per-character AND per-word timestamps — but this is **unverified in production**. Do NOT rely on it for word-by-word highlighting until tested; fall back to `/v1/forced-alignment`.
+
+     **Response schema (confirmed from Python SDK `ForcedAlignmentResponseModel` — 2026-05-23):**
+     ```python
+     # response.words → List[ForcedAlignmentWordResponseModel]
+     # Each word: .text (str), .start (float, seconds), .end (float, seconds), .loss (float)
+     # response.characters → List[ForcedAlignmentCharacterResponseModel]
+     # Each char: .text (str), .start (float, seconds), .end (float, seconds)
+     # response.loss → float (overall alignment confidence, lower is better)
+
+     # Convert to Remotion Caption format:
+     captions = [
+         {
+             "text": w.text,
+             "startMs": int(w.start * 1000),
+             "endMs": int(w.end * 1000),
+             "timestampMs": int((w.start + w.end) / 2 * 1000),
+             "confidence": 1 - w.loss,  # loss → confidence inversion
+         }
+         for w in response.words
+     ]
+     ```
+
+     **⚠️ Dashboard enablement:** Some users report forced alignment must be enabled in ElevenLabs account settings before the endpoint accepts requests. If you receive a 403 or feature-not-enabled error, check the API features section of your dashboard.
+
+   - ❌ **WRONG for word-level: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — returns **CHARACTER-ONLY** timestamps regardless of model. The Python SDK `Alignment` type confirms this: fields are `char_start_times_ms`, `char_durations_ms`, `chars` — no word-level fields exist (confirmed 2026-05-23 via SDK inspection). Root cause of V2 caption sync issues 2026-04-09/10. **Do NOT use this endpoint for word-by-word highlighting — use `/v1/forced-alignment` instead.**
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
    - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
