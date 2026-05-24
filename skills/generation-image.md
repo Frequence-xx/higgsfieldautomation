@@ -47,6 +47,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | GPT Image 2 | `gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K | 0‡ | ~$0.07-0.35§ | 1K–2K |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
+| Grok Imagine Quality | `x-ai/grok-imagine-image-quality`† | T2I + I2I scenery drafts; 3 refs; strong text | 3 | ~$0.055 (1K), ~$0.07 (2K) | 9:16 native |
 
 †NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction — previously documented incorrectly). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
 
@@ -58,7 +59,9 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 §GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Imagen 4 Fast ($0.02) for iteration, GPT Image 2 only for finals requiring superior text accuracy.
 
-**⚠️ IMAGEN 4 RETIREMENT — URGENT (2026-05-22):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 33 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs).
+†**Grok Imagine Image Quality (2026-05-24):** xAI launched `grok-imagine-image-quality` on 2026-05-06. Predecessor `grok-imagine-image-pro` deprecated **2026-05-15** — do not use. Supports T2I and I2I editing with up to 3 reference images. 9:16 via `aspect_ratio: "9:16"`. Strong text rendering and photorealism. Practical use: cheap B-roll / environment drafts ($0.055 < NBP Pro's $0.13) when character accuracy isn't required. **AIMLAPI model string UNVERIFIED** — AIMLAPI docs still show the deprecated `-pro` variant as of 2026-05-24. Run canary with `x-ai/grok-imagine-image-quality` before relying on it. Do NOT use for character shots (no identity sheet support beyond 3 refs; no face adherence features).
+
+**⚠️ IMAGEN 4 RETIREMENT — URGENT (2026-05-22):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 31 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs).
 
 **Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier. **[DEPRECATED — see retirement notice above]**
 
@@ -75,6 +78,8 @@ Shot needs brand-color still without input? → Flux Kontext Max T2I or Nano Ban
 Shot is the money shot / CTA hero? → Nano Banana Pro Edit (14 refs, T2I) — Imagen 4 Ultra RETIRING 2026-06-24
 Shot needs flawless Dutch text (CTA card)? → GPT Image 2 (99% text accuracy) — run canary first
 Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over Kontext Max ($0.10) — better face stability, lower cost
+Hero frame passed most QA but has 1 brand failure? → NBP Edit inpainting ($0.20) — fix only the failing element, not full regen
+Need cheap B-roll scenery draft (no characters)? → Grok Imagine Quality ($0.055) — run AIMLAPI canary first (model string unverified)
 ```
 
 ## API Call Templates
@@ -321,6 +326,28 @@ NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
 - **Chain update technique (2026-05-08):** Include the PREVIOUS output as one of the reference images when making incremental edits. This reduces drift across multi-pass generation by giving the model a visual anchor of the last state. Remind it explicitly each call to preserve hair, clothing, and facial features.
 - **Iterative refinement loop (2026-05-22):** After each generation pass, use the BEST output from that pass as an additional reference in the next call — alongside the original character sheet. Community-confirmed: achieves 90%+ consistency across 50+ image batches. Loop: generate batch → pick best → add as Image 2 alongside original sheet → generate next batch → repeat. Stop when identity is locked (face distance < 0.4 cosine).
+
+### NBP Semantic Inpainting — Fix Brand Failures Without Regenerating (2026-05-24)
+
+NBP Edit supports mask-free localized editing: pass the hero frame as Image 1 and describe the change in natural language. The model identifies the target area automatically using scene understanding, not pixel masks. No inpainting mask parameter is needed.
+
+**Use case:** A hero frame passes 7/8 QA checks but fails one brand binary item — use inpainting to fix that element at $0.20 instead of re-running the full generation loop (saves 2-5 iteration passes = ~$0.40-1.00).
+
+**Common pipeline fixes:**
+
+| Failure | Inpainting prompt |
+|---------|-------------------|
+| Truck side door visible | `"Image 1: hero frame. Remove the side door from the cargo box. Replace with a smooth flat white sealed panel. Keep everything else in the scene identical — do not change the character, lighting, background, or any other part of the truck."` |
+| Uniform wrong color | `"Image 1: hero frame. Change the shirt color to black. Keep the orange logo on the left chest. Do not change anything else — face, background, truck, jeans."` |
+| Logo color off (yellow instead of #FC8434) | `"Image 1: hero frame. Change all orange/yellow brand elements to exactly #FC8434 bright orange. Do not change any other part of the image."` |
+| Box color wrong (brown kraft instead of white) | `"Image 1: hero frame. Change the moving box to white cardboard with #FC8434 orange text. Do not change the character, truck, or background."` |
+
+**Rules:**
+- Always pass the hero frame as Image 1 in the `image_urls` array
+- Name the target area explicitly — "the cargo box", "the shirt", "the logo" — not "it" or "that"
+- Explicitly state what NOT to change: "do not change the face, lighting, or background"
+- If the fix fails after 2 attempts, regenerate from scratch rather than chaining fixes
+- Log inpainting calls in cost tracking the same as any NBP Edit call ($0.20 each)
 
 ### Multi-Reference Role Assignment (2026-04-27)
 
