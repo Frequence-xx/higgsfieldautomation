@@ -97,12 +97,17 @@ for i in range(30):
 
 ## CFG Scale Guidelines
 
+**v3 range: 0.0–1.0 only** (v1.x allowed up to 2.0 — do not exceed 1.0 on v3, confirmed May 2026).
+
 | Shot Type | cfg_scale | Reasoning |
 |-----------|-----------|----------|
 | Establishing / B-roll | 0.4 | Creative interpretation acceptable |
 | Character movement | 0.5 (default) | Balanced motion + adherence |
 | Truck / product hero | 0.7 | Strict adherence to preserve branding |
 | Branded transitions | 0.7 | Preserve specific visual elements |
+| Character multi-shot sequence | 0.8 | Tighter identity lock across multi-shot; documented in Kling API examples |
+
+**Upper bound note:** 0.8 is the practical maximum for character shots. Values approaching 1.0 over-constrain motion and produce stiff, jittery output. Use 0.8 only for multi-shot sequences where identity consistency matters more than motion fluidity.
 
 ## Motion Strength — NOT a Standard I2V Parameter
 
@@ -122,12 +127,12 @@ For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "veh
 | Type | Description | AIMLAPI Status |
 |------|-------------|---------------|
 | `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **CONFIRMED — use this** |
-| `"down_back"` | Camera descends and pulls backward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
-| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
-| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
-| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED across Kling API, ComfyUI, fal.ai, Kie AI, WaveSpeedAI — CANARY on AIMLAPI wrapper** |
+| `"down_back"` | Camera descends and pulls backward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
 
-**Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are now confirmed across 5+ platforms including fal.ai, Kie AI, and WaveSpeedAI for Kling v3 — high confidence they will work on AIMLAPI too, but AIMLAPI's wrapper should still get one canary call per preset before production use.
+**Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are confirmed across 6+ platforms specifically for Kling v3 (not just v1/v2) as of May 2026 — high confidence they will work on AIMLAPI, but one canary call per preset is still required before production use.
 
 **Simple config:** all values range -10 to 10. Recommended for cinematic work: **1-2** (Kling 3 Pro guides confirm lower values = cleaner, more stable motion; values ≥3 risk instability). **Only ONE config value should be non-zero at a time** — the official Kling API spec is explicit about this constraint. Setting multiple non-zero values simultaneously is undefined behavior.
 
@@ -402,7 +407,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI, Replicate, fal.ai, Kie AI, ModelsLab, and Eachlabs — but **NOT on AIMLAPI as of May 2026** (AIMLAPI docs index shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Do a canary test before any production use — Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
+**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai, Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, Artlist, and OpenArt — but **NOT on AIMLAPI as of May 2026** (AIMLAPI docs index shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -478,9 +483,15 @@ Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro
 
 **BREAKING CHANGE for O3:** When O3 is added, `cfg_scale` and `negative_prompt` are BOTH REMOVED — O3 handles them internally. Every gen script using these parameters will break. Update scripts before switching.
 
-## Kling 3.0 4K Variant — Future Watch (Not Yet on AIMLAPI)
+## Kling 3.0 4K Variant — Future Watch (Not Yet Confirmed on AIMLAPI)
 
-Kling 3.0 supports native 4K output (up to 3840×2160, up to 60fps). **Released April 23, 2026.** On the native Kling API and fal.ai, 4K is accessed via `"mode": "4k"` as a top-level parameter (alongside the existing standard/pro modes). Not yet confirmed on AIMLAPI — treat as **CANARY**: do a test call with `"mode": "4k"` before production use; if AIMLAPI returns an error, fall back to Pro 1080p. Use for final-delivery hero clips only (cost will be significantly higher than Pro 1080p).
+Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 23, 2026.**
+
+**How 4K works (native Kling API):** 4K is NOT a separate model — it is a mode toggle on existing Kling v3 models. Pass `"mode": "4k"` as a top-level request parameter alongside the standard I2V parameters. The same model handles std (720p), pro (1080p), and 4K (3840×2160).
+
+**4K I2V supported features:** single-shot (start frame only), multi-shot, start+end frame, element control with video character and multi-image inputs. Duration range: 3–15 seconds (same as pro mode). Motion Control and voice are NOT available in 4K mode.
+
+**AIMLAPI status:** On AIMLAPI, mode is typically encoded in the model string (Standard vs Pro). Whether `"mode": "4k"` is accepted as a top-level parameter on AIMLAPI's Kling wrapper is UNVERIFIED. Do a canary test call with `"mode": "4k"` before any production use; if AIMLAPI returns an error, fall back to Pro 1080p. Use for final-delivery hero clips only — cost will be significantly higher than Pro 1080p.
 
 ## Error Handling
 
