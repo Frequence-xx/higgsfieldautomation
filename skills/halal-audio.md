@@ -159,7 +159,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 | Source | License | Commercial? | Attribution? | Download |
 |--------|---------|-------------|--------------|----------|
-| **NoCopyrightNasheeds (NCN)** — nocopyrightnasheeds.com | NCN Custom | YouTube: free with credit. Outside YouTube: paid license required. | Yes (description) | YouTube DL via yt-dlp |
+| **NoCopyrightNasheeds (NCN)** — nocopyrightnasheeds.com | NCN Custom | YouTube: free with credit. Outside YouTube: paid license required. Tiers: Forever $99.99 (one-time) · Monthly $19.99/mo · Mujahideen $11.99/mo — all tiers: outside-YouTube commercial use, no attribution. | Yes on free tier (YouTube only) | YouTube DL via yt-dlp |
 | **Internet Archive — Mix Vocal Only Nasheeds** — archive.org/details/mixvocalonlynasheeds | Varies per track | Check per track | Check per track | Direct download |
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
@@ -709,6 +709,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
 | Ambient SFX has click at loop point despite acrossfade | Pre-processing acrossfade not applied, or file too short | Use ElevenLabs SFX v2 with `loop=True` instead — output is natively seamless, no post-processing needed |
+| SFX has distracting room tone or crowd noise that arnndn can't fully clean | arnndn is for broadband hiss; mixed source noise requires source separation | Use ElevenLabs Voice Isolator (`client.audio_isolation.convert()`) — AI source separation; costs 1000 credits/minute (see §10 Option C) |
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
@@ -850,7 +851,12 @@ Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO
 - [ ] Transcript contains "SNELVERHUIZEN" (not garbled)
 - [ ] Phone number "085 3331133" transcribed in Dutch digit form ("nul-acht-vijf...")
 - [ ] No extra/dropped words vs. approved script
-- [ ] Total duration within ±0.5 s of target video slot length
+- [ ] Total duration within ±0.5 s of target video slot length — use `result.audio_duration_secs` (added April 7, 2026; no ffprobe needed)
+
+**`result.audio_duration_secs` (added April 7, 2026):** The response now includes total audio duration as a float. Use this for the ±0.5 s duration check instead of `ffprobe` — saves a subprocess call:
+```python
+print(f"VO duration: {result.audio_duration_secs:.2f}s")  # compare against target slot
+```
 
 **Caption reuse:** the word timestamps from Scribe v2 can be passed directly to `captions-and-titles.md` §2 pipeline (whisper → timecode → Remotion). No separate Whisper run needed.
 
@@ -899,3 +905,28 @@ ffmpeg -i sfx_noisy.wav \
 - **arnndn**: broadband digital hiss, microphone noise; better speech/voice preservation if any voice content is present in the SFX
 
 **Workflow:** Pre-process once, save as `_clean.wav` in the SFX library for reuse.
+
+### Option C: ElevenLabs Voice Isolator (AI-powered — best for SFX with mixed voice/noise)
+
+Deep-learning model that separates vocal signal from background noise. Useful for cleaning ambient SFX files that contain unwanted room tone, crowd noise, or bleed. Also useful for extracting a clean vocal track from a nasheed that has recording artifacts (room reverb, hiss) — but NOT as a substitute for rejecting a nasheed with actual instruments (policy: reject those outright, do not strip them).
+
+**Cost:** 1000 characters per minute of audio (uses same ElevenLabs credit pool as TTS). A 30-second SFX file costs ~500 credits (~$0.06 at Creator plan rates). Use sparingly — only when arnndn/afwtdn insufficient.
+
+**Supports:** WAV, MP3, FLAC, OGG, AAC (input); up to 500MB / 1 hour.
+
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+with open("sfx_noisy.mp3", "rb") as f:
+    cleaned = b"".join(client.audio_isolation.convert(audio=f))
+
+with open("sfx_clean.mp3", "wb") as f:
+    f.write(cleaned)
+```
+
+**When to use vs arnndn/afwtdn:**
+- **Voice Isolator**: AI-powered, no local model download; best when SFX contains room tone + voice-like content (e.g., ambient crowd); high-quality result
+- **arnndn**: broadband digital hiss from microphone; best for pure noise reduction without isolating a specific source
+- **afwtdn**: HVAC/mains hum; no credits consumed
