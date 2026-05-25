@@ -186,6 +186,8 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
+**InsightFace install (pass 10 finding, 2026-05-25):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
+
 ```python
 from insightface.app import FaceAnalysis
 import cv2, numpy as np
@@ -415,6 +417,23 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "duration": 5,
     "aspect_ratio": "9:16"
 }, headers=headers)
+```
+
+**Alternative: `klingai/video-o1-video-to-video-reference` (pass 10 finding, 2026-05-25):** Confirmed available on AIMLAPI. Instead of extracting a last frame (I2V), pass the entire previous clip as a video reference. Stronger continuity for character motion and scene lighting — the model reads temporal context from the full clip rather than a single frozen frame. Use when a character was in motion at clip end (motion-blur frame risk) or when scene lighting continuity matters more than exact pose match.
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/video-o1-video-to-video-reference",
+    "video_url": prev_clip_url,           # Full previous clip as continuity anchor
+    "elements": [{"frontal_image_url": "crew_lead/front.png", "reference_image_urls": ["crew_lead/three_quarter.png"]}],
+    "prompt": "...",
+    "generate_audio": False,
+    "duration": 5,
+    "aspect_ratio": "9:16"
+}, headers=headers)
+# Cost: same as O1 reference-to-video ($1.46/5s Pro tier).
+# Requires prev_clip uploaded to a CDN or public URL — not a local path.
+# Fall back to I2V frame-chaining if prev_clip is not yet uploaded.
 ```
 
 ## InsightFace buffalo_l Benchmarks
