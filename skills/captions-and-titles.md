@@ -50,6 +50,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      **⚠️ Dashboard enablement:** Some users report forced alignment must be enabled in ElevenLabs account settings before the endpoint accepts requests. If you receive a 403 or feature-not-enabled error, check the API features section of your dashboard.
 
    - ❌ **WRONG for word-level: `POST /v1/text-to-speech/{voice_id}/with-timestamps`** — returns **CHARACTER-ONLY** timestamps regardless of model. The Python SDK `Alignment` type confirms this: fields are `char_start_times_ms`, `char_durations_ms`, `chars` — no word-level fields exist (confirmed 2026-05-23 via SDK inspection). Root cause of V2 caption sync issues 2026-04-09/10. **Do NOT use this endpoint for word-by-word highlighting — use `/v1/forced-alignment` instead.**
+
+     **`alignment` vs `normalized_alignment` in the response:** The `with-timestamps` response contains two character-level alignment objects. `alignment` timestamps map to original input characters (e.g., "0", "8", "5" for the input "085"). `normalized_alignment` timestamps map to characters as spoken after text normalization (e.g., "n","u","l"," ","a","c","h","t"," ","v","i","j","f" for Dutch "085" → "nul acht vijf"). For Dutch ads with phone numbers ("085 3331133") or numerals, `normalized_alignment` matches actual pronunciation and is the correct field to use when grouping characters into word-level boundaries. Still character-level only — group by whitespace to reconstruct words. **Fastest correct path remains `/v1/forced-alignment` which returns true word-level timestamps directly.**
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
    - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
@@ -184,6 +186,16 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    ```
 
    Version: 4.0.448 (May 2026). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+
+   **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
+   Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
+
+   ```typescript
+   import { openAiWhisperApiToCaptions } from '@remotion/openai-whisper';
+   // transcription = OpenAI API response with timestamp_granularities: ['word']
+   const { captions } = openAiWhisperApiToCaptions({ transcription });
+   // → Caption[] compatible with createTikTokStyleCaptions()
+   ```
 
 2. **Parse timestamps** into frame-number arrays:
    ```
