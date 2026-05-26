@@ -196,7 +196,7 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 **TNTwise REAL Video Enhancer v2.4.1** (stable, 2026-01-02) is the recommended tool. Also available on Steam (released 2026-02-11) for easier Windows/Mac install. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
 
-**v2.4.2 pre-release note (2026-01-09, not yet stable):** Fixes a conflict between PySceneDetect and restoration models (upscaling/denoising) when both are enabled simultaneously — if your pipeline uses RVE's built-in scene detection alongside a restoration model, upgrading to 2.4.2 once stable resolves random crashes. Also adds decimal frame timestep support and fixes FFmpeg reading stopping randomly. Monitor releases at https://github.com/TNTwise/REAL-Video-Enhancer/releases.
+**v2.4.2 pre-release note (2026-01-09, still pre-release as of May 2026):** Fixes a conflict between PySceneDetect and restoration models (upscaling/denoising) when both are enabled simultaneously — if your pipeline uses RVE's built-in scene detection alongside a restoration model, upgrading to 2.4.2 once stable resolves random crashes. Also adds decimal frame timestep support, input folder structure for output files, and fixes FFmpeg reading stopping randomly. **Current stable: 2.4.1.** Monitor releases at https://github.com/TNTwise/REAL-Video-Enhancer/releases.
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
@@ -249,7 +249,12 @@ RIFE blends across hard cuts, producing ghost frames. Detect and split clips at 
 
 **Option A — PySceneDetect (recommended, handles splitting automatically):**
 ```bash
-# Install: pip install scenedetect[opencv]  # v0.7 as of May 2026
+# Install (v0.7, requires Python 3.10+):
+# Server/headless environments (our pipeline): pip install scenedetect-headless
+# Desktop with GUI libraries:                  pip install scenedetect
+# NOTE: The [opencv] extra no longer exists in v0.7 — opencv is now a core dependency.
+#       Use scenedetect-headless on servers to avoid pulling in GUI libs (opencv-python-headless).
+
 # Detect content-aware cuts and auto-split to segment_XXX.mp4 files
 scenedetect -i clip.mp4 detect-content --threshold 27 split-video
 # Lower threshold = more sensitive (catch subtle cuts); default 27 is safe for AI video
@@ -257,7 +262,9 @@ scenedetect -i clip.mp4 detect-content --threshold 27 split-video
 **v0.7 release notes (2026-05-03):**
 - Frame numbers are now 1-based (was 0-based). The `detect-content --threshold` and `split-video` command syntax is unchanged — only affects scripts that reference specific frame numbers. Our pipeline command above is unaffected.
 - **VFR (variable framerate) video support:** v0.7 properly handles VFR input — relevant because some AI model outputs (particularly Veo) may have slightly irregular frame timing. PySceneDetect 0.7 now reads actual frame timestamps instead of assuming constant framerate, so scene boundaries are more accurate on VFR clips.
-- New `save-xml` command exports scene list in Final Cut Pro XML format — not relevant to our FFmpeg pipeline but useful if editing in FCP.
+- New `save-fcp` command exports scene list in Final Cut Pro XML format — not relevant to our FFmpeg pipeline but useful if editing in FCP.
+- New `save-qp` command writes a QP keyframe file for x264/x265 — lets you force keyframes at scene boundaries during re-encode instead of splitting. Not needed for our RIFE pre-step (we split), but useful if re-encoding a long clip that contains multiple scenes.
+- **install change**: `pip install scenedetect[opencv]` is invalid in v0.7 — opencv-python is now a core dep. Use `scenedetect-headless` on servers (see install command above).
 
 **Option B — FFmpeg scdet (no install, timestamps only):**
 ```bash
@@ -720,7 +727,7 @@ Before marking video as delivered:
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
-- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly), interpolate per-segment with rife-v4.22, check ghost artifacts
+- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.22, check ghost artifacts
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
 - [ ] TikTok repurpose: re-check right 164px dead zone (wider than Instagram) — see §5g
 - [ ] All text overlays composited (see text-overlay-compositing.md)
