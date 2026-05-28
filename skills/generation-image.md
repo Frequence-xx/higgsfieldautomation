@@ -34,6 +34,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 | Model | AIMLAPI String | Best For | Max Refs | Cost | 9:16 Output |
 |-------|---------------|----------|----------|------|-------------|
+| Gemini 2.5 Flash Image | `google/gemini-2.5-flash-image`‖ | Ultra-cheap T2I layout/composition drafts (no refs, no reasoning). Use ONLY before NB2 pass when you need rough placement check — NOT for character or brand shots | 0 | ~$0.039 | native 9:16 |
 | Imagen 4 Fast (DRAFT) | `google/imagen-4.0-fast-generate-001` | **⚠️ RETIRES 2026-06-24** — cheap prompt iteration, $0.02/img. Migrate to NBP now. | 0 | $0.02 | native |
 | Imagen 4 | `google/imagen-4.0-generate-001` | **⚠️ RETIRES 2026-06-24** — use NBP Pro instead | 0 | ~$0.04 | native |
 | Imagen 4 Ultra | `google/imagen-4.0-ultra-generate-001` | **⚠️ RETIRES 2026-06-24** — migrate to NBP Pro immediately | 0 | ~$0.06 | 2K native |
@@ -48,6 +49,8 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 | Grok Imagine Quality | `x-ai/grok-imagine-image-quality`† | T2I + I2I scenery drafts; 3 refs; strong text | 3 | ~$0.055 (1K), ~$0.07 (2K) | 9:16 native |
+
+‖**Gemini 2.5 Flash Image (2026-05-28):** The original "Nano Banana" (Gemini 2.5 Flash Image) is available on AIMLAPI at ~$0.039/img. T2I only, no reference images, no Gemini 3 reasoning. Use ONLY as a sub-NB2 draft tier for rough composition/layout checks before committing NB2 credits. Do NOT use for character or brand-critical shots — quality is significantly below NB2. **AIMLAPI model string `google/gemini-2.5-flash-image` — run canary to confirm before production use.** Native 9:16 output. Pricing: ~42% cheaper than NB2 ($0.039 vs $0.067 at 1K).
 
 †NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction — previously documented incorrectly). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
 
@@ -68,6 +71,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 ### Decision Flow
 
 ```
+Need ultra-cheap T2I layout/composition draft (no chars, no refs)? → Gemini 2.5 Flash Image ($0.039) — run canary first (model string unverified)
 Shot has characters, need to iterate prompt? → NB2 Edit first ($0.07 at 1K, or $0.045 at 512px draft), then NBP Edit for approved final ($0.20)
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
@@ -394,7 +398,7 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 
 ## Prompting Rules for Flux Kontext Max
 
-**Flux Kontext Max Multi (2026-05-22):** BFL released a multi-reference variant. On fal.ai: `fal-ai/flux-pro/kontext/max/multi`; on Replicate: `multi-image-kontext-max`. **NOT confirmed on AIMLAPI as of 2026-05-22.** AIMLAPI Kontext endpoints remain single-reference. Workaround: composite character + truck into one reference image (FFmpeg hstack) before calling the API, rather than passing two separate refs. Monitor `docs.aimlapi.com/api-references/image-models/flux` for a multi endpoint.
+**Flux Kontext Max Multi (2026-05-28 UPDATE — CONFIRMED):** `image_url` on AIMLAPI's `flux/kontext-max/image-to-image` accepts an **array of URLs**. AIMLAPI docs show working 2-image examples (place object from image A onto image B). This was unverified as of 2026-05-22 — now confirmed operational. BFL-native supports up to 8-10 refs; AIMLAPI confirmed at 2 in docs, exact max unclear — treat 2 as the safe ceiling until you run a canary with 3+. Dedicated `/multi` endpoints exist on fal.ai (`fal-ai/flux-pro/kontext/max/multi`) and Replicate (`multi-image-kontext-max`) but still no separate `/multi` path on AIMLAPI — use the standard I2I endpoint with array input instead. The FFmpeg hstack composite workaround is no longer required for 2-ref calls.
 
 - 30-80 word sweet spot, maximum 512 tokens
 - FLUX does NOT support CLIP-style weighting — `(keyword:1.5)` is silently ignored
@@ -406,9 +410,11 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
 - `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Two regimes: (1) character/face editing → use 2.0–2.5 (more image-preserving, prevents face warp; 2.0 is the confirmed lower bound for stable face output); (2) text/typography editing → use 3.5–4.0 (more prompt-literal for letter accuracy). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
 - **`image_strength`** (0–1, default 0.1): Controls how much the reference image influences the output. **Status: UNVERIFIED on AIMLAPI Kontext endpoint** — may not be exposed. If available: increase to 0.3–0.5 for stronger face identity lock (higher = more reference-faithful, less prompt flexibility). Run canary to confirm parameter is accepted before relying on it.
-- **Multi-image on AIMLAPI**: `image_url` accepts an array. AIMLAPI docs confirm **2 reference images** in examples. BFL-native supports up to 8-10, but higher counts on AIMLAPI are UNVERIFIED. Do not assume 8 slots — treat 2 as confirmed max until canary proves otherwise.
+- **Multi-image on AIMLAPI (confirmed 2026-05-28)**: `image_url` accepts an array. AIMLAPI docs confirm **2 reference images** in working examples. BFL-native supports up to 8-10, but counts above 2 on AIMLAPI are unverified — treat 2 as the safe max until canary confirms 3+.
 - `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
 - **`prompt_upsampling`**: When `true`, an LLM rewrites the prompt for richer output — but results are NOT reproducible across calls. For character editing and brand-critical shots, set `prompt_upsampling: false` to maintain reproducibility. For T2I scenery shots where variation is acceptable, leaving it true may improve output. Status on AIMLAPI's Kontext endpoint: UNVERIFIED — may be handled server-side. Use `false` explicitly if the parameter is exposed.
+
+**Kontext Max speed upgrade (2026-03-03):** BFL doubled generation speed for both text-to-image and image-editing tasks with zero quality loss. Turnaround on AIMLAPI should be ~15-20s at current load.
 
 ### Max vs Pro — When to Use Which (2026-05-18)
 
