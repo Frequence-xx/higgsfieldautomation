@@ -336,7 +336,8 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 - Lighting: even, no harsh shadows — shadow on face degrades facial geometry
 - Expression: neutral base image required; expression variants are optional additions
 - **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources)
-- **More refs ≠ better**: 1-4 focused images optimal. More than 4 confuses the model and weakens binding
+- **reference_image_urls are STRONGLY RECOMMENDED, not optional** — multiple sources (May 2026) indicate that passing frontal_image_url alone without reference_image_urls may trigger a model error. Minimum 2 total images per element (frontal + at least 1 reference angle).
+- **More refs ≠ better**: 2-4 focused images optimal. More than 4 confuses the model and weakens binding
 - **frontal_image_url is mandatory** — reference_image_urls alone (without frontal) will not bind correctly
 - **Pose matters**: simple neutral poses (standing, arms at sides) produce far less identity drift than complex poses or strong non-frontal angles. Use complex reference poses only as supplemental refs, not as the frontal anchor.
 
@@ -407,7 +408,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai, Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, Artlist, and OpenArt — but **NOT on AIMLAPI as of May 2026** (AIMLAPI docs index shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
+**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) released March 5, 2026 and is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai, Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, EachLabs, and Media.io — but **NOT on AIMLAPI as of May 2026** (AIMLAPI docs index shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -477,7 +478,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 (model string on other platforms: `kwaivgi/kling-v3-omni-video`) is available on fal.ai, Replicate, PiAPI, and Atlas Cloud, but not AIMLAPI docs index. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro. **Confirmed NOT on AIMLAPI as of May 2026** — O3 (model string on other platforms: `kwaivgi/kling-v3-omni-video`) is available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, and Runware (including a dedicated O3 4K variant) — but not AIMLAPI docs index. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:** Multi-image element building, multi-character coreference (3+ characters), 3D Spacetime Joint Attention for stronger physics and consistency, reference-to-video workflow. If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
@@ -487,11 +488,11 @@ Kling O3 (V3 Omni, released Feb 2026) is the premium reasoning tier above v3 Pro
 
 Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 23, 2026.**
 
-**How 4K works (native Kling API):** 4K is NOT a separate model — it is a mode toggle on existing Kling v3 models. Pass `"mode": "4k"` as a top-level request parameter alongside the standard I2V parameters. The same model handles std (720p), pro (1080p), and 4K (3840×2160).
+**How 4K works (native Kling API):** The native Kling API accepts `"mode": "4k"` as a top-level parameter. However, third-party API wrappers implement 4K differently: **fal.ai exposes it as a dedicated model endpoint** (`fal-ai/kling-video/v3/4k/image-to-video`), not a parameter toggle. Runware similarly exposes a separate "Kling VIDEO O3 4K API" model. This means AIMLAPI may use either a separate model string or the `mode` parameter — do NOT assume either approach without a canary test.
 
 **4K I2V supported features:** single-shot (start frame only), multi-shot, start+end frame, element control with video character and multi-image inputs. Duration range: 3–15 seconds (same as pro mode). Motion Control and voice are NOT available in 4K mode.
 
-**AIMLAPI status:** On AIMLAPI, mode is typically encoded in the model string (Standard vs Pro). Whether `"mode": "4k"` is accepted as a top-level parameter on AIMLAPI's Kling wrapper is UNVERIFIED. Do a canary test call with `"mode": "4k"` before any production use; if AIMLAPI returns an error, fall back to Pro 1080p. Use for final-delivery hero clips only — cost will be significantly higher than Pro 1080p.
+**AIMLAPI status:** UNVERIFIED. Two possible access methods — (1) pass `"mode": "4k"` alongside standard I2V parameters, or (2) use a dedicated model string (e.g., `klingai/video-v3-4k-image-to-video`). Test method 1 first (zero extra cost if rejected); if AIMLAPI returns an error, check docs index for a 4K model string. Fall back to Pro 1080p if neither works. Use for final-delivery hero clips only.
 
 ## Error Handling
 
