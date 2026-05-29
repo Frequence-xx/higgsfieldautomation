@@ -128,19 +128,37 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
+   **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
+   - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
+   - `transcribe()` requires `whisperPath: string` — same path passed to `installWhisperCpp(to:)`
+   - `transcribe()` requires `whisperCppVersion: string` — must match the version string used in `installWhisperCpp(version:)`
+
+   Omitting any of these will cause a TypeScript compile error (they have no `?` in the interface).
+
    **Two transcription modes — pick one:**
 
    **Mode A (DTW, recommended):** `tokenLevelTimestamps: true` adds `--dtw` to whisper.cpp. Produces the most accurate single-point timestamp per word (`t_dtw`). `tokensPerItem` and `splitOnWord` have **no effect** in DTW mode.
 
    ```typescript
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
-   await installWhisperCpp({ version: '1.8.4', printOutput: false }); // once; v1.8.4 required for large-v3-turbo
+
+   const WHISPER_PATH = './whisper-cpp';   // installation directory
+   const WHISPER_VERSION = '1.8.4';        // v1.8.4 required for large-v3-turbo
+
+   await installWhisperCpp({
+     version: WHISPER_VERSION,
+     to: WHISPER_PATH,       // REQUIRED — no default
+     printOutput: false,
+   });
+
    const result = await transcribe({
      inputPath: 'voiceover.wav',
-     model: 'large-v3-turbo',    // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
+     whisperPath: WHISPER_PATH,         // REQUIRED — path from installWhisperCpp(to:)
+     whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version
+     model: 'large-v3-turbo',           // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
-     tokenLevelTimestamps: true,  // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
-     flashAttention: false,       // keep false on CPU; set true only with CUDA GPU
+     tokenLevelTimestamps: true,        // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
+     flashAttention: false,             // keep false on CPU; set true only with CUDA GPU
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // captions → Caption[] ready for createTikTokStyleCaptions()
@@ -154,6 +172,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    ```typescript
    const result = await transcribe({
      inputPath: 'voiceover.wav',
+     whisperPath: WHISPER_PATH,          // REQUIRED
+     whisperCppVersion: WHISPER_VERSION, // REQUIRED
      model: 'large-v3-turbo',
      language: 'nl',
      tokenLevelTimestamps: false, // DTW off; enables tokensPerItem + splitOnWord
@@ -165,6 +185,10 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    // Each Caption covers exactly one word — good for createTikTokStyleCaptions()
    // timestampMs = (startMs + endMs) / 2 (no DTW), timing slightly less accurate
    ```
+
+   **Optional parameters worth knowing:**
+   - `onProgress?: (progress: number) => void` — callback receiving 0–1 progress updates during transcription (useful for long voiceovers)
+   - `signal?: AbortSignal` — cancel an in-progress transcription via `AbortController`
 
    **`additionalArgs` escape hatch:** Pass custom whisper.cpp CLI flags via `additionalArgs: ['--no-prints', '--print-special']` (string[] or key-value pair arrays). Only needed for non-standard whisper.cpp builds.
 
@@ -488,15 +512,17 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.447+)
+### Full API (v4.0.469 — current as of 2026-05-29)
 
 | Export | Purpose |
 |--------|---------|
 | `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight |
-| `parseSrt()` | Parses SRT → `Caption[]` — **block-level only, NO word timestamps** |
+| `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps** |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
 | `Caption` | Type: `{ text, startMs, endMs, timestampMs, confidence }` |
+| `TikTokPage` | Type: `{ text, startMs, durationMs, tokens: TikTokToken[] }` — `durationMs` added v4.0.261 |
+| `TikTokToken` | Type: `{ text, fromMs, toMs }` — named export for TypeScript typing |
 
 No `parseWebVtt()` exists in this package. No `convertToCaptions()` either — that was deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
@@ -520,6 +546,9 @@ const { pages } = createTikTokStyleCaptions({
   captions,
   combineTokensWithinMilliseconds: 500, // word-by-word
 });
+// Each page: { text: string, startMs: number, durationMs: number, tokens: TikTokToken[] }
+// durationMs is available from v4.0.261 — use it to advance pages:
+// const currentPage = pages.find(p => currentTimeMs >= p.startMs && currentTimeMs < p.startMs + p.durationMs);
 
 {currentPage?.tokens.map((token, i) => {
   const isActive = currentTimeMs >= token.fromMs && currentTimeMs < token.toMs;
