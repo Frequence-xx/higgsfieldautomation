@@ -75,17 +75,25 @@ Audio tags are inline `[tag]` markers in the text that direct delivery. They are
 
 eleven_v3 has a community-documented library of ~1806 tags across 15 categories (emotions, delivery styles, accents, pacing, reactions, etc.). The tags below are the verified useful subset for Snelverhuizen brand ads. Anything in brackets is interpreted as a tag, not spoken — so typos or unknown tags silently fail.
 
-**Appropriate for Snelverhuizen ads:**
+**ElevenLabs does NOT publish an exhaustive official tag list.** Tags are voice- and context-dependent. The list below distinguishes confirmed (verified in official ElevenLabs blog posts/docs) from unconfirmed (appear in third-party summaries, may work but test first).
+
+**Confirmed in official ElevenLabs sources:**
+- `[calm]` — composed, professional; use for contact info
+- `[pauses]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores)
+- `[matter-of-fact]` — neutral, direct delivery; good safe fallback for any ad line
+- `[drawn out]` — slows and stretches the next phrase for emphasis; use on key brand claims
+
+**Unconfirmed (test on Willem voice before production — may be silently ignored):**
 - `[sincere]` — honest, direct delivery; use for brand promise lines
 - `[warm]` — approachable, friendly; use for customer-benefit lines
 - `[confident]` — authoritative, trust-building; use for CTA
-- `[calm]` — composed, professional; use for contact info
 - `[conversational]` — natural, unhurried pace; use for longer copy
 - `[newsreader]` — clean broadcast delivery; use for factual claims
 - `[professional]` — neutral authority; safe default for any line
 - `[direct]` — punchy, no-nonsense; use for price/offer lines
-- `[pauses]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores)
 - `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel
+
+**Test protocol for unconfirmed tags:** generate one sentence with and without the tag using Willem + `eleven_v3`; if delivery is identical, the tag is not working on this voice — switch to `[matter-of-fact]` or `[calm]` instead.
 
 **Avoid for Snelverhuizen brand:**
 - `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
@@ -163,8 +171,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Internet Archive — Mix Vocal Only Nasheeds** — archive.org/details/mixvocalonlynasheeds | Varies per track | Check per track | Check per track | Direct download |
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
-| **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download |
-| **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download |
+| **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download — **REJECT for Snelverhuizen**: platform explicitly uses daf (frame drum) on tracks. Daf is percussion; Snelverhuizen policy prohibits all instruments. Do not use. |
+| **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
