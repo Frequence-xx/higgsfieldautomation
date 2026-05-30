@@ -355,12 +355,16 @@ ffmpeg -i normalized.mp4 \
 
 ### 5c. Platform Specs Reference (2026)
 
-| Platform | Resolution | FPS | Codec | Audio | Max File |
-|----------|-----------|-----|-------|-------|---------|
-| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 4 GB |
-| TikTok | 1080×1920 | 30 | H.264 | AAC 192k 44.1kHz | 287.6 MB |
-| YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 15 min |
-| WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) |
+| Platform | Resolution | FPS | Codec | Audio | Max File | Max Length |
+|----------|-----------|-----|-------|-------|---------|------------|
+| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 4 GB | **3 min** (180s) |
+| TikTok | 1080×1920 | 30 | H.264 | AAC 192k 44.1kHz | 287.6 MB (mobile) / 10 GB (Studio) | 10 min |
+| YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | — | 3 min |
+| WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) | 60s |
+
+**Instagram Reels max length note:** Instagram extended the limit to 3 minutes (180 seconds) — was previously capped at 90 seconds on some accounts. Our ads are typically 30–60s, well within this.
+
+**TikTok upload:** Mobile app cap is 287.6 MB (iOS) / 72 MB (Android). Always upload via TikTok Studio (desktop) for master-quality files — supports up to 10 GB with no in-app compression.
 
 **-pix_fmt yuv420p is MANDATORY** for all platform uploads. Without it, Instagram and some players reject the file silently.
 
@@ -685,13 +689,11 @@ ffmpeg -filters 2>/dev/null | grep drawvg
 # badge.vgs — save this file first
 cat > /opt/pipeline/overlays/brand_badge.vgs << 'EOF'
 # Orange pill CTA badge — bottom-center placement
-# Frame: 1080x1920. Badge: 600px wide, 80px tall, centered at y=1550
-set_source_rgb 0.988 0.518 0.204   # #FC8434
-arc  240 1550 40 1.5708 -1.5708    # left cap
-rectangle 240 1510 600 80          # body
-arc  840 1550 40 -1.5708 1.5708    # right cap
+# Frame: 1080x1920. Badge: 600px wide, 80px tall, centered x=(1080-600)/2=240, top-y=1510
+# setrgba takes r g b a as floats 0-1; #FC8434 = 0.988 0.518 0.204
+setrgba 0.988 0.518 0.204 1
+roundedrect 240 1510 600 80 40
 fill
-# Text uses cairo pango layout — requires drawtext for actual text layer
 EOF
 
 ffmpeg -i graded.mp4 \
@@ -699,6 +701,17 @@ ffmpeg -i graded.mp4 \
   -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy \
   with_badge.mp4
 ```
+
+**VGS command reference (correct names — the prior `set_source_rgb` / `rectangle` were wrong):**
+
+| Purpose | Correct VGS command | Notes |
+|---------|--------------------|----|
+| Set fill color (float) | `setrgba r g b a` | All values 0–1; alpha=1 for opaque |
+| Set fill color (hex) | `setvar c #FC8434` then `setcolor c` | Hex color support added Jan 2026 (FFmpeg 8.1.x) |
+| Rounded rectangle | `roundedrect x y w h radius` | `radius = h/2` for perfect pill |
+| Plain rectangle | `rect x y w h` | NOT `rectangle` |
+| Arc | `arc xc yc radius angle1 angle2` | Angles in radians; counterclockwise |
+| Fill path | `fill` | Fills closed path with current color |
 
 **Practical workflow — badge shape + drawtext layer:**
 For our typical branded overlay (orange pill + white text), layer `drawvg` (shape) then `drawtext` (text) in the same `-vf` chain:
@@ -737,6 +750,6 @@ Before marking video as delivered:
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=3` (IQ) for perceptual quality — see §5h
-- [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion
+- [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setrgba`/`roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
