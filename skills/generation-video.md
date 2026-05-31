@@ -127,10 +127,11 @@ For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "veh
 | Type | Description | AIMLAPI Status |
 |------|-------------|---------------|
 | `"simple"` | Custom config via horizontal/vertical/pan/tilt/roll/zoom values | **CONFIRMED — use this** |
-| `"down_back"` | Camera descends and pulls backward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
-| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
-| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
-| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED on Kling API, ComfyUI, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"(Auto)"` | Model auto-selects camera movement; use when motion is desired but direction doesn't matter | **CANARY on AIMLAPI — confirmed in Griptape native wrapper (May 2026)** |
+| `"down_back"` | Camera descends and pulls backward | **CONFIRMED on Kling API, ComfyUI, Griptape, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"forward_up"` | Camera moves forward and tilts upward | **CONFIRMED on Kling API, ComfyUI, Griptape, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"right_turn_forward"` | Camera rotates right while moving forward | **CONFIRMED on Kling API, ComfyUI, Griptape, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
+| `"left_turn_forward"` | Camera rotates left while moving forward | **CONFIRMED on Kling API, ComfyUI, Griptape, fal.ai v3, WaveSpeedAI v3, Replicate v3, Kie AI — CANARY on AIMLAPI wrapper** |
 
 **Use `"simple"` for ALL AIMLAPI calls until named presets are canary-tested.** Named presets are confirmed across 6+ platforms specifically for Kling v3 (not just v1/v2) as of May 2026 — high confidence they will work on AIMLAPI, but one canary call per preset is still required before production use.
 
@@ -169,6 +170,14 @@ blurry, distorted, low quality, jittery, flickering, morphing faces, warping, de
 
 ```
 face distortion, unnatural skin texture, floating limbs, breathing movement, body sway, weight shifting, expression change, mood shift
+```
+
+### Add for Uniformed Character Shots (Snelverhuizen crew)
+
+Lock the crew uniform against drift. Add these to character shots where uniform identity matters:
+
+```
+outfit change, clothing color shift, missing logo, uniform drift, shirt color change, jeans color change, sneaker design change, logo disappear, brand color change
 ```
 
 ### Add for Truck/Product Shots
@@ -335,6 +344,7 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 - Background: solid white or grey — patterned backgrounds bleed into identity encoding
 - Lighting: even, no harsh shadows — shadow on face degrades facial geometry
 - Expression: neutral base image required; expression variants are optional additions
+- **Clothing texture: solid colors and simple fabrics prevent outfit morphing during motion.** Patterned or printed clothing in reference images increases the risk of fabric "morphing" or color drift mid-clip. For the Snelverhuizen crew (black crewneck + orange logo), solid colors are ideal — this is already the correct uniform design.
 - **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources)
 - **reference_image_urls are STRONGLY RECOMMENDED, not optional** — multiple sources (May 2026) indicate that passing frontal_image_url alone without reference_image_urls may trigger a model error. Minimum 2 total images per element (frontal + at least 1 reference angle).
 - **More refs ≠ better**: 2-4 focused images optimal. More than 4 confuses the model and weakens binding
