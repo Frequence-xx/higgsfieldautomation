@@ -56,11 +56,11 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
-   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.5`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display). Older versions silently produce wrong timestamps.
+   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
 
-   **Dependency requirement (v3.8.5+):** `faster-whisper>=1.2.0` is required. Install both:
+   **Dependency requirement (v3.8.6+):** `faster-whisper>=1.2.0` is required. Install both:
    ```bash
-   pip install "faster-whisper>=1.2.0" "whisperx>=3.8.5"
+   pip install "faster-whisper>=1.2.0" "whisperx>=3.8.6"
    ```
    **Model recommendation for Dutch:** Use `large-v3-turbo` instead of `large-v2` — performs identically to large-v2 on Dutch (v3 pure has Dutch regression; turbo reverts to v2-level accuracy) but transcribes ~3–4x faster on CPU. Pass `--model large-v3-turbo` in the CLI.
 
@@ -165,6 +165,11 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    // timestampMs field uses t_dtw (DTW-derived) when tokenLevelTimestamps: true —
    // most accurate single-point timestamp available from whisper.cpp.
    // Without tokenLevelTimestamps, timestampMs falls back to (startMs + endMs) / 2.
+   //
+   // ⚠️ timestampMs CAN BE NULL: when whisper.cpp DTW fails for a token (t_dtw === -1),
+   // toCaptions() sets timestampMs = null. Always null-check before using:
+   //   const activeMs = caption.timestampMs ?? caption.startMs;
+   // confidence is also number | null — null-safe default to 1.0.
    ```
 
    **Mode B (non-DTW, one-word-per-segment):** Use when DTW produces errors or you need strict 1-word-per-Caption output. `tokensPerItem: 1` sets `--max-len 1` (one word per segment); `splitOnWord: true` adds `--split-on-word` to prevent a word being split across two segments at the `max-len` boundary. **Only works with `tokenLevelTimestamps: false`.**
@@ -512,7 +517,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.469 — current as of 2026-05-29)
+### Full API (v4.0.469 — confirmed current as of 2026-05-31)
 
 | Export | Purpose |
 |--------|---------|
@@ -520,7 +525,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps** |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
-| `Caption` | Type: `{ text, startMs, endMs, timestampMs, confidence }` |
+| `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null }` |
 | `TikTokPage` | Type: `{ text, startMs, durationMs, tokens: TikTokToken[] }` — `durationMs` added v4.0.261 |
 | `TikTokToken` | Type: `{ text, fromMs, toMs }` — named export for TypeScript typing |
 
@@ -537,6 +542,66 @@ No `parseWebVtt()` exists in this package. No `convertToCaptions()` either — t
 ```bash
 npx remotion add @remotion/captions
 ```
+
+#### Production Pattern: useDelayRender() for async caption loading
+
+**Required** when fetching captions from a JSON file at render time. Without it, Remotion renders frames before caption data loads — frames come out with no captions.
+
+```tsx
+import { delayRender, continueRender, useCurrentFrame, useVideoConfig } from 'remotion';
+import { createTikTokStyleCaptions } from '@remotion/captions';
+import { useState, useEffect } from 'react';
+
+export const CaptionComposition = () => {
+  const [captions, setCaptions] = useState(null);
+  const [handle] = useState(() => delayRender()); // suspend rendering
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const currentTimeMs = (frame / fps) * 1000;
+
+  useEffect(() => {
+    fetch('/captions.json')
+      .then(r => r.json())
+      .then(data => {
+        setCaptions(data);
+        continueRender(handle); // resume rendering
+      })
+      .catch(e => {
+        console.error(e);
+        continueRender(handle); // MUST always call even on error
+      });
+  }, [handle]);
+
+  if (!captions) return null;
+  // ... render captions
+};
+```
+
+#### Page rendering with <Sequence> (recommended for performance)
+
+Each caption page as its own `<Sequence>` lets Remotion skip inactive pages during render:
+
+```tsx
+import { Sequence } from 'remotion';
+
+const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 500 });
+
+{pages.map((page, i) => (
+  <Sequence
+    key={i}
+    from={Math.round(page.startMs / 1000 * fps)}
+    durationInFrames={Math.round(page.durationMs / 1000 * fps)}
+  >
+    <CaptionPage page={page} fps={fps} />
+  </Sequence>
+))}
+
+// Inside CaptionPage: useCurrentFrame() returns frames RELATIVE to sequence start
+// → const relativeMs = (useCurrentFrame() / fps) * 1000;
+// → const isActive = relativeMs >= (token.fromMs - page.startMs) && relativeMs < (token.toMs - page.startMs);
+```
+
+#### Inline conditional (simpler, same result):
 
 ```tsx
 import { createTikTokStyleCaptions } from '@remotion/captions';
