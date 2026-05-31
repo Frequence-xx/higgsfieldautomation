@@ -45,6 +45,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | Flux Kontext Pro | `flux/kontext-pro/image-to-image` | Character identity chain-editing (4+ iterations) — better face stability, lower cost than Max | 8 | ~$0.05 | 752x1392 |
 | Flux Kontext Max T2I | `flux/kontext-max/text-to-image` | Brand color stills without input ref | 0 | ~$0.08 | 768x1344 |
 | FLUX.2 Pro Edit | `blackforestlabs/flux-2-pro-edit` | Multi-ref brand asset compositing, up to 3 refs on AIMLAPI | 3 | ~$0.07 | native |
+| FLUX.2 Max | `blackforestlabs/flux-2-max`⁑ | Highest quality T2I, up to 10 refs — when Kontext Max 2-ref limit is insufficient | 10 | ~$0.09 | native |
 | GPT Image 2 | `gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K | 0‡ | ~$0.07-0.35§ | 1K–2K |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
@@ -62,6 +63,8 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 §GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Imagen 4 Fast ($0.02) for iteration, GPT Image 2 only for finals requiring superior text accuracy.
 
+⁑**FLUX.2 Max (2026-05-31):** BFL's highest-quality T2I/I2I model. Available on AIMLAPI as `blackforestlabs/flux-2-max` — **CANARY REQUIRED** to confirm exact model string and parameter support. Pricing: ~$0.091/megapixel at BFL-native; ~$0.09/img at 1K on AIMLAPI (slightly more than Kontext Max but similar). Supports up to **10 reference images** — the key advantage over Kontext Max's 2-ref AIMLAPI ceiling. Use case: brand compositing shots needing more than 2 refs (character + truck + boxes + background scene) without paying NBP Edit prices. Do NOT use for character chain-editing — Kontext Pro/Max is better for sequential face edits. Run canary before production use.
+
 †**Grok Imagine Image Quality (2026-05-24):** xAI launched `grok-imagine-image-quality` on 2026-05-06. Predecessor `grok-imagine-image-pro` deprecated **2026-05-15** — do not use. Supports T2I and I2I editing with up to 3 reference images. 9:16 via `aspect_ratio: "9:16"`. Strong text rendering and photorealism. Practical use: cheap B-roll / environment drafts ($0.055 < NBP Pro's $0.13) when character accuracy isn't required. **AIMLAPI model string UNVERIFIED** — AIMLAPI docs still show the deprecated `-pro` variant as of 2026-05-24. Run canary with `x-ai/grok-imagine-image-quality` before relying on it. Do NOT use for character shots (no identity sheet support beyond 3 refs; no face adherence features).
 
 **⚠️ IMAGEN 4 RETIREMENT — URGENT (2026-05-22):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 31 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs).
@@ -75,7 +78,8 @@ Need ultra-cheap T2I layout/composition draft (no chars, no refs)? → Gemini 2.
 Shot has characters, need to iterate prompt? → NB2 Edit first ($0.07 at 1K, or $0.045 at 512px draft), then NBP Edit for approved final ($0.20)
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
-Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 3 refs on AIMLAPI)
+Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 3 refs on AIMLAPI) OR FLUX.2 Max (up to 10 refs, ~$0.09 — canary first)
+Need 4+ brand refs without character? → FLUX.2 Max over FLUX.2 Pro Edit (10 refs vs 3)
 Shot is pure scenery / B-roll? → Nano Banana Pro ($0.13) — Imagen 4 Fast RETIRING 2026-06-24
 Shot needs pixel-perfect text on truck? → Flux Kontext Max I2I (best text rendering)
 Shot needs brand-color still without input? → Flux Kontext Max T2I or Nano Banana Pro
@@ -316,6 +320,37 @@ NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable
 - **safety_settings (2026-05-22):** Two distinct block behaviors: `blockReason: SAFETY` = pre-generation block (configurable via safety thresholds); `blockReason: IMAGE_SAFETY` = post-generation output block (also configurable). `blockReason: OTHER` is non-configurable. If a generation fails silently, check the response for blockReason field before retrying. For modest-dress character shots, IMAGE_SAFETY false-positives can occur — log the blockReason and escalate to owner rather than retrying blindly.
 - **Gemini 3.5 Flash (2026-05-19):** Text-output-only model. Does NOT generate images. Not an upgrade path for hero frames. Image generation pipeline remains: NB2 (draft) → NBP Edit (final) → Imagen 4 Ultra (CTA/money shots).
 
+### Camera Angle Variation Technique (2026-05-31)
+
+Generate alternate camera angles from one approved hero frame — cheaper than full regen from scratch.
+
+**Official Google formula (confirmed):**
+```
+[Reference images] + [Relationship instruction] + [New scenario/angle]
+```
+
+**Camera angle prompt template:**
+```
+Image 1: Mourad-SV approved hero frame (frontal close-up, golden hour).
+Keep ALL of the following IDENTICAL: facial features, skin tone, short black beard,
+black crewneck with orange chest logo, blue jeans, white sneakers, lighting direction.
+Change ONLY the camera angle to a 45-degree left three-quarter profile view.
+Same shallow depth of field (f/2.2). Same golden hour warm backlight.
+No side door on the cargo box behind him. Vertical 9:16.
+```
+
+**Camera hardware naming for lens control** (more reliable than abstract lens specs):
+- "Shot on Fujifilm X-T5, f/1.8, warm color science" → cinematic portrait
+- "Shot on Sony A7R V, 85mm portrait lens, f/2.2" → sharp commercial
+- "GoPro Hero 11 Wide" → immersive, slightly distorted action feel
+
+**Use case — character sheet from one hero frame:**
+Instead of generating three views from scratch, take one approved hero frame and use NBP Edit to generate 45° left and 45° right views. Each call costs $0.20. Total character sheet from one approved frame: $0.40 + FFmpeg (free).
+
+**Critical:** When asking for an angle change, list EVERY preserved element explicitly. The model interprets ambiguity as permission to change. Leaving out "keep same lighting" = risk of lighting drift.
+
+**Failure mode:** Full-body shots with angle changes fail more often than head-and-shoulders crops. If identity consistency is critical, crop to head-and-shoulders before requesting angle variation.
+
 ### Reference Image Rules (NBP Edit)
 
 - Label every image: "Image 1: Mourad character sheet. Image 2: Truck reference."
@@ -409,7 +444,8 @@ This single sheet costs ~$0.40 total (2× NBP Edit + free FFmpeg) and eliminates
 - Refer to subjects by description, not pronouns: "the man with the black crewneck" not "him"
 - Character identity: uses AuraFace embeddings; maintains cosine similarity >0.92 across 6 successive edits (vs ~0.80 for competing models). This means ≤6 edits from original ref before restarting chain.
 - `guidance_scale` range on AIMLAPI: 1–20. **Default is 3.5.** Two regimes: (1) character/face editing → use 2.0–2.5 (more image-preserving, prevents face warp; 2.0 is the confirmed lower bound for stable face output); (2) text/typography editing → use 3.5–4.0 (more prompt-literal for letter accuracy). Do not exceed 5 for character editing — face structure distorts. Note: other platforms (Replicate, fal.ai) use a different guidance_scale range (1–50) — do not import their settings.
-- **`image_strength`** (0–1, default 0.1): Controls how much the reference image influences the output. **Status: UNVERIFIED on AIMLAPI Kontext endpoint** — may not be exposed. If available: increase to 0.3–0.5 for stronger face identity lock (higher = more reference-faithful, less prompt flexibility). Run canary to confirm parameter is accepted before relying on it.
+- **`image_strength`** (0–1, default 0.1): Controls how much the reference image influences the output. **Status: CONFIRMED on AIMLAPI Kontext endpoint (2026-05-31).** Increase to 0.3–0.5 for stronger face identity lock (higher = more reference-faithful, less prompt flexibility). Use 0.3–0.5 for character editing; keep at default 0.1 for background/environment changes where you want prompt to dominate.
+- **`safety_tolerance`** (1–6, default 2): Controls content safety threshold. 1 = most strict, 5 = most permissive. **Confirmed on AIMLAPI Kontext.** Default 2 is appropriate for our modest-dress character shots — do NOT raise above 2 for character calls. If a character shot is unexpectedly blocked, log `blockReason` and escalate; do not loosen safety_tolerance.
 - **Multi-image on AIMLAPI (confirmed 2026-05-28)**: `image_url` accepts an array. AIMLAPI docs confirm **2 reference images** in working examples. BFL-native supports up to 8-10, but counts above 2 on AIMLAPI are unverified — treat 2 as the safe max until canary confirms 3+.
 - `num_inference_steps`: not exposed on AIMLAPI I2I endpoint (handled server-side). For T2I endpoint: 20-50 steps; use 28 for drafts, 50 for production finals.
 - **`prompt_upsampling`**: When `true`, an LLM rewrites the prompt for richer output — but results are NOT reproducible across calls. For character editing and brand-critical shots, set `prompt_upsampling: false` to maintain reproducibility. For T2I scenery shots where variation is acceptable, leaving it true may improve output. Status on AIMLAPI's Kontext endpoint: UNVERIFIED — may be handled server-side. Use `false` explicitly if the parameter is exposed.
