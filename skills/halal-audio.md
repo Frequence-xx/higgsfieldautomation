@@ -79,19 +79,23 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 
 **Confirmed in official ElevenLabs sources:**
 - `[calm]` — composed, professional; use for contact info
-- `[pauses]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores)
+- `[pause]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores). **Note:** official ElevenLabs blogs use `[pause]` (no 's'). Previous docs had `[pauses]` — both may work, but `[pause]` is the documented canonical form. Test on Willem if migrating scripts.
 - `[matter-of-fact]` — neutral, direct delivery; good safe fallback for any ad line
 - `[drawn out]` — slows and stretches the next phrase for emphasis; use on key brand claims
+- `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel (confirmed in ElevenLabs "story beats" category)
+- `[deliberate]` — precise, measured pacing with careful articulation; **best professional substitute for unconfirmed `[confident]` / `[direct]`**; use for brand claims and CTA lines
+- `[understated]` — calm, controlled understatement; anti-sensationalist; ideal for Snelverhuizen brand (sincere, not hype)
+- `[serious tone]` — professional authority for factual/pricing lines; use where `[matter-of-fact]` is too flat
+- `[slows down]` — reduces pace on following phrase; use to land the brand name or phone number with weight
 
 **Unconfirmed (test on Willem voice before production — may be silently ignored):**
 - `[sincere]` — honest, direct delivery; use for brand promise lines
 - `[warm]` — approachable, friendly; use for customer-benefit lines
-- `[confident]` — authoritative, trust-building; use for CTA
+- `[confident]` — authoritative, trust-building; use for CTA (use confirmed `[deliberate]` as a reliable alternative)
 - `[conversational]` — natural, unhurried pace; use for longer copy
 - `[newsreader]` — clean broadcast delivery; use for factual claims
 - `[professional]` — neutral authority; safe default for any line
-- `[direct]` — punchy, no-nonsense; use for price/offer lines
-- `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel
+- `[direct]` — punchy, no-nonsense; use for price/offer lines (use confirmed `[deliberate]` as a reliable alternative)
 
 **Test protocol for unconfirmed tags:** generate one sentence with and without the tag using Willem + `eleven_v3`; if delivery is identical, the tag is not working on this voice — switch to `[matter-of-fact]` or `[calm]` instead.
 
@@ -100,6 +104,8 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[mischievously]`, `[laughs]`, `[crying]` — unprofessional
 - `[whispers]` — inaudible on phone speakers
 - `[sings]`, `[strong X accent]` — experimental; output is unreliable
+- `[breathes]` — **confirmed working** but adds audible breath sounds; violates same policy as "breathing" ban in video motion prompts; never use in Snelverhuizen ads
+- `[sarcastic tone]`, `[resigned]`, `[wistful]` — confirmed working but tone is wrong for brand (sarcasm, defeat, nostalgia — none appropriate for a professional moving company ad)
 
 **Tag persistence (v3 behaviour):** a tag affects ALL text from that point forward until a new tag appears. Explicitly reset after expressive sections — append `[professional]` before the CTA so it doesn't carry unwanted emotion.
 
@@ -723,6 +729,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
+| `[pauses]` tag in old scripts not working | Official ElevenLabs form is `[pause]` (no 's') — `[pauses]` may be silently ignored | Update scripts to use `[pause]` (confirmed canonical form from official ElevenLabs blog posts). Both may work but test on Willem to confirm. |
+| `[confident]` / `[direct]` ignored on Willem | These are unconfirmed tags; Willem may not respond | Substitute with confirmed `[deliberate]` — same professional pacing effect, confirmed in official ElevenLabs delivery control category. |
 
 ---
 
@@ -841,6 +849,7 @@ for word in result.words:
 - **+20% cost surcharge** applies when `keyterms` is set.
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
+- **May 2026 realtime update:** Scribe v2 realtime WebSocket now also accepts `no_verbatim` (removes filler words) and native mute/unmute. These are realtime-only additions; the batch API (used for VO QA) is unchanged.
 
 **`entity_detection` (Scribe v2 — new in 2026):**
 Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO QA, but useful for compliance screening of user-submitted audio.
