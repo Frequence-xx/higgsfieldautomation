@@ -528,14 +528,14 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-05-30)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-01)
 
 Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **The April 10, 2026 migration was to fal.ai / Atlas Cloud / Leonardo — NOT AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. Monitor for AIMLAPI O3 landing.
 
 **O3 advantages for character shots:**
 - Multi-shot: up to 6 shots in a single API call with consistent character across all shots (max 15s total, each shot ≥ 3s)
 - `face_consistency: True` confirmed functional on fal.ai/Atlas Cloud — forces face reconstruction from image_reference even when occluded (hands, hat, shadows)
-- `image_reference` replaces O1's `elements` array — up to 4 images (Front, 45°, Profile, Back) as spatial anchor
+- `kling_elements` replaces O1's `elements` array — inline element definition with `name`+`description`+`element_input_urls` (2–4 images)
 - Stronger element binding (3D Spacetime Joint Attention)
 
 **O3 multi-shot `multi_prompt` parameter structure (for when O3 lands on AIMLAPI):**
@@ -564,27 +564,29 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "multi_shots": True,                              # required to activate multi_prompt
     "face_consistency": True,
     "generate_audio": False,   # CRITICAL: O3 audio defaults ON — must set explicitly
+    # Native Kling 3.0 API uses "sound" param; AIMLAPI likely remaps to "generate_audio" (consistent with V3)
+    "negative_prompt": "ghost driving, blurry, distorted anatomy, extra limbs",  # still present in O3
+    "cfg_scale": 0.5,          # still present in O3, default 0.5
     "aspect_ratio": "9:16"
-    # NOTE: negative_prompt and cfg_scale are REMOVED in O3
 }, headers=headers)
 ```
 
-**O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas):**
+**O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — pass 12 correction):**
 - `start_image_url` → renamed to `image_url`
 - `elements` array → replaced by `kling_elements` array (max 3 elements, each with `name`+`description`+`element_input_urls` of 2–4 images) — **NOT `image_reference`**
 - Prompt references elements by `@name` (element name field), not `@Element1`
 - `multi_shots: True` required to activate `multi_prompt` (multi-shot control)
-- `negative_prompt` **REMOVED** — bake avoidance into positive prompt instead
-- `cfg_scale` **REMOVED** — handled internally
+- `negative_prompt` **STILL PRESENT** — default "blur, distort, and low quality" (prior pass incorrectly said REMOVED)
+- `cfg_scale` **STILL PRESENT** — default 0.5 range 0–1 (prior pass incorrectly said REMOVED)
+- Audio: native Kling 3.0 API uses `sound` (bool); AIMLAPI likely remaps to `generate_audio` (consistent with how it handles V3). Always set to OFF explicitly regardless of param name.
 - `generate_audio` defaults **ON** in O3 (was off by default in O1) — ALWAYS set `False` explicitly
 - Text prompts capped at 2,500 characters; each @element reference consumes 37 characters
+- New `shot_type` param: `"intelligent"` (auto scope selection) or `"customize"` (manual control)
 - AIMLAPI endpoint pattern will shift from `/v3/` to `/o3/`
 
-**Avoidance prompting for O3 (no negative_prompt):** Instead of `negative_prompt: "ghost driving, blurry"`, write: `"stationary truck, sharp focus throughout, no vehicle movement, no motion blur"`
+**Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-**Action on O3 landing on AIMLAPI:** Update `generation-video.md` templates first (remove negative_prompt/cfg_scale), then this file's frame-chaining snippet (`start_image_url` → `image_url`), then confirm `kling_elements` parameter passthrough with a draft test.
-
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-05-21)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-01)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
