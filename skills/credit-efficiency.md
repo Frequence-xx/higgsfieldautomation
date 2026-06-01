@@ -396,9 +396,36 @@ $0.20/sec = $1.00/5s. 32% cheaper than Kling v3 Pro. I2V (image-to-video). No Su
 
 **CAUTION:** No Subject Binding — do NOT use when character face must appear.
 
-### Veo 3.1 Reference-to-Video (`google/veo-3.1-reference-to-video`) — NEW 2026-05-17
+### Veo 3.1 Extend Video — CONFIRMED ON AIMLAPI (2026-06-01)
 
-Standard (not Fast) model. Estimated **~$0.40/sec = $3.20/8s run** (WaveSpeedAI confirmed, medium confidence). Parameter: `image_urls` (array, up to 3 reference images). Accepts character reference images to guide identity — Google calls this "Ingredients to Video." No explicit Subject Binding strength parameter.
+Two variants confirmed live on AIMLAPI:
+
+| Variant | Model String | Notes |
+|---------|-------------|-------|
+| Standard | `google/veo-3.1-extend-video` | Full quality |
+| Fast | `google/veo-3.1-fast-extend-video` | Lower cost, faster |
+
+**Parameters:**
+- `video_url` — URL of an existing Veo 3.1 generated clip to extend
+- `prompt` — text describing what happens next (redirects narrative)
+- `generateAudio: false` — camelCase, same as other Veo models
+- `aspectRatio` — camelCase, "9:16" for vertical
+- Processing time: ~3 minutes
+
+**Use case:** Extend an approved Veo 3.1 establishing shot beyond the single-generation 4/6/8s limit. Chain two extensions for a 12-16s master establishing shot from a single reference frame. Preserves visual consistency, motion dynamics, and scene logic from the original clip.
+
+**Cost:** Priced per extension length at the same per-second rate as the base model (~$0.065/sec Lite tier). Cheaper than regenerating a second independent clip.
+
+**Workflow for longer establishing shots:**
+1. Generate base Veo 3.1 Lite clip (6s, ~$0.39)
+2. QA base clip — if passed, extend via `google/veo-3.1-fast-extend-video` with new `video_url`
+3. Merge with FFmpeg: `ffmpeg -i base.mp4 -i extension.mp4 -filter_complex concat final.mp4`
+
+**CANARY REQUIRED before production use.** Verify: (1) `video_url` accepts direct CDN link from prior generation, (2) actual cost per extension, (3) visual continuity at join point.
+
+### Veo 3.1 Reference-to-Video (`google/veo-3.1-reference-to-video`) — AIMLAPI DOCS CONFIRMED (2026-06-01)
+
+Doc page confirmed: `docs.aimlapi.com/api-references/video-models/google/veo-3-1-reference-to-video`. Standard (not Fast) model. Estimated **~$0.40/sec = $3.20/8s run** (WaveSpeedAI confirmed, medium confidence). Parameter: `image_urls` (array, up to 3 reference images). Accepts character reference images to guide identity — Google calls this "Ingredients to Video." No explicit Subject Binding strength parameter.
 
 **Use case assessment:** Too expensive at ~$3.20/8s for draft iterations. May be viable as a final-pass character shot model IF identity lock matches Kling Subject Binding quality — saves zero vs Kling Pro if pricing is correct. SKIP until pricing drops or Kling identity retention degrades. Note: Veo 3.1 FAST does NOT have the multi-reference capability — only standard model.
 
@@ -529,11 +556,13 @@ Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-cha
 
 ---
 
-### Kling 3.0 — NEW Feb 2026 (AIMLAPI model string UNCONFIRMED)
+### Kling 3.0 = Kling v3 (CONFIRMED — same model, 2026-06-01)
 
-Kling 3.0 released February 5, 2026. Features: first+last frame control, physics-aware motion, native 1080p up to 15s. Pricing on fal.ai/EvoLink: ~$0.075–$0.112/sec. **No confirmed AIMLAPI model string** — Kling 3.0 may not yet be on AIMLAPI (Kling 2.6 Pro is the newest confirmed Kling on AIMLAPI). Do NOT update Kling model strings until verified.
+**`klingai/video-v3-pro-image-to-video` IS Kling 3.0 Pro.** Kuaishou calls it "Kling 3.0"; AIMLAPI surfaces it as "v3." They are the same model — confirmed via cross-referencing AIMLAPI model page (`aimlapi.com/models/kling-video-v3-pro`) and Kuaishou's Feb 5, 2026 release. No string change needed; we are already on Kling 3.0. Features: first+last frame control, physics-aware motion, native 1080p up to 15s, up to 15s duration.
 
-Note: "Kling v4" does not exist — Kling 3.0 is the current generation. Our v3 Pro string `klingai/video-v3-pro-image-to-video` remains the correct production model string.
+**Kling O3 (= Kling 3.0 Omni) is a separate, premium model** — released Feb 2026, optimized for multi-shot storytelling (up to 6 shots, 15s total in one pass). Available on fal.ai; **NOT confirmed on AIMLAPI** as of 2026-06-01. Not cost-efficient for our single-clip workflow (pricing higher than v3 Pro).
+
+Note: "Kling v4" does not exist. Our production strings remain `klingai/video-v3-pro-image-to-video` (final) and `klingai/video-v3-standard-image-to-video` (draft).
 
 ---
 
@@ -589,10 +618,13 @@ Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 5
 13. **Negative prompts for Kling I2V: 5-8 terms maximum.** Kling weights earlier terms more heavily — longer lists dilute effectiveness. Drop terms below 5-8 and move the strongest failure-prevention terms first. Confirmed via 2026 prompt engineering benchmarks.
 14. **Reduce element count before retrying a failed shot.** Complexity overload is a primary Kling I2V failure mode. If a shot fails, remove one moving element from the prompt before changing model or cfg_scale.
 15. **Hailuo 02 has NO audio generation** — no `generate_audio` parameter required. Safe to call without audio flags. For Kling, AIMLAPI still defaults audio ON — `generate_audio: false` remains mandatory on all Kling calls. NOTE: Hailuo 02 is $0.0728/sec on AIMLAPI — do NOT use for production shots.
-16. **Kling O3 / Kling 3.0 are NOT confirmed on AIMLAPI (May 2026).** Kling 3.0 exists on fal.ai (Feb 2026). AIMLAPI's newest confirmed Kling is v3 Pro/Standard. Do NOT update Kling model strings until verified. Current v3 Pro string `klingai/video-v3-pro-image-to-video` remains correct.
+16. **Kling v3 = Kling 3.0 (CONFIRMED 2026-06-01).** `klingai/video-v3-pro-image-to-video` is Kling 3.0 Pro. No string change needed — we are already using the correct model. Kling O3 (Kling 3.0 Omni) is a separate premium model (multi-shot, up to 6 shots/pass); NOT confirmed on AIMLAPI. Do NOT use for single-clip production shots.
 17. **Hailuo 02 pricing CORRECTED (2026-05-23): $0.0728/sec on AIMLAPI** — NOT $0.28/clip flat (the flat price was fal.ai). At $0.437/6s and $0.728/10s, Hailuo 02 is the most expensive non-character video option on AIMLAPI. Do NOT use. Route to LTXV 2 Fast ($0.04/sec) or Hailuo 2.3 Fast ($0.0416/sec) instead.
 18. **Non-character routing by duration (updated 2026-05-23):** 5s → Hailuo 2.3 Fast ($0.208). 6-10s → LTXV 2 Fast ($0.04/sec, $0.24/6s, $0.40/10s) after canary. Hailuo 02 removed from routing — $0.0728/sec makes it uncompetitive. AIMLAPI string: `minimax/hailuo-2.3-fast`, `ltxv/ltxv-2-fast`.
 19. **Wan 2.7 I2V is LIVE on AIMLAPI (`alibaba/wan-2-7-i2v`). T2V and R2V are "Coming Soon" (2026-05-30).** Pricing: ~$0.10/sec (updated from $0.08/sec). Duration: 2-15s integer — **2s ultra-drafts at ~$0.20** supported. NO `generate_audio` param (no audio surcharge). `audio_url` accepts input audio for sync. First+last frame pinning via `last_image` param (canary required for exact AIMLAPI param name).
 20. **LTXV 2 Fast is live on AIMLAPI (`ltxv/ltxv-2-fast`).** $0.04/sec at 1080p. Minimum 6s clip. Parameters are snake_case (`aspect_ratio`, `generate_audio: false`). CANARY REQUIRED before production use. For 6s+ non-character shots, this is the lowest-cost option pending canary pass.
 21. **Seedance 2.0 pricing confirmed (2026-05-26): Standard = $0.316/sec ($1.58/5s), Fast = $0.182/sec ($0.91/5s).** The $0.06/generation in AIMLAPI docs example was a misleading short-clip artifact. Standard is MORE expensive than Kling Pro ($1.46/5s) — never use. Fast (`bytedance/seedance-2-0-fast`) at $0.91/5s is cheaper than Kling Standard ($1.09/5s) but still more expensive than Wan 2.7 I2V (~$0.40/5s). Face content-policy block risk from Seedance lineage applies. CANARY REQUIRED before use. Only consider Fast variant if Wan 2.7 I2V canary fails.
 22. **Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) is the cheapest confirmed character-draft candidate on AIMLAPI** at ~$0.10/sec (updated 2026-05-30). 3s draft = ~$0.30 vs Kling Standard 3s = $0.65 — 54% savings. 2s ultra-draft = ~$0.20 — 69% savings (use for identity spot-checks only). No audio surcharge. First+last frame truck-lock available. CANARY REQUIRED. Do not use for finals — Kling Pro with Subject Binding 80-90 remains required. **T2V and R2V: "Coming Soon" in AIMLAPI model database — I2V only.**
+23. **Hailuo 2.3 Standard ≠ Fast (confirmed 2026-06-01):** Standard = `minimax/hailuo-2.3` at $0.0728/sec ($0.728/10s) — same price as Hailuo 02, do NOT use. Fast = `minimax/hailuo-2.3-fast` at $0.0416/sec ($0.416/10s) — this is the routing target for 5s non-character clips. Always use `-fast` suffix; standard variant is uncompetitive.
+24. **Veo 3.1 Extend Video confirmed on AIMLAPI (2026-06-01):** `google/veo-3.1-extend-video` (Standard) and `google/veo-3.1-fast-extend-video` (Fast). Takes `video_url` of existing Veo 3.1 clip + new `prompt`. Use to extend approved establishing shots beyond single 4/6/8s generation limit. CANARY REQUIRED — verify `video_url` param accepts CDN link, confirm actual per-second cost, check visual continuity at join.
+25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
