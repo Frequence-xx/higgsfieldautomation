@@ -502,7 +502,15 @@ Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro
 
 If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
-**BREAKING CHANGE for O3 (confirmed):** When O3 is added, `cfg_scale` and `negative_prompt` are BOTH REMOVED — O3 handles them internally. Avoidance instructions must be **baked into the positive prompt** (e.g., "truck firmly stationary, wheels locked, branding sharp" instead of a negative prompt). Every gen script using these parameters will break on O3. Update scripts before switching.
+**O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12):**
+- `elements` array → replaced by `kling_elements` array (`name` + `description` + `element_input_urls` of 2–4 images)
+- Reference in prompt → use `@name` (element's `name` value), NOT `@Element1` positional syntax
+- `multi_shots: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored)
+- `generate_audio` defaults **ON** in O3 — ALWAYS set `False` explicitly
+- `cfg_scale` and `negative_prompt` are **STILL PRESENT** — do NOT remove them when switching to O3
+- `start_image_url` → renamed to `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
+
+See `character-consistency.md` O3 section for the complete `kling_elements` call template.
 
 ## Kling 3.0 4K Variant — Future Watch (Not Yet Confirmed on AIMLAPI)
 
