@@ -55,6 +55,50 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
    - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
+   **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
+   When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
+
+   - **Dutch supported** (`language: "nl"` or leave null for auto-detect)
+   - **Word-level timestamps** returned in response: `words[].text`, `words[].start` (seconds), `words[].end` (seconds)
+   - **Pricing:** $0.22/hour of audio — a 30-second voiceover costs ~$0.002. Negligible.
+   - **Keyterm biasing** (`+$0.05/hr`): pass up to 100 brand terms to force correct spelling. Use for Dutch brand names that would otherwise be mangled:
+     ```python
+     keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
+     ```
+   - **`no_verbatim: True`** — strips filler words ("uh", "uhm") from transcription output; leave False for voiceovers (TTS never produces fillers).
+
+   ```python
+   from elevenlabs import ElevenLabs
+   import json
+
+   client = ElevenLabs()  # uses ELEVENLABS_API_KEY env var
+
+   with open("voiceover.wav", "rb") as f:
+       result = client.speech_to_text.convert(
+           file=f,
+           model_id="scribe_v2",         # "scribe_v1" also works but v2 is more accurate
+           language_code="nl",           # Dutch; omit for auto-detect
+           timestamps_granularity="word", # required for word-level timestamps
+           keyterms=["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133"],  # optional
+           no_verbatim=False,            # keep False for TTS audio
+       )
+
+   # Convert to Remotion Caption format:
+   captions = [
+       {
+           "text": w.text,
+           "startMs": int(w.start * 1000),
+           "endMs": int(w.end * 1000),
+           "timestampMs": int((w.start + w.end) / 2 * 1000),
+           "confidence": 1.0,
+       }
+       for w in result.words
+       if w.type == "word"  # filter out spacing tokens (type == "spacing")
+   ]
+   ```
+
+   **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
+
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
 
@@ -128,6 +172,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) is the current latest — adds no timestamp changes but is the correct version to pin.
+
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
    - `transcribe()` requires `whisperPath: string` — same path passed to `installWhisperCpp(to:)`
@@ -143,7 +189,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.8.4';        // v1.8.4 required for large-v3-turbo
+   const WHISPER_VERSION = '1.8.6';        // v1.8.5+ for PR #2279 silence-gap fix; 1.8.6 is latest
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -517,7 +563,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.469 — confirmed current as of 2026-05-31)
+### Full API (v4.0.471 — confirmed current as of 2026-06-02)
 
 | Export | Purpose |
 |--------|---------|
