@@ -75,23 +75,37 @@ Audio tags are inline `[tag]` markers in the text that direct delivery. They are
 
 eleven_v3 has a community-documented library of ~1806 tags across 15 categories (emotions, delivery styles, accents, pacing, reactions, etc.). The tags below are the verified useful subset for Snelverhuizen brand ads. Anything in brackets is interpreted as a tag, not spoken — so typos or unknown tags silently fail.
 
-**Appropriate for Snelverhuizen ads:**
+**ElevenLabs does NOT publish an exhaustive official tag list.** Tags are voice- and context-dependent. The list below distinguishes confirmed (verified in official ElevenLabs blog posts/docs) from unconfirmed (appear in third-party summaries, may work but test first).
+
+**Confirmed in official ElevenLabs sources:**
+- `[calm]` — composed, professional; use for contact info
+- `[pause]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores). **Note:** official ElevenLabs blogs use `[pause]` (no 's'). Previous docs had `[pauses]` — both may work, but `[pause]` is the documented canonical form. Test on Willem if migrating scripts.
+- `[matter-of-fact]` — neutral, direct delivery; good safe fallback for any ad line
+- `[drawn out]` — slows and stretches the next phrase for emphasis; use on key brand claims
+- `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel (confirmed in ElevenLabs "story beats" category)
+- `[deliberate]` — precise, measured pacing with careful articulation; **best professional substitute for unconfirmed `[confident]` / `[direct]`**; use for brand claims and CTA lines
+- `[understated]` — calm, controlled understatement; anti-sensationalist; ideal for Snelverhuizen brand (sincere, not hype)
+- `[serious tone]` — professional authority for factual/pricing lines; use where `[matter-of-fact]` is too flat
+- `[slows down]` — reduces pace on following phrase; use to land the brand name or phone number with weight
+
+**Unconfirmed (test on Willem voice before production — may be silently ignored):**
 - `[sincere]` — honest, direct delivery; use for brand promise lines
 - `[warm]` — approachable, friendly; use for customer-benefit lines
-- `[confident]` — authoritative, trust-building; use for CTA
-- `[calm]` — composed, professional; use for contact info
+- `[confident]` — authoritative, trust-building; use for CTA (use confirmed `[deliberate]` as a reliable alternative)
 - `[conversational]` — natural, unhurried pace; use for longer copy
 - `[newsreader]` — clean broadcast delivery; use for factual claims
 - `[professional]` — neutral authority; safe default for any line
-- `[direct]` — punchy, no-nonsense; use for price/offer lines
-- `[pauses]` — brief natural pause; eleven_v3-native pacing tool (replaces SSML `<break>` which v3 ignores)
-- `[hesitates]` — momentary stammer before the next phrase; use sparingly for natural delivery feel
+- `[direct]` — punchy, no-nonsense; use for price/offer lines (use confirmed `[deliberate]` as a reliable alternative)
+
+**Test protocol for unconfirmed tags:** generate one sentence with and without the tag using Willem + `eleven_v3`; if delivery is identical, the tag is not working on this voice — switch to `[matter-of-fact]` or `[calm]` instead.
 
 **Avoid for Snelverhuizen brand:**
 - `[excited]`, `[shouts]` — sensationalist, not aligned with sincere brand voice
 - `[mischievously]`, `[laughs]`, `[crying]` — unprofessional
 - `[whispers]` — inaudible on phone speakers
 - `[sings]`, `[strong X accent]` — experimental; output is unreliable
+- `[breathes]` — **confirmed working** but adds audible breath sounds; violates same policy as "breathing" ban in video motion prompts; never use in Snelverhuizen ads
+- `[sarcastic tone]`, `[resigned]`, `[wistful]` — confirmed working but tone is wrong for brand (sarcasm, defeat, nostalgia — none appropriate for a professional moving company ad)
 
 **Tag persistence (v3 behaviour):** a tag affects ALL text from that point forward until a new tag appears. Explicitly reset after expressive sections — append `[professional]` before the CTA so it doesn't carry unwanted emotion.
 
@@ -163,8 +177,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Internet Archive — Mix Vocal Only Nasheeds** — archive.org/details/mixvocalonlynasheeds | Varies per track | Check per track | Check per track | Direct download |
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
-| **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download |
-| **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download |
+| **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download — **REJECT for Snelverhuizen**: platform explicitly uses daf (frame drum) on tracks. Daf is percussion; Snelverhuizen policy prohibits all instruments. Do not use. |
+| **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
@@ -715,6 +729,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
+| `[pauses]` tag in old scripts not working | Official ElevenLabs form is `[pause]` (no 's') — `[pauses]` may be silently ignored | Update scripts to use `[pause]` (confirmed canonical form from official ElevenLabs blog posts). Both may work but test on Willem to confirm. |
+| `[confident]` / `[direct]` ignored on Willem | These are unconfirmed tags; Willem may not respond | Substitute with confirmed `[deliberate]` — same professional pacing effect, confirmed in official ElevenLabs delivery control category. |
 
 ---
 
@@ -833,6 +849,7 @@ for word in result.words:
 - **+20% cost surcharge** applies when `keyterms` is set.
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
+- **May 2026 realtime update:** Scribe v2 realtime WebSocket now also accepts `no_verbatim` (removes filler words) and native mute/unmute. These are realtime-only additions; the batch API (used for VO QA) is unchanged.
 
 **`entity_detection` (Scribe v2 — new in 2026):**
 Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO QA, but useful for compliance screening of user-submitted audio.
