@@ -87,6 +87,8 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[understated]` — calm, controlled understatement; anti-sensationalist; ideal for Snelverhuizen brand (sincere, not hype)
 - `[serious tone]` — professional authority for factual/pricing lines; use where `[matter-of-fact]` is too flat
 - `[slows down]` — reduces pace on following phrase; use to land the brand name or phone number with weight
+- `[emphasized]` — adds vocal emphasis to the following phrase; use for key brand promise lines ("verhuizen zonder zorgen"). Confirmed in ElevenLabs precision delivery control docs.
+- `[stress on next word]` — focuses emphasis on the immediately following word only; more targeted than `[emphasized]`. Confirmed in ElevenLabs precision delivery control docs. Example: `[stress on next word] SNELVERHUIZEN.NL`
 
 **Unconfirmed (test on Willem voice before production — may be silently ignored):**
 - `[sincere]` — honest, direct delivery; use for brand promise lines
@@ -106,8 +108,11 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 - `[sings]`, `[strong X accent]` — experimental; output is unreliable
 - `[breathes]` — **confirmed working** but adds audible breath sounds; violates same policy as "breathing" ban in video motion prompts; never use in Snelverhuizen ads
 - `[sarcastic tone]`, `[resigned]`, `[wistful]` — confirmed working but tone is wrong for brand (sarcasm, defeat, nostalgia — none appropriate for a professional moving company ad)
+- `[rushed]`, `[rapid-fire]` — confirmed official speed tags; too fast for a professional brand; never use for Snelverhuizen ad copy
 
 **Tag persistence (v3 behaviour):** a tag affects ALL text from that point forward until a new tag appears. Explicitly reset after expressive sections — append `[professional]` before the CTA so it doesn't carry unwanted emotion.
+
+**Minimum prompt length for reliable tag response:** audio tags work best in prompts over ~250 characters. In shorter prompts the model may ignore or weakly apply tags — use the full script (including VO context) rather than testing on a single isolated line.
 
 **Usage in text (eleven_v3 only):**
 ```
@@ -180,8 +185,11 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download — **REJECT for Snelverhuizen**: platform explicitly uses daf (frame drum) on tracks. Daf is percussion; Snelverhuizen policy prohibits all instruments. Do not use. |
 | **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
+| **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
+
+**Riad Nasheeds:** YouTube channel specialising in 100% vocal-only humming nasheeds — no instruments, no lyrics (pure melodic humming). Tracks are labelled "No Copyright Nasheed" on their YouTube titles. Before any commercial use (including boosted/paid social ads), email riadnasheeds@gmail.com to confirm commercial terms. For YouTube-only distribution, check individual video description for permission statement. Use yt-dlp to download (same command as NCN below).
 
 **Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
 
@@ -723,6 +731,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
 | Ambient SFX has click at loop point despite acrossfade | Pre-processing acrossfade not applied, or file too short | Use ElevenLabs SFX v2 with `loop=True` instead — output is natively seamless, no post-processing needed |
+| Audio tags work weakly or inconsistently | Prompt too short (< ~250 chars) | Tags need enough context — test with the full production script (≥250 chars), not an isolated sentence |
+| Tags `[rushed]` / `[rapid-fire]` accidentally in script | Speed tags sound unprofessional for moving company brand | Add both to pre-generation script review checklist; never use in Snelverhuizen copy |
 | SFX has distracting room tone or crowd noise that arnndn can't fully clean | arnndn is for broadband hiss; mixed source noise requires source separation | Use ElevenLabs Voice Isolator (`client.audio_isolation.convert()`) — AI source separation; costs 1000 credits/minute (see §10 Option C) |
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
@@ -947,3 +957,43 @@ with open("sfx_clean.mp3", "wb") as f:
 - **Voice Isolator**: AI-powered, no local model download; best when SFX contains room tone + voice-like content (e.g., ambient crowd); high-quality result
 - **arnndn**: broadband digital hiss from microphone; best for pure noise reduction without isolating a specific source
 - **afwtdn**: HVAC/mains hum; no credits consumed
+
+---
+
+## 12. Text to Dialogue API (future use — multi-speaker ads)
+
+ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA (March 2026). Generates a single audio file containing multiple speakers in natural conversation. Not needed for current Snelverhuizen single-VO format, but relevant if a future brief calls for two characters (e.g., customer + crew dialogue scene).
+
+**Endpoint:** `client.text_to_speech.text_to_dialogue.convert()` (Python SDK v2.42+)
+
+**Key parameters:**
+- `inputs` — array of `{text, voice_id}` objects; each object is one dialogue turn
+- Max **10 unique voice IDs** per request
+- Max **2,000 characters total** across all `inputs[].text` values (hard limit — split longer dialogues)
+- `model_id` — must be `"eleven_v3"` (only model supporting dialogue mode)
+- `language_code` — set `"nl"` for Dutch
+- `text_normalization` — `"on"` to force Dutch number normalisation (same as TTS `apply_text_normalization`)
+- `seed` — optional int for reproducibility (model is nondeterministic)
+
+**Billing:** same per-character rate as TTS. Not a separate credit pool.
+
+**Halal note:** each `voice_id` must be a male voice consistent with modest Islamic advertising standards. Owner approval required before using two-voice format in any production.
+
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+audio = b"".join(client.text_to_speech.text_to_dialogue.convert(
+    inputs=[
+        {"text": "[calm] Verhuizen zonder zorgen?", "voice_id": VOICE_ID_CREW},
+        {"text": "[warm] Snel Verhuizen regelt alles.", "voice_id": VOICE_ID_NARRATOR},
+    ],
+    model_id="eleven_v3",
+    language_code="nl",
+    text_normalization="on",
+))
+
+with open("dialogue_output.mp3", "wb") as f:
+    f.write(audio)
+```
