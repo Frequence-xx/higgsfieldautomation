@@ -50,6 +50,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 | Grok Imagine Quality | `x-ai/grok-imagine-image-quality`† | T2I + I2I scenery drafts; 3 refs; strong text | 3 | ~$0.055 (1K), ~$0.07 (2K) | 9:16 native |
+| Qwen Image Edit | `alibaba/qwen-image-edit`✦ | Surgical text edits within existing images; background/object removal; fallback when NBP blockReason OTHER fires | 2–3 | ~$0.059 | native |
 
 ‖**Gemini 2.5 Flash Image (2026-05-28):** The original "Nano Banana" (Gemini 2.5 Flash Image) is available on AIMLAPI at ~$0.039/img. T2I only, no reference images, no Gemini 3 reasoning. Use ONLY as a sub-NB2 draft tier for rough composition/layout checks before committing NB2 credits. Do NOT use for character or brand-critical shots — quality is significantly below NB2. **AIMLAPI model string `google/gemini-2.5-flash-image` — run canary to confirm before production use.** Native 9:16 output. Pricing: ~42% cheaper than NB2 ($0.039 vs $0.067 at 1K).
 
@@ -67,7 +68,9 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 †**Grok Imagine Image Quality (2026-05-24):** xAI launched `grok-imagine-image-quality` on 2026-05-06. Predecessor `grok-imagine-image-pro` deprecated **2026-05-15** — do not use. Supports T2I and I2I editing with up to 3 reference images. 9:16 via `aspect_ratio: "9:16"`. Strong text rendering and photorealism. Practical use: cheap B-roll / environment drafts ($0.055 < NBP Pro's $0.13) when character accuracy isn't required. **AIMLAPI model string UNVERIFIED** — AIMLAPI docs still show the deprecated `-pro` variant as of 2026-05-24. Run canary with `x-ai/grok-imagine-image-quality` before relying on it. Do NOT use for character shots (no identity sheet support beyond 3 refs; no face adherence features).
 
-**⚠️ IMAGEN 4 RETIREMENT — URGENT (2026-05-22):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 31 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs).
+✦**Qwen Image Edit (2026-06-02):** Available on AIMLAPI as `alibaba/qwen-image-edit` at ~$0.059/img. Primary use case: surgical edits on existing images — text corrections within a generated frame, background replacement when NBP fires `blockReason: OTHER`, precise object removal/insertion. Supports 2-3 reference images. NOT a replacement for NBP Edit on multi-ref character compositing (no 14-ref support, no character-sheet identity anchoring). Use as a fallback when NBP Edit is blocked by the March 2026 policy tightening. AIMLAPI model string confirmed. **CANARY REQUIRED** to verify exact parameter names and response structure before production use. Qwen-Image-2.0 (Feb 2026, 2K native, professional typography) is available via Alibaba DashScope but NOT confirmed on AIMLAPI — do not route to it until canary confirms.
+
+**⚠️ IMAGEN 4 RETIREMENT — CRITICAL (2026-06-02 update):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 22 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs). Gemini 2.5 Flash Image (`gemini-2.5-flash-image`) shuts down **October 2, 2026**.
 
 **Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier. **[DEPRECATED — see retirement notice above]**
 
@@ -88,6 +91,7 @@ Shot needs flawless Dutch text (CTA card)? → GPT Image 2 (99% text accuracy) �
 Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over Kontext Max ($0.10) — better face stability, lower cost
 Hero frame passed most QA but has 1 brand failure? → NBP Edit inpainting ($0.20) — fix only the failing element, not full regen
 Need cheap B-roll scenery draft (no characters)? → Grok Imagine Quality ($0.055) — run AIMLAPI canary first (model string unverified)
+NBP Edit returns blockReason OTHER (March 2026 policy)? → Add "fictional, illustrated character" to prompt FIRST (60-70% block reduction); if still blocked use Qwen Image Edit ($0.059) for surgical edit OR T2I describe-the-scene approach
 ```
 
 ## API Call Templates
@@ -318,6 +322,7 @@ NBP (Gemini 3 Pro) supports named fonts directly in the prompt — more reliable
 - Prompts over ~200 words trigger internal summarization — keep concise
 - NO seed, guidance scale, or CFG parameters (NBP is autoregressive, not diffusion — seed reproducibility does not apply)
 - **safety_settings (2026-05-22):** Two distinct block behaviors: `blockReason: SAFETY` = pre-generation block (configurable via safety thresholds); `blockReason: IMAGE_SAFETY` = post-generation output block (also configurable). `blockReason: OTHER` is non-configurable. If a generation fails silently, check the response for blockReason field before retrying. For modest-dress character shots, IMAGE_SAFETY false-positives can occur — log the blockReason and escalate to owner rather than retrying blindly.
+- **blockReason: OTHER — March 2026 policy tightening (CRITICAL, 2026-06-02):** Google significantly expanded `blockReason: OTHER` in March 2026 to cover person-related editing operations: uploading a reference photo of a person and asking to change their background, composite them into a new scene, or modify appearance now frequently returns `blockReason: OTHER`. This is a policy-level restriction — safety_settings adjustments have NO effect. **Our characters are AI-generated (not real people), but NBP cannot reliably distinguish them from real-person photos.** Two mitigations: (1) **Add "fictional, illustrated character" to the prompt** — reduces IMAGE_SAFETY false-positive blocks by ~60-70%. (2) **T2I fallback**: Describe the scene in text with the character's features spelled out rather than uploading a reference photo — avoids the "editing real person photo" trigger entirely. (3) **Segmentation composite**: Use BiRefNet or rembg to extract the character silhouette from the approved hero frame, generate the new background separately with NBP T2I, composite in FFmpeg. (4) **Qwen Image Edit fallback** (`alibaba/qwen-image-edit`, $0.059) for surgical background replacement when NBP OTHER-blocks. The OTHER block is NOT a failure of prompt quality — do not keep retrying the same call.
 - **Gemini 3.5 Flash (2026-05-19):** Text-output-only model. Does NOT generate images. Not an upgrade path for hero frames. Image generation pipeline remains: NB2 (draft) → NBP Edit (final) → Imagen 4 Ultra (CTA/money shots).
 
 ### Camera Angle Variation Technique (2026-05-31)
@@ -362,6 +367,7 @@ Instead of generating three views from scratch, take one approved hero frame and
 - **Max 14 images total, BUT only 5 can be human/person identity references.** Remaining 9 slots are for objects, vehicles, and scenes. Do NOT exceed 5 human refs or identity anchoring degrades. For strict structural accuracy, cap total uploads at 6 high-quality refs even if quota allows more. (Confirmed by community guides apiyi.com, laozhang.ai 2026 — going beyond 6 shows no quality gain and may introduce conflicting information.)
 - **NB2 (Gemini 3.1 Flash Image) ref limits differ:** up to 10 object fidelity refs, but only 5 character consistency refs. Same 6-cap guidance applies.
 - **Reference image quality spec (2026-04-21):** Minimum resolution 1024×1024. Face must occupy **30–50% of the frame area** — tighter crops produce better identity anchoring than full-body shots used as the sole reference. Sub-30% face coverage = identity drift; sub-1024px = detail loss in identity latent.
+- **Reference image lighting consistency (2026-06-02):** All reference images for the same character MUST share identical lighting setup — even, front-facing diffused light, no strong directionality. Mixed lighting across refs (e.g., one studio-lit and one outdoor) introduces inconsistency that the model resolves by averaging, producing a face that matches neither. If you have refs with mixed lighting, pick only those shot in the same session or relight to match before uploading.
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
 - **Chain update technique (2026-05-08):** Include the PREVIOUS output as one of the reference images when making incremental edits. This reduces drift across multi-pass generation by giving the model a visual anchor of the last state. Remind it explicitly each call to preserve hair, clothing, and facial features.
 - **Iterative refinement loop (2026-05-22):** After each generation pass, use the BEST output from that pass as an additional reference in the next call — alongside the original character sheet. Community-confirmed: achieves 90%+ consistency across 50+ image batches. Loop: generate batch → pick best → add as Image 2 alongside original sheet → generate next batch → repeat. Stop when identity is locked (face distance < 0.4 cosine).
@@ -499,6 +505,27 @@ is_same = result["verified"]  # True if cosine distance < threshold
 ```
 
 Run this check on every hero frame before sending to owner for approval. Rejection threshold: if cosine distance > 0.4 (i.e. similarity < 0.6), flag for regeneration.
+
+## Background Segmentation Tools (for blockReason OTHER workaround)
+
+When NBP Edit returns `blockReason: OTHER` on a person+scene composite call, the segmentation-composite workflow extracts the character silhouette from the approved hero frame, generates a new background with T2I, and composites in FFmpeg — without triggering person-editing policies.
+
+| Tool | Install | Strength | Notes |
+|------|---------|----------|-------|
+| **BiRefNet** | `pip install birefnet` | Production-grade high-res segmentation; outperforms rembg on complex edges | Three-tier: Light (fast), Heavy (complex), Portrait (face-optimized) |
+| **rembg** | `pip install rembg` | Simple, fast automatic foreground extraction | Adequate for clean-background refs; inferior to BiRefNet on natural scenes |
+| **SAM2** | `pip install transformers` | Interactive segmentation (point/box prompt) | Slower; use when BiRefNet misses hair or fine details |
+
+**Workflow (blockReason OTHER fallback):**
+```
+1. BiRefNet: extract character RGBA from approved hero frame
+2. NBP T2I: generate new background scene (no person in prompt)
+3. FFmpeg composite: overlay character RGBA onto new background
+   ffmpeg -i background.jpg -i character_rgba.png \
+     -filter_complex "[0][1]overlay=x=...:y=..." output.jpg
+```
+
+This produces the same scene change as an NBP Edit call but avoids all person-editing policy triggers.
 
 ## Imagen 4 API Templates (2026-05-08)
 
