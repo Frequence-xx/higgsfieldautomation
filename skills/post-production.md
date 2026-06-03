@@ -200,7 +200,7 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
-**Model currency check (May 2026):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). The recommendations below remain current — no newer version to upgrade to.
+**Model currency check (2026-06-03):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). The recommendations below remain current — no newer version to upgrade to.
 
 Model selection for live-action / AI-generated video:
 - **rife-v4.22** — **best for diffusion-generated video (Kling, Veo output)**. Maintainer explicitly notes this version for diffusion post-processing. Use this as default for our pipeline.
@@ -357,12 +357,12 @@ ffmpeg -i normalized.mp4 \
 
 | Platform | Resolution | FPS | Codec | Audio | Max File | Max Length |
 |----------|-----------|-----|-------|-------|---------|------------|
-| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 4 GB | **3 min** (180s) |
+| Instagram Reels | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | 4 GB | **15 min** (upload) / 20 min (in-app) |
 | TikTok | 1080×1920 | 30 | H.264 | AAC 192k 44.1kHz | 287.6 MB (mobile) / 10 GB (Studio) | 10 min |
 | YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | — | 3 min |
 | WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) | 60s |
 
-**Instagram Reels max length note:** Instagram extended the limit to 3 minutes (180 seconds) — was previously capped at 90 seconds on some accounts. Our ads are typically 30–60s, well within this.
+**Instagram Reels max length note:** Any video under 15 minutes uploaded to Instagram is auto-classified as a Reel (confirmed 2026-06-03). In-app recording supports up to 20 minutes on select accounts. The algorithmic sweet spot for discovery is under 90 seconds. Our ads are 30–60s — well within all limits.
 
 **TikTok upload:** Mobile app cap is 287.6 MB (iOS) / 72 MB (Android). Always upload via TikTok Studio (desktop) for master-quality files — supports up to 10 GB with no in-app compression.
 
@@ -432,7 +432,7 @@ ffmpeg -i normalized.mp4 \
 
 ### 5h. AV1 Archive Encoding (Internal Storage Only — NOT for Platform Upload)
 
-SVT-AV1 v4.1 (2026-03-16) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
+SVT-AV1 v4.1 (2026-03-16, confirmed current 2026-06-03) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
 
 ```bash
 # Check SVT-AV1 availability
@@ -491,7 +491,7 @@ audio: aac - - 256000bps
 
 ## 6. FFmpeg 8.0 Native Whisper Filter (Quick Segment-Level SRT)
 
-**FFmpeg 8.0 "Huffman"** (released 2025-08-22) and **8.1 "Hoare"** (released 2026-03-17) include a built-in `whisper` audio filter (`af_whisper`). **Current stable: 8.1.1** (released 2026-05-04) — maintenance patch fixing ALS/USAC decoder bugs; no new filters. — powered by whisper.cpp — that can generate SRT/VTT subtitles in one command without a separate tool.
+**FFmpeg 8.0 "Huffman"** (released 2025-08-22) and **8.1 "Hoare"** (released 2026-03-17) include a built-in `whisper` audio filter (`af_whisper`). **Current stable: 8.1.1** (released 2026-05-04, confirmed current 2026-06-03) — maintenance patch fixing ALS/USAC decoder bugs; no new filters. All pipeline-relevant filters (drawvg, normalize, zscale, hqdn3d) are stable and unchanged in 8.1.1. — powered by whisper.cpp — that can generate SRT/VTT subtitles in one command without a separate tool.
 
 **Check availability:**
 ```bash
