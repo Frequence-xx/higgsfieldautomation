@@ -22,6 +22,14 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
+## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (22 days away as of 2026-06-03)
+
+Google is retiring both Gemini image preview models on **June 25, 2026**:
+- `gemini-3-pro-image-preview` → GA replacement: `gemini-3-pro-image`
+- `gemini-3.1-flash-image-preview` → GA replacement: `gemini-3.1-flash-image`
+
+**AIMLAPI status:** AIMLAPI model strings `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` likely already route to the GA models (Google Cloud blog confirms both NBP and NB2 are generally available). However, AIMLAPI's docs still reference the `-preview` suffix in their internal doc URLs for NBP, suggesting their backend may not have migrated yet. **Run a canary call on `google/nano-banana-pro-edit` before June 22** to verify it still works. If calls start returning 404/model-not-found after June 25, contact AIMLAPI support — do NOT assume the pipeline is broken before checking.
+
 ## Critical Rules
 
 1. **MUST generate natively in 9:16** for vertical platforms. NEVER crop, zoom, or pad a square image.
@@ -54,7 +62,7 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 
 ‖**Gemini 2.5 Flash Image (2026-05-28):** The original "Nano Banana" (Gemini 2.5 Flash Image) is available on AIMLAPI at ~$0.039/img. T2I only, no reference images, no Gemini 3 reasoning. Use ONLY as a sub-NB2 draft tier for rough composition/layout checks before committing NB2 credits. Do NOT use for character or brand-critical shots — quality is significantly below NB2. **AIMLAPI model string `google/gemini-2.5-flash-image` — run canary to confirm before production use.** Native 9:16 output. Pricing: ~42% cheaper than NB2 ($0.039 vs $0.067 at 1K).
 
-†NB2 (Gemini 3.1 Flash Image, launched Feb 26 2026) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction — previously documented incorrectly). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration.
+†NB2 (Gemini 3.1 Flash Image, **GA as of 2026-06**) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Native GA model ID: `gemini-3.1-flash-image` (no `-preview`). Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration. **NEW (2026-06, Preview):** NB2 now accepts video files as input — enables generating stills from existing approved footage (thumbnail extraction, keyframe generation). Not yet confirmed on AIMLAPI endpoint; use for native Google API workflows only until canary confirms.
 
 **NB2 resolution tiers (Google official rates):** `"resolution": "512"` ($0.045/img, ~4-6s) → `"1K"` ($0.067/img) → `"2K"` ($0.101/img) → `"4K"` ($0.151/img). Use `"512"` for layout/composition checks before committing to 1K — saves ~33% per draft pass. Note: 512px is specified as `"512"` (no K suffix), not `"0.5K"`. AIMLAPI may map this to their own pricing tier — run a canary if using 512 for the first time.
 
@@ -63,6 +71,8 @@ Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Ev
 ‡GPT Image 2 supports up to **16 reference images** per call (every reference billed at high-fidelity input rate). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. AIMLAPI model string: `openai/gpt-image-2`. Confirmed `size` values: `1024x1536` (9:16 portrait), `1536x1024` (landscape), `1024x1024` (square). Quality tiers: `low`, `medium`, `high`. Run canary to verify AIMLAPI reference image support before using in production — OpenAI confirms it, AIMLAPI implementation unverified.
 
 §GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Imagen 4 Fast ($0.02) for iteration, GPT Image 2 only for finals requiring superior text accuracy.
+
+**GA model IDs clarification (2026-06-03):** Google's native GA model strings are `gemini-3-pro-image` (NBP) and `gemini-3.1-flash-image` (NB2). AIMLAPI wraps these under `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` — these AIMLAPI strings are unchanged and should continue working post-June-25 assuming AIMLAPI updates their backend routing. The `-preview` suffix is in AIMLAPI's internal doc URLs but NOT in the model strings you pass in API calls. Run a canary before June 22 to confirm.
 
 ⁑**FLUX.2 Max (2026-05-31):** BFL's highest-quality T2I/I2I model. Available on AIMLAPI as `blackforestlabs/flux-2-max` — **CANARY REQUIRED** to confirm exact model string and parameter support. Pricing: ~$0.091/megapixel at BFL-native; ~$0.09/img at 1K on AIMLAPI (slightly more than Kontext Max but similar). Supports up to **10 reference images** — the key advantage over Kontext Max's 2-ref AIMLAPI ceiling. Use case: brand compositing shots needing more than 2 refs (character + truck + boxes + background scene) without paying NBP Edit prices. Do NOT use for character chain-editing — Kontext Pro/Max is better for sequential face edits. Run canary before production use.
 
@@ -371,6 +381,18 @@ Instead of generating three views from scratch, take one approved hero frame and
 - First-pass consistency rates: character-sheet workflow = 85-90%; single hero image without sheet = 60-70%
 - **Chain update technique (2026-05-08):** Include the PREVIOUS output as one of the reference images when making incremental edits. This reduces drift across multi-pass generation by giving the model a visual anchor of the last state. Remind it explicitly each call to preserve hair, clothing, and facial features.
 - **Iterative refinement loop (2026-05-22):** After each generation pass, use the BEST output from that pass as an additional reference in the next call — alongside the original character sheet. Community-confirmed: achieves 90%+ consistency across 50+ image batches. Loop: generate batch → pick best → add as Image 2 alongside original sheet → generate next batch → repeat. Stop when identity is locked (face distance < 0.4 cosine).
+
+### thoughtSignature — Multi-Turn Chain Editing (2026-06-03)
+
+Gemini 3 image models (NBP and NB2) use **thought signatures** — encrypted reasoning-state tokens returned with every generation response. In multi-turn editing (e.g., asking the model to iteratively refine the same image across several calls), the `thoughtSignature` from each response MUST be passed back in the next turn. Missing signatures result in **400 errors** or the model "forgetting" earlier context (reverts to generating from scratch).
+
+**For our AIMLAPI pipeline (httpx, not official Google SDK):**
+- AIMLAPI proxies through the Gemini API — it may or may not surface `thoughtSignature` in the response JSON.
+- Do NOT attempt to build native multi-turn Gemini sessions through AIMLAPI. AIMLAPI's `/v1/images/generations` endpoint is stateless by design — each call is independent.
+- **Our existing substitute is correct**: include the PREVIOUS output image as Image 2 (alongside the original character sheet as Image 1) in every chain-edit call. This gives the model a visual anchor of prior state and is the AIMLAPI-safe equivalent of thoughtSignature continuity.
+- If you need true thoughtSignature-based multi-turn editing, use the native Gemini Python SDK (`google-generativeai`) with a `chat` object — signatures are handled automatically. Only switch to native SDK if AIMLAPI's stateless proxy proves insufficient after ≥3 chain-edit failures.
+
+**Why this matters:** The iterative refinement loop (chain update technique) documented above is our thoughtSignature substitute — it works precisely because passing the previous output preserves visual context. Continue using it; don't try to extract or pass `thoughtSignature` manually through AIMLAPI.
 
 ### NBP Semantic Inpainting — Fix Brand Failures Without Regenerating (2026-05-24)
 
