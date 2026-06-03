@@ -249,7 +249,18 @@ app.prepare(ctx_id=-1, det_size=(640, 640))
 ```
 **Current production model stays buffalo_l** (auto-downloads, validated thresholds). Upgrade to antelopev2 only after re-calibrating thresholds on approved character sheets.
 
-**AuraFace** (open-source, commercially licensed): ResNet100 + ArcFace, drop-in ONNX replacement for buffalo_l's recognition head. Key advantage: BSD license (buffalo_l ONNX models carry non-commercial restriction). **LFW benchmark confirmed at 99.65%** (pass 6 finding, 2026-05-17). Multiple production teams have validated it. Recommended upgrade path from buffalo_l when BSD licensing matters. No per-demographic benchmark published yet; calibrate thresholds per character as with antelopev2.
+**AuraFace** (open-source, commercially licensed): ResNet100 + ArcFace, drop-in ONNX replacement for buffalo_l's recognition head. Key advantage: Apache 2.0 license (buffalo_l ONNX models carry non-commercial restriction). **LFW benchmark confirmed at 99.65%** (pass 6 finding, 2026-05-17). Multiple production teams have validated it. Recommended upgrade path from buffalo_l when licensing matters.
+
+**AuraFace threshold regime (pass 13 finding, 2026-06-03):** AuraFace produces lower raw cosine scores than buffalo_l. Same-person comparison across different images typically yields ~0.55–0.65 cosine — noticeably lower than buffalo_l's ~0.75–0.90 range for the same identity. **Do NOT use buffalo_l thresholds (PASS≥0.68) with AuraFace** — they will produce systematic false rejects. Starting calibration range for AuraFace:
+
+| Score | Action |
+|-------|--------|
+| ≥ 0.45 | PASS |
+| 0.35 – 0.44 | PASS with note |
+| 0.25 – 0.34 | RETRY |
+| < 0.25 | REJECT |
+
+These are starting estimates only — calibrate per character by scoring 4 approved reference images against each other (same procedure as buffalo_l skin-tone calibration). No per-demographic benchmark published yet for AuraFace; treat olive/brown skin characters same as generic until calibrated.
 
 ### FaceFusion Fallback (identity score < 0.50)
 
@@ -325,6 +336,8 @@ python facefusion.py headless-run \
 ```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
+
+**GSwap — Future Watch (research stage, March 2026):** 3D head swap using neural Gaussian portrait representation embedded in SMPL-X body surface. Models head, torso, and motion together (not just 2D face patch), with neural re-rendering for natural background integration. Addresses FaceFusion's known failure mode: detached/misaligned look under strong head motion. Not yet packaged as a tool. Monitor for open-source release — would replace FaceFusion for clips with large head rotation or motion blur.
 
 **lip_syncer processor (pass 9 finding, 2026-05-23): sync mouth to voiceover**
 
@@ -457,11 +470,12 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## InsightFace buffalo_l Benchmarks
 
-| Model | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size | Notes |
-|-------|-----|--------|----------|-----------|------|-------|
-| buffalo_l | 99.83% | 99.33% | 98.23% | 97.25% | 326MB | Production default |
-| buffalo_m | same as buffalo_l | — | — | — | ~200MB | Faster (~900 FPS), balanced server use — good for batch QA of many frames |
-| buffalo_s (CPU fallback) | 99.70% | 98.00% | — | — | 159MB | Edge/mobile only |
+| Model | Backbone | LFW | CFP-FP | AgeDB-30 | IJB-C(E4) | Size | Notes |
+|-------|----------|-----|--------|----------|-----------|------|-------|
+| buffalo_l | R50 / W600K (w600k_r50) | 99.83% | 99.33% | 98.23% | 97.25% | 326MB | Production default |
+| buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | Faster (~900 FPS), good for batch QA |
+| buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | Edge/mobile only |
+| antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
 
 **buffalo_m (pass 9 finding, 2026-05-23):** Identical accuracy to buffalo_l but significantly faster throughput (~900 FPS). Use buffalo_m for batch QA pipelines (many frame extractions in one session) where speed matters. Use buffalo_l for per-clip evaluation where accuracy is paramount. Same threshold calibration as buffalo_l applies.
 
@@ -528,9 +542,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-01)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-03)
 
-Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **The April 10, 2026 migration was to fal.ai / Atlas Cloud / Leonardo — NOT AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. Monitor for AIMLAPI O3 landing.
+Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **O3 advantages for character shots:**
 - Multi-shot: up to 6 shots in a single API call with consistent character across all shots (max 15s total, each shot ≥ 3s)
@@ -586,7 +600,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-01)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-03)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
