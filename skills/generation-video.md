@@ -162,6 +162,8 @@ For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "veh
 
 ## Negative Prompt Templates
 
+**Term ordering matters:** Kling weights earlier terms more heavily than later ones. Put your highest-priority failure prevention terms FIRST. For character shots: face/identity terms first. For truck shots: vehicle movement terms first.
+
 ### Universal Baseline (ALWAYS include ALL)
 
 ```
@@ -379,6 +381,25 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 ]
 ```
 
+**Multi-shot failure modes (v3-specific — absent in single-shot Kling 2.6):**
+- Character drift between shots (face/clothing changes at cut points)
+- Audio desync at cut boundaries (if audio is enabled — always keep it off)
+- Tonal shift between cuts (lighting or color grade jumps)
+- Lighting inconsistency across shots
+
+**Multi-shot anti-drift technique:** Restate a continuity anchor inside every shot prompt:
+```python
+"multi_prompt": [
+    {"prompt": "@Element1 walks to the truck. Continuity: same face, same outfit, same lighting.", "duration": 5},
+    {"prompt": "@Element1 loads a box into the truck. Continuity: same face, same outfit, same lighting.", "duration": 5},
+]
+```
+
+**Multi-shot negative prompt additions** (add to standard negative template):
+```
+character drift between shots, tonal shift between cuts, lighting inconsistency across shots
+```
+
 **If AIMLAPI returns a parameter error:** fall back to single-prompt clips and chain in post via FFmpeg. Do NOT retry multi_prompt more than once per session — it costs credits on failure too.
 
 ## Dynamic Masks — Exact Structure
@@ -505,7 +526,7 @@ If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where 
 **O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12):**
 - `elements` array → replaced by `kling_elements` array (`name` + `description` + `element_input_urls` of 2–4 images)
 - Reference in prompt → use `@name` (element's `name` value), NOT `@Element1` positional syntax
-- `multi_shots: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored)
+- `multi_shot: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored) — NOTE: singular (`multi_shot`), not `multi_shots`
 - `generate_audio` defaults **ON** in O3 — ALWAYS set `False` explicitly
 - `cfg_scale` and `negative_prompt` are **STILL PRESENT** — do NOT remove them when switching to O3
 - `start_image_url` → renamed to `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
@@ -517,6 +538,8 @@ See `character-consistency.md` O3 section for the complete `kling_elements` call
 Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 23, 2026.**
 
 **How 4K works (native Kling API):** The native Kling API accepts `"mode": "4k"` as a top-level parameter. However, third-party API wrappers implement 4K differently: **fal.ai exposes it as a dedicated model endpoint** (`fal-ai/kling-video/v3/4k/image-to-video`), not a parameter toggle. Runware similarly exposes a separate "Kling VIDEO O3 4K API" model. This means AIMLAPI may use either a separate model string or the `mode` parameter — do NOT assume either approach without a canary test.
+
+**fal.ai 4K confirmed pricing: $0.42/sec ($2.10/5s)** — 44% more expensive than v3 Pro on fal.ai and ~44% more than Kling Pro on AIMLAPI ($1.46/5s). Only justified for final hero delivery clips, not draft iterations.
 
 **4K I2V supported features:** single-shot (start frame only), multi-shot, start+end frame, element control with video character and multi-image inputs. Duration range: 3–15 seconds (same as pro mode). Motion Control and voice are NOT available in 4K mode.
 

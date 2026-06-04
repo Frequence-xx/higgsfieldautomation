@@ -571,11 +571,11 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     ],
     # max 3 kling_elements per task; each element 2–4 images in element_input_urls
     # prompt uses @crew_lead (not @Element1) — name must match exactly
-    "multi_prompt": [                                  # multi-shot control (O3 only, requires multi_shots: true)
+    "multi_prompt": [                                  # multi-shot control (O3 only, requires multi_shot: true)
         {"prompt": "@crew_lead lifts a box from the truck, golden hour", "duration": 5},
         {"prompt": "@crew_lead carries box to doorway, focus pull", "duration": 5}
     ],
-    "multi_shots": True,                              # required to activate multi_prompt
+    "multi_shot": True,                               # required to activate multi_prompt (singular — NOT multi_shots)
     "face_consistency": True,
     "generate_audio": False,   # CRITICAL: O3 audio defaults ON — must set explicitly
     # Native Kling 3.0 API uses "sound" param; AIMLAPI likely remaps to "generate_audio" (consistent with V3)
@@ -589,7 +589,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - `start_image_url` → renamed to `image_url`
 - `elements` array → replaced by `kling_elements` array (max 3 elements, each with `name`+`description`+`element_input_urls` of 2–4 images) — **NOT `image_reference`**
 - Prompt references elements by `@name` (element name field), not `@Element1`
-- `multi_shots: True` required to activate `multi_prompt` (multi-shot control)
+- `multi_shot: True` required to activate `multi_prompt` (multi-shot control) — singular, NOT `multi_shots`
 - `negative_prompt` **STILL PRESENT** — default "blur, distort, and low quality" (prior pass incorrectly said REMOVED)
 - `cfg_scale` **STILL PRESENT** — default 0.5 range 0–1 (prior pass incorrectly said REMOVED)
 - Audio: native Kling 3.0 API uses `sound` (bool); AIMLAPI likely remaps to `generate_audio` (consistent with how it handles V3). Always set to OFF explicitly regardless of param name.
