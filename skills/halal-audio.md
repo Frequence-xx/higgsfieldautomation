@@ -57,15 +57,22 @@ No music. No instruments. Ever. Audio is restricted to:
 | **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
-**Willem voice_id**: The `voice_id` string for Willem is not published in any SDK reference or public list — it is a Voice Library community voice. Retrieve it once and store in project config:
+**Willem voice_id**: The `voice_id` string for Willem is not published in any SDK reference or public list — it is a Voice Library community voice. Retrieve it once and store in project config. As of the April 7, 2026 API update, the voice response also includes `recording_quality` and `labelling_status` — check these when first retrieving:
 ```python
 import requests
 r = requests.get("https://api.elevenlabs.io/v1/voices",
                  headers={"xi-api-key": ELEVENLABS_API_KEY},
                  params={"search": "Willem"})
-VOICE_ID = r.json()["voices"][0]["voice_id"]
+voice = r.json()["voices"][0]
+VOICE_ID = voice["voice_id"]
+# April 7, 2026: recording_quality enum: "studio" | "good" | "ok" | "poor" | "bad"
+# labelling_status enum: "in_review" | "review_complete"
+print(f"Willem quality: {voice.get('recording_quality', 'unknown')}")
+print(f"Review status: {voice.get('labelling_status', 'unknown')}")
 ```
-Alternatively: elevenlabs.io → Voices → search "Willem" → three-dot menu → Copy voice ID. **Voice Library community voices are NOT subject to the Dec 31, 2026 ElevenLabs default-voice expiry** (that applies only to the original 38 pre-made English defaults). Willem will persist unless its creator removes it — save the ID to project config as a precaution.
+Only proceed to production if `recording_quality` is `"studio"` or `"good"`. If `"ok"` or worse, or `labelling_status` is `"in_review"`, consider switching to a different Dutch voice. Alternatively: elevenlabs.io → Voices → search "Willem" → three-dot menu → Copy voice ID. **Voice Library community voices are NOT subject to the Dec 31, 2026 ElevenLabs default-voice expiry** (that applies only to the original 38 pre-made English defaults). Willem will persist unless its creator removes it — save the ID to project config as a precaution.
+
+**PVC note (April 2026):** Professional Voice Clones (PVCs) are not yet fully optimized for eleven_v3 — they may show reduced responsiveness to audio tags compared to Instant Voice Clones (IVCs) and Voice Library voices. Willem (a Voice Library voice) is not affected. Do NOT create a PVC for production unless testing confirms tags work as expected.
 
 **eleven_v3 + audio tags**: lower stability to **50–55** when the script uses `[tag]` markers. Stability ≥60 suppresses the headroom the model needs to act on tags — they will be ignored or weakened. For plain prose with no tags, keep at 60.
 
@@ -283,6 +290,12 @@ with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
 ```
 
 **When `loop=True` is used:** the output is already seamlessly looped — do NOT additionally run the `acrossfade` command from §4e. Use directly with `aloop=loop=-1:size=2e+09` in the mix commands.
+
+### ⚠ ElevenLabs Music API — DO NOT USE for halal ambient SFX
+
+ElevenLabs added a Music API with `generation_mode: "ambience"` (May 2026, SDK v2.49.0). Despite the name "ambience", this is a **music generation API** — it generates AI-composed music with instrumentation. Even in `ambience` mode, output is likely to contain musical elements (tonal pads, harmonics, rhythmic content).
+
+**Rule: never use ElevenLabs Music API in this pipeline.** The SFX v2 API (`eleven_text_to_sound_v2`) is the correct tool for instrument-free ambient beds. The Music API exists for background music use cases — incompatible with Snelverhuizen halal audio policy. If an ambient SFX v2 generation sounds musical, that is a prompt issue (include "no music, no instruments, no melody" in the text prompt) — it is NOT a reason to switch to the Music API.
 
 ### Tier 2: Freesound (API, CC0 Filter Only)
 
@@ -737,6 +750,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
+| Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music (even in ambience mode) — contains instrumentation | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
+| PVC audio tags weak or ignored in eleven_v3 | PVCs not fully optimized for v3 as of April 2026 | Switch to a Voice Library voice (e.g. Willem) or an IVC. Do not use PVCs for eleven_v3 tag-dependent scripts until ElevenLabs confirms full PVC compatibility. |
+| Need to verify Willem voice quality before production | No UI check in pipeline | Call GET /v1/voices?search=Willem — check `recording_quality` field. Proceed only if "studio" or "good". If "in_review" labelling_status, hold and re-check next session. |
 | Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
 | `[pauses]` tag in old scripts not working | Official ElevenLabs form is `[pause]` (no 's') — `[pauses]` may be silently ignored | Update scripts to use `[pause]` (confirmed canonical form from official ElevenLabs blog posts). Both may work but test on Willem to confirm. |
@@ -856,7 +872,7 @@ for word in result.words:
 
 **`keyterms` (Scribe v2 batch — confirmed 2026):**
 - Biases the model toward recognising the listed terms. Up to 1000 keyterms per call; each ≤50 characters and ≤5 words.
-- **+20% cost surcharge** applies when `keyterms` is set.
+- **+$0.050/hr flat surcharge** applies when `keyterms` is set (base $0.22/hr → $0.27/hr total, ≈23% increase). Not "+20%" — the surcharge is a flat additive rate per audio hour, not a percentage of base.
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
 - **May 2026 realtime update:** Scribe v2 realtime WebSocket now also accepts `no_verbatim` (removes filler words) and native mute/unmute. These are realtime-only additions; the batch API (used for VO QA) is unchanged.
@@ -872,7 +888,7 @@ Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO
 
 **Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
 
-**Cost:** Scribe v2 is billed **per audio hour**, NOT per character. Batch rate: **$0.22/hour** (reduced from $0.40/hour — 45% cut, announced May 7, 2026). Realtime: $0.39/hour. A 30-second VO costs ~$0.0018 base + 20% keyterm surcharge = **~$0.0022 total** — essentially free for VO QA use. Do NOT budget Scribe as if it were TTS credits.
+**Cost:** Scribe v2 is billed **per audio hour**, NOT per character. Batch rate: **$0.22/hour** base (reduced from $0.40/hour — 45% cut, announced May 7, 2026). Keyterm surcharge: +$0.050/hr flat → $0.27/hr total with keyterms. Entity detection: +$0.070/hr. Realtime: $0.39/hour. A 30-second VO costs ~$0.0018 base + $0.000417 keyterm surcharge = **~$0.0022 total** — essentially free for VO QA use. Do NOT budget Scribe as if it were TTS credits.
 
 **QA checklist:**
 - [ ] Transcript contains "SNELVERHUIZEN" (not garbled)
@@ -939,7 +955,7 @@ Deep-learning model that separates vocal signal from background noise. Useful fo
 
 **Cost:** 1000 characters per minute of audio (uses same ElevenLabs credit pool as TTS). A 30-second SFX file costs ~500 credits (~$0.06 at Creator plan rates). Use sparingly — only when arnndn/afwtdn insufficient.
 
-**Supports:** WAV, MP3, FLAC, OGG, AAC (input); up to 500MB / 1 hour.
+**Supports:** WAV, MP3, FLAC, OGG, AAC (input); up to 500MB / 1 hour. (Note: STT/Scribe accepts up to 5.0GB — the 500MB limit here applies to Voice Isolator specifically.)
 
 ```python
 from elevenlabs import ElevenLabs
