@@ -66,6 +66,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
      ```
    - **`no_verbatim: True`** — strips filler words ("uh", "uhm") from transcription output; leave False for voiceovers (TTS never produces fillers).
+   - **Dutch accuracy (Scribe v2 benchmark):** WER ≤5% — Excellent tier on ElevenLabs' internal multilingual benchmark. In practice: brand names and phone numbers may still need keyterm biasing; normal narration transcribes correctly without it.
 
    ```python
    from elevenlabs import ElevenLabs
@@ -98,6 +99,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    ```
 
    **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
+
+   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. Key difference: keyterms limited to **50 terms, max 20 characters each** (vs batch Scribe: 100 terms, no per-term char limit). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
@@ -563,7 +566,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.471 — confirmed current as of 2026-06-02)
+### Full API (v4.0.471 — confirmed current as of 2026-06-04)
 
 | Export | Purpose |
 |--------|---------|
@@ -698,6 +701,8 @@ const { segments } = CaptionsInternals.ensureMaxCharactersPerLine({
 ```
 
 Use this BEFORE `createTikTokStyleCaptions()` when you have long Dutch phrases that would otherwise overflow the 1080px canvas width.
+
+**Simpler alternative for basic line-wrapping:** Set `maxWidth: '80%'` (or a pixel value like `maxWidth: 840`) directly on the caption container `<div>`. This lets the browser/Remotion renderer wrap naturally without needing pre-processing. Use `ensureMaxCharactersPerLine` when you need precise control over per-word line breaks (e.g. preventing orphan 1-word tail); use `maxWidth` CSS when simple visual wrapping is enough.
 
 ### Key Parameter: combineTokensWithinMilliseconds
 
