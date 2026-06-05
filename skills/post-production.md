@@ -200,13 +200,13 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
-**Model currency check (2026-06-03):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). The recommendations below remain current — no newer version to upgrade to.
+**Model currency check (2026-06-05):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). **v4.22 is no longer the recommended model.** Practical-RIFE README recommends v4.25 as the default for most scenes and explicitly states v4.24+ is best for diffusion-generated video — use v4.25 as pipeline default.
 
 Model selection for live-action / AI-generated video:
-- **rife-v4.22** — **best for diffusion-generated video (Kling, Veo output)**. Maintainer explicitly notes this version for diffusion post-processing. Use this as default for our pipeline.
+- **rife-v4.25** — **best for diffusion-generated video (Kling, Veo output) and general default.** Practical-RIFE project explicitly states v4.24+ is suitable for diffusion model video post-processing; v4.25 is the maintainer's recommended default for most scenes. Use this as our pipeline default.
 - **rife-v4.26.heavy** — highest quality variant of v4.26, significantly more GPU-intensive. Reserve for final delivery polish on important clips only (character close-ups, hero moments). Not in RVE GUI — CLI only via rife-ncnn-vulkan binary.
-- **rife-v4.26** — latest standard model (2024-09-21), officially recommended for general use. Good fallback if v4.22 produces artifacts on a specific clip.
-- **rife-v4.25** — previous recommended; community finds it matches v4.26 on real footage when bidirectional + dynamic optical flow enabled. No longer the first choice.
+- **rife-v4.26** — latest standard model (2024-09-21). Similar quality to v4.25 on most content; use if v4.25 produces artifacts on a specific clip.
+- **rife-v4.22** — prior recommendation (superseded). v4.24+ is the current guidance for diffusion video; retain only as legacy fallback.
 - **rife-v4.6** — legacy fallback only (nihui original binary)
 
 **CORRECTION from SC21:** Prior note that v4.26 is "anime-only" was incorrect. v4.26 is a general improvement. There is a separate `rife-v4.6-anime` variant for anime, which is unrelated.
@@ -223,9 +223,9 @@ unzip rife-ncnn-vulkan-linux.zip
 # Extract frames
 ffmpeg -i clip.mp4 -r 24 frames/%08d.png
 
-# Interpolate with v4.22 (best for diffusion/AI-generated video — see §3a)
+# Interpolate with v4.25 (best for diffusion/AI-generated video — see §3a)
 # No -x TTA flag — deprecated in v4.22+
-./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.22 -j 1:2:2
+./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.25 -j 1:2:2
 
 # Reassemble at target fps
 ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
@@ -235,7 +235,7 @@ ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
   -r 30 clip_smooth.mp4
 ```
 
-**Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.22+? Drop it — TTA deprecated.
+**Note:** Using nihui's binary (v4.6)? Keep `-x` flag. Using TNTwise binary with v4.22+? Drop it — TTA deprecated. **nihui/rife-ncnn-vulkan** has not released a new binary since October 2022 (max bundled model: v4.6). Use TNTwise fork for v4.25.
 
 ### 3c. Expected Quality Risks
 
@@ -278,6 +278,8 @@ ffmpeg -i clip.mp4 -c copy \
 ```
 
 **For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
+
+**PySceneDetect v0.7.1 (in development, not yet released):** Will add `--expand` flag to the `split-video` command (extends clip boundaries to video edges rather than cutting at exact scene timestamps) and an `expand_scenes_to_bounds()` API helper. Monitor: https://github.com/Breakthrough/PySceneDetect/blob/main/website/pages/changelog.md
 
 ---
 
@@ -400,13 +402,13 @@ TikTok's right-side dead zone is significantly wider than Instagram's — this i
 | Zone | Pixels from edge | What occupies it |
 |------|-----------------|------------------|
 | Bottom danger zone | Bottom **324px** (organic) / **370px** (ads/branded) | Caption, sound attribution, engagement buttons |
-| Right danger zone | Right **164px** | Like, Comment, Share, Bookmark + "Add to Playlist" (added Jan 2026) |
+| Right danger zone | Right **~180px** | Like, Comment, Share, Bookmark, "Add to Playlist" — right column expanded ~+16px in Jan 2026 |
 | Top danger zone | Top **130px** | Back button, overflow menu |
 | Left danger zone | Left **60px** | Profile avatar |
 
-**Effective safe content area: ~916 × 1466px, centered.**
+**Effective safe content area: ~900 × 1466px, centered.** (Right margin updated to ~180px from prior 164px — "Add to Playlist" button expanded the right icon column in January 2026.)
 
-**Key difference vs Instagram:** TikTok's right dead zone is 164px vs Instagram's 120px. When reusing an asset designed for Instagram, any element within the right 164px may be hidden on TikTok. Re-check placement of logos, phone numbers, and CTAs before cross-posting.
+**Key difference vs Instagram:** TikTok's right dead zone is ~180px vs Instagram's 120px. When reusing an asset designed for Instagram, any element within the right 180px may be hidden on TikTok. Re-check placement of logos, phone numbers, and CTAs before cross-posting.
 
 **Upload bitrate guidance:** Upload at 8–15 Mbps for 1080p/30fps. Below 5 Mbps triggers TikTok's quality downgrade flag. Desktop upload via TikTok Studio supports up to **10 GB** — always upload via desktop for master-quality delivery, not mobile (mobile cap is 287 MB iOS / 72 MB Android).
 
@@ -432,7 +434,7 @@ ffmpeg -i normalized.mp4 \
 
 ### 5h. AV1 Archive Encoding (Internal Storage Only — NOT for Platform Upload)
 
-SVT-AV1 v4.1 (2026-03-16, confirmed current 2026-06-03) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
+SVT-AV1 v4.1 (2026-03-23, confirmed current 2026-06-05) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
 
 ```bash
 # Check SVT-AV1 availability
@@ -708,7 +710,7 @@ ffmpeg -i graded.mp4 \
 | Set fill color (float) | `setrgba r g b a` | All values 0–1; alpha=1 for opaque |
 | Set fill color (hex, direct) | `setcolor #FC8434` | **Preferred** — direct hex syntax, FFmpeg 8.1.x+ |
 | Set fill color with alpha | `setcolor #FC8434@@0.5` | `@@N` suffix sets alpha (0–1); `@@1` = opaque |
-| Set fill color via variable | `setvar c #FC8434` then `setcolor c` | For reusable color constants in longer scripts |
+| Set fill color via variable | `setvar c #FC8434` then `setcolor c` | For reusable color constants in longer scripts — direct `#rrggbb` syntax now works correctly in variables (PR #21128, ~Dec 2025) |
 | Rounded rectangle | `roundedrect x y w h radius` | `radius = h/2` for perfect pill |
 | Plain rectangle | `rect x y w h` | NOT `rectangle` |
 | Arc | `arc xc yc radius angle1 angle2` | Angles in radians; counterclockwise |
@@ -724,6 +726,8 @@ ffmpeg -i graded.mp4 \
   -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy \
   with_overlay.mp4
 ```
+
+**Post-8.1 patch (PR #21128, ~Dec 2025):** Improved color handling when colors are passed via `setvar`/`call` variables. The old workaround of encoding colors as `0xRRGGBBAA` integer arguments is no longer needed — use direct `#rrggbb` hex throughout. If any VGS scripts use `0xRRGGBBAA` encoding, migrate to `setcolor #FC8434` style.
 
 **Limitation:** VGS is NOT SVG — it uses its own language. Static SVG files cannot be directly imported. Use for programmatically-defined shapes (rectangles, arcs, lines) where dynamic coordinates or exact brand colors matter. For complex imported vector art, continue using the PNG overlay workflow.
 
@@ -741,9 +745,9 @@ Before marking video as delivered:
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
-- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.22, check ghost artifacts
+- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise fork — nihui binary tops out at v4.6), check ghost artifacts
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
-- [ ] TikTok repurpose: re-check right 164px dead zone (wider than Instagram) — see §5g
+- [ ] TikTok repurpose: re-check right ~180px dead zone (wider than Instagram; updated Jan 2026) — see §5g
 - [ ] All text overlays composited (see text-overlay-compositing.md)
 - [ ] Audio mixed per halal-audio.md — voiceover + SFX only, no instruments
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
