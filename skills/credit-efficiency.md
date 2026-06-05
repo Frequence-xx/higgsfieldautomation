@@ -105,20 +105,21 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Veo 3.1 First+Last Fast (canary) | `google/veo-3.1-first-last-image-to-video-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | — |
 | Wan 2.6 I2V (fallback) | `alibaba/wan-2-6-i2v` | TBD | **~$0.65** ($0.13/sec, min 5s) | — |
 | Wan 2.7 I2V | `alibaba/wan-2-7-i2v` ✓ CONFIRMED | 720p/1080p | **~$0.50** (~$0.10/sec × 5s) | **~$0.30** (3s), **~$0.20** (2s ultra-draft) — model string confirmed, no audio surcharge risk, CANARY REQUIRED |
-| Wan 2.7 R2V | `alibaba/wan-2-7-r2v` | 720p/1080p | ~$0.50 est. | NOT YET LIVE on AIMLAPI (2026-05-30). In model database as "Coming Soon" — do not attempt. |
-| Wan 2.7 T2V | `alibaba/wan-2-7-t2v` | 720p/1080p | ~$0.50 est. | NOT YET LIVE on AIMLAPI (2026-05-30). In model database as "Coming Soon" — do not attempt. |
+| Wan 2.7 R2V | `alibaba/wan-2-7-r2v` | 720p/1080p | ~$0.50 est. | LIKELY LIVE (2026-06-05) — Wan 2.6 R2V exists on AIMLAPI as `alibaba/wan-2-6-r2v`; Wan 2.7 follows same naming. CANARY REQUIRED. Up to 5 mixed refs, character binding via `Image1`/`Video1` prompt slots. |
+| Wan 2.7 T2V | `alibaba/wan-2-7-t2v` ✓ CONFIRMED | 720p/1080p | **~$0.50** (~$0.10/sec × 5s) | **~$0.30** (3s) — AIMLAPI docs page confirmed 2026-06-05. Use for wide shots without characters. CANARY REQUIRED before production. |
 | Kling 2.6 Pro I2V (canary) | `klingai/video-v2-6-pro-image-to-video` | TBD | **~$0.46** ($0.091/sec) | ~$0.27 |
 | Hailuo 02 I2V (6s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.437** ($0.0728/sec × 6s) | No audio param — NOTE: $0.28 flat was fal.ai price, AIMLAPI is per-second |
 | Hailuo 02 I2V (10s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.728** ($0.0728/sec × 10s) | NOT the cheapest — LTXV 2 Fast wins at $0.40/10s; Hailuo 2.3 Fast at $0.416/10s |
 | Hailuo 2.3 Fast | `minimax/hailuo-2.3-fast` | 1080p 24fps | **$0.0416/sec** ($0.416/10s flat — corrected 2026-05-19) | 5s = $0.208 (cheapest non-char 5s clip) |
 | LTXV 2 Fast I2V | `ltxv/ltxv-2-fast` | 1080p | **$0.04/sec** ($0.24/6s min) | CANARY REQUIRED — cheapest 6s+ non-char I2V; audio OFF required |
 | LTXV 2 Standard I2V | `ltxv/ltxv-2` | 1080p | **$0.06/sec** ($0.36/6s min) | Higher quality, slower than Fast |
+| Luma Ray Flash 2 I2V | `luma/ray-flash-2` | 720p (9:16 ✓) | **~$0.048/sec** (~$0.24/5s, AIMLAPI $0.002/M pixels) | No audio generation, no surcharge risk — CANARY REQUIRED. I2V + first+last frame. Max 9s. |
 | Seedance 2.0 (canary) | `bytedance/seedance-2-0` | TBD | **~$0.18/sec est.** (AIMLAPI docs example shows $0.06/gen — unverified) | CANARY REQUIRED — exact AIMLAPI price unknown; face content-policy risk |
 
-**Non-character video routing by duration (updated 2026-05-23):**
-- **5s clip:** Hailuo 2.3 Fast ($0.208) — LTXV 2 minimum is 6s, not applicable
-- **6-9s clip:** LTXV 2 Fast ($0.04/sec, $0.24/6s) — beats Hailuo 2.3 Fast ($0.25/6s) and Hailuo 02 ($0.437/6s)
-- **10s clip:** LTXV 2 Fast ($0.40/10s) — beats Hailuo 2.3 Fast ($0.416/10s) and Hailuo 02 ($0.728/10s)
+**Non-character video routing by duration (updated 2026-06-05):**
+- **5s clip:** Hailuo 2.3 Fast ($0.208) — cheapest; Luma Ray Flash 2 (~$0.24) is I2V alternative if Hailuo quality insufficient
+- **6-9s clip:** LTXV 2 Fast ($0.04/sec, $0.24/6s) — beats Hailuo 2.3 Fast ($0.25/6s) and Luma Ray Flash 2 ($0.288/6s)
+- **10s clip:** LTXV 2 Fast ($0.40/10s) — beats Hailuo 2.3 Fast ($0.416/10s) and Luma Ray Flash 2 ($0.48/10s)
 - **CORRECTION 2026-05-23:** Hailuo 02 is $0.0728/sec on AIMLAPI (NOT $0.28 flat — that was fal.ai pricing). Hailuo 02 is no longer recommended for any clip length.
 
 **LTXV 2 Fast note (confirmed 2026-05-22, updated 2026-06-03):** `ltxv/ltxv-2-fast` is LIVE on AIMLAPI. $0.04/sec at 1080p. Parameters use snake_case (not camelCase like Veo): `aspect_ratio`, `generate_audio`, `image_url`. `generate_audio: false` REQUIRED — audio defaults ON. Minimum duration 6s, max 20s. I2V supported. CANARY REQUIRED before production use. **LTX-2.3 caveat:** LTX released v2.3 in Q2 2026 at $0.05/sec (confirmed on other providers). If AIMLAPI has silently updated the `ltxv/ltxv-2-fast` endpoint to point to LTX-2.3, cost would be $0.05/sec not $0.04. Verify actual billing from AIMLAPI dashboard on first test call — record exact invoice amount before routing production shots.
@@ -133,7 +134,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 **Wan 2.6 note (web research 2026-04-26, medium confidence):** $0.13/sec confirmed from AIMLAPI pricing page snippet. Minimum clip is 5 seconds — no 3s option. Slightly more expensive than Veo 3.1 Lite 720p but provides I2V capability (Veo Lite is T2V only). Use as fallback when Veo is unavailable.
 
-**Wan 2.7 I2V (AIMLAPI status 2026-05-30):** `alibaba/wan-2-7-i2v` is LIVE on AIMLAPI (docs page confirmed). Pricing: ~$0.10/sec (updated from $0.08/sec estimate; multiple sources converge on $0.10/sec as base rate). Supports duration 2-15s (not just fixed values). NO `generate_audio` parameter — does not generate audio natively, no audio surcharge risk. `audio_url` accepts input audio for synchronization. Supports first+last frame pinning. T2V/R2V: in AIMLAPI model database as "Coming Soon" — do NOT attempt.
+**Wan 2.7 I2V (AIMLAPI status 2026-05-30):** `alibaba/wan-2-7-i2v` is LIVE on AIMLAPI (docs page confirmed). Pricing: ~$0.10/sec (updated from $0.08/sec estimate; multiple sources converge on $0.10/sec as base rate). Supports duration 2-15s (not just fixed values). NO `generate_audio` parameter — does not generate audio natively, no audio surcharge risk. `audio_url` accepts input audio for synchronization. Supports first+last frame pinning. **T2V: CONFIRMED LIVE as `alibaba/wan-2-7-t2v` (AIMLAPI docs page surfaced 2026-06-05). R2V: likely live per naming convention — Wan 2.6 R2V exists as `alibaba/wan-2-6-r2v`, Wan 2.7 R2V expected at `alibaba/wan-2-7-r2v`. Both need CANARY before production.**
 
 **Kling 2.6 Pro I2V (CANARY REQUIRED):** At $0.091/sec it is 58% cheaper than Kling v3 Standard and 69% cheaper than Kling v3 Pro. Older model generation — quality vs. v3 unverified for character identity retention. Do NOT use on character shots without canary validation. May be appropriate for truck-only shots where identity drift is not a concern.
 
@@ -442,16 +443,16 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 2. Record actual cost and resolution from AIMLAPI response
 3. If cost ≤ $0.75/5s and 9:16 confirmed → document as verified
 
-### Wan 2.7 — T2V / I2V / R2V (STATUS UPDATED 2026-05-30)
+### Wan 2.7 — T2V / I2V / R2V (STATUS UPDATED 2026-06-05)
 
-**STATUS:** Only I2V is currently live on AIMLAPI. T2V and R2V are in the AIMLAPI model database as "Coming Soon" — confirmed via search; do not attempt until docs pages appear.
+**STATUS:** I2V and T2V are confirmed live on AIMLAPI. R2V is likely live per naming convention.
 
 **Confirmed live model strings:**
-- I2V: `alibaba/wan-2-7-i2v` ✓ (AIMLAPI docs page confirmed, last updated ~May 13, 2026)
+- I2V: `alibaba/wan-2-7-i2v` ✓ (AIMLAPI docs page confirmed, May 13, 2026)
+- T2V: `alibaba/wan-2-7-t2v` ✓ (AIMLAPI docs page surfaced in search, **confirmed 2026-06-05**)
 
-**STATUS UPDATE (2026-06-03):** AIMLAPI blog confirms full Wan 2.7 suite (T2V, I2V, R2V, VideoEdit) is live. T2V and R2V model string docs pages did not surface in verification — confirm exact model IDs from `docs.aimlapi.com` before first call. Likely strings per naming pattern:
-- T2V: `alibaba/wan-2-7-t2v` — likely live; verify docs page before use
-- R2V: `alibaba/wan-2-7-r2v` — likely live; verify docs page before use; see R2V character binding notes below
+**STATUS UPDATE (2026-06-05):** AIMLAPI docs page for Wan 2.7 T2V (`docs.aimlapi.com/api-references/video-models/alibaba-cloud/wan-2.7-image-to-video`) confirmed live. T2V use case: wide establishing shots WITHOUT characters at ~$0.50/5s — more expensive than Veo 3.1 Lite (~$0.33/5s) but provides T2V capability similar to Veo Lite. R2V status:
+- R2V: `alibaba/wan-2-7-r2v` — likely live; Wan 2.6 R2V exists at `alibaba/wan-2-6-r2v`; verify `docs.aimlapi.com` before first call
 
 **Pricing (updated 2026-05-30):** ~$0.10/sec flat (AIMLAPI blog: "from $0.10/sec"). Previous $0.08/sec (720p) estimate was below the confirmed rate. Use $0.10/sec for all planning. At 2s: ~$0.20. At 3s: ~$0.30. At 5s: ~$0.50.
 
@@ -475,19 +476,21 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 **First+Last Frame pinning for ghost-driving (NEW — 2026-05-30):**
 Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Model interpolates between two identical frames → truck stays stationary, ambient motion only. Same technique as Veo 3.1 First+Last Fast but at ~$0.10/sec vs ~$0.13/sec. Verify exact `last_image` parameter name in canary.
 
-**R2V character consistency (pending AIMLAPI release):**
+**R2V character consistency (likely live — CANARY REQUIRED):**
 - Accepts up to 5 mixed refs (images, video clips, audio)
 - Characters referenced in prompt by slot name: `Image1`, `Image2`, `Video1`
 - Measured 80% identity hit rate with multi-image (9-grid) input vs 55% single ref
 - Voice cloning from 1-10s audio ref — supports Arabic/Dutch accents
 - No explicit Subject Binding strength parameter (unlike Kling's 0-100 slider)
+- R2V character binding could reduce NBP Edit + Kling Subject Binding to a single call — high priority canary
 
-**Canary test sequence (updated 2026-06-03):**
+**Canary test sequence (updated 2026-06-05):**
 1. I2V truck: One 5s call to `alibaba/wan-2-7-i2v` with truck hero frame, `aspect_ratio: "9:16"`. Run brand binary checklist: box sealed, no ghost driving, logo orange. Record actual cost (expect ~$0.50 — verify $0.10/sec).
 2. I2V first+last: Same call but also pass `last_image` = same truck hero. Verify truck is stationary.
 3. I2V character: One 3s call with character hero frame + prompt. QA identity retention and Shari'ah compliance.
 4. If all pass → route Kling Standard 3s draft passes to Wan 2.7 I2V. **Log actual cost.**
-5. **T2V/R2V (updated status — likely live):** Verify `alibaba/wan-2-7-t2v` and `alibaba/wan-2-7-r2v` doc pages at `docs.aimlapi.com` before first call. If confirmed, run separate T2V and R2V canaries. R2V is the priority — multi-ref character binding (up to 5 refs) could replace NBP Edit + Kling Subject Binding in a single R2V call if identity holds.
+5. **T2V (confirmed live):** Run one 5s T2V call to `alibaba/wan-2-7-t2v`, wide establishing prompt, no characters. Verify 9:16 output and actual billing (~$0.50). If passes → use for T2V establishing shots where Veo 3.1 Lite is unavailable.
+6. **R2V (likely live):** Check `docs.aimlapi.com` for `alibaba/wan-2-7-r2v` doc page. If confirmed, run R2V canary: one 5s call with character hero frame as `Image1`, prompt referencing `Image1`. QA identity retention vs NBP Edit baseline.
 
 **Do NOT use for character finals until R2V canary clears.** Kling Pro with Subject Binding 80-90 remains the final-pass standard.
 
@@ -541,18 +544,58 @@ Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-cha
 
 ---
 
+### Luma Ray Flash 2 (`luma/ray-flash-2`) — NEW on AIMLAPI, CANARY REQUIRED (2026-06-05)
+
+**AIMLAPI docs page confirmed:** `docs.aimlapi.com/api-references/video-models/luma-ai/luma-ray-flash-2`
+
+**Pricing: ~$0.048/sec** (AIMLAPI: $0.002/M pixels — 4× cheaper than Ray 2's $0.008/M pixels). At 5s: ~$0.24. At 4s: ~$0.19.
+
+**Parameters:**
+- `model`: `"luma/ray-flash-2"` — AIMLAPI endpoint `https://api.aimlapi.com/v2/video/generations`
+- `prompt`: scene description
+- `image_url`: first frame for I2V
+- `last_frame_url` or `last_image_url`: last frame (supports first+last keyframe lock — verify param name in canary)
+- `aspect_ratio: "9:16"` — vertical output confirmed supported
+- **No `generate_audio` parameter** — Ray Flash 2 generates silent video only, no audio surcharge risk
+- Duration: up to 9 seconds, 720p
+
+**Strengths vs alternatives:**
+- Supports I2V (unlike Veo 3.1 Lite T2V) — can animate a truck hero frame as B-roll
+- First+last frame lock available — ghost-driving elimination technique applies
+- No audio surcharge risk — no parameter needed, always silent
+- Max 9s clips — longer than Hailuo 2.3 Fast without per-second penalty
+
+**Cost position vs non-character alternatives (5s clip):**
+- Hailuo 2.3 Fast: $0.208 ← cheapest 5s
+- Luma Ray Flash 2: ~$0.24 — 15% more but provides I2V + first+last frame capability
+- LTXV 2 Fast: $0.24 at 6s min (not available at 5s)
+
+**Use case:** Non-character I2V shots (truck exterior, establishing, B-roll from hero frame) where Hailuo 2.3 Fast quality is insufficient. First+last frame truck-lock is a direct alternative to Wan 2.7 I2V truck technique at similar cost.
+
+**NOT for character face shots** — no Subject Binding equivalent.
+
+**Canary checklist:**
+1. Submit one 5s I2V call: `luma/ray-flash-2`, truck hero frame, `aspect_ratio: "9:16"`, no audio param
+2. Verify actual cost ~$0.24 from AIMLAPI dashboard (confirm $0.002/M pixels billing)
+3. Run brand binary checklist: box sealed, no ghost driving, logo orange
+4. Test first+last frame lock: same truck image as start and end — verify truck stays stationary
+5. If passes → use as I2V alternative to Hailuo 2.3 Fast for 5s non-character shots
+
+---
+
 ### Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`) — PRICING CORRECTED 2026-05-19
 
 **Confirmed pricing: $0.416/10s flat = $0.0416/sec.** Prior estimate of ~$0.08/sec was wrong. Resolution: **1080p 24fps** (not 768p as previously noted — full Hailuo 2.3 family is 1080p).
 
-**Key cost position (UPDATED 2026-05-23 — Hailuo 02 pricing corrected):**
+**Key cost position (UPDATED 2026-06-05):**
 - At 5s: **$0.208** — cheapest non-character 5s clip in pipeline
 - At 6s: $0.250 — vs LTXV 2 Fast $0.24 (LTXV wins by $0.01 after canary)
 - At 10s: $0.416 — vs LTXV 2 Fast $0.40 (LTXV wins by $0.016); Hailuo 02 costs $0.728 (worst option)
+- **Limitation:** T2V only — no I2V capability. For I2V 5s non-character shots, use Luma Ray Flash 2 (~$0.24, canary) instead.
 
 **Quality:** 80-90% of Hailuo 2.3 standard. "Major improvements in physical actions, stylization, and subtle character expressions." Suitable for B-roll and establishing shots. No character face shots.
 
-**Routing rule (updated):** Use Hailuo 2.3 Fast for 5s non-character clips. Use LTXV 2 Fast for 6s+ clips after canary. Hailuo 02 is NOT recommended (per-second billing on AIMLAPI makes it uncompetitive at all durations).
+**Routing rule (updated 2026-06-05):** Use Hailuo 2.3 Fast for 5s non-character T2V clips. Use Luma Ray Flash 2 for 5s non-character I2V clips (canary). Use LTXV 2 Fast for 6s+ clips after canary. Hailuo 02 is NOT recommended (per-second billing on AIMLAPI makes it uncompetitive at all durations).
 
 ---
 
@@ -623,10 +666,12 @@ Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 5
 16. **Kling v3 = Kling 3.0 (CONFIRMED 2026-06-01).** `klingai/video-v3-pro-image-to-video` is Kling 3.0 Pro. No string change needed — we are already using the correct model. Kling O3 (Kling 3.0 Omni) is a separate premium model (multi-shot, up to 6 shots/pass); NOT confirmed on AIMLAPI. Do NOT use for single-clip production shots.
 17. **Hailuo 02 pricing CORRECTED (2026-05-23): $0.0728/sec on AIMLAPI** — NOT $0.28/clip flat (the flat price was fal.ai). At $0.437/6s and $0.728/10s, Hailuo 02 is the most expensive non-character video option on AIMLAPI. Do NOT use. Route to LTXV 2 Fast ($0.04/sec) or Hailuo 2.3 Fast ($0.0416/sec) instead.
 18. **Non-character routing by duration (updated 2026-05-23):** 5s → Hailuo 2.3 Fast ($0.208). 6-10s → LTXV 2 Fast ($0.04/sec, $0.24/6s, $0.40/10s) after canary. Hailuo 02 removed from routing — $0.0728/sec makes it uncompetitive. AIMLAPI string: `minimax/hailuo-2.3-fast`, `ltxv/ltxv-2-fast`.
-19. **Wan 2.7 I2V is LIVE on AIMLAPI (`alibaba/wan-2-7-i2v`). T2V and R2V are "Coming Soon" (2026-05-30).** Pricing: ~$0.10/sec (updated from $0.08/sec). Duration: 2-15s integer — **2s ultra-drafts at ~$0.20** supported. NO `generate_audio` param (no audio surcharge). `audio_url` accepts input audio for sync. First+last frame pinning via `last_image` param (canary required for exact AIMLAPI param name).
+19. **Wan 2.7 I2V and T2V are now LIVE on AIMLAPI. R2V is likely live.** I2V: `alibaba/wan-2-7-i2v` (confirmed). T2V: `alibaba/wan-2-7-t2v` (AIMLAPI docs confirmed 2026-06-05). R2V: `alibaba/wan-2-7-r2v` (likely live — Wan 2.6 R2V precedent; verify docs page). All at ~$0.10/sec. NO `generate_audio` param on any Wan 2.7 variant. T2V use case: wide establishing shots without characters (~$0.50/5s, more expensive than Veo Lite ~$0.33 but usable when Veo unavailable). CANARY REQUIRED for T2V and R2V before production.
 20. **LTXV 2 Fast is live on AIMLAPI (`ltxv/ltxv-2-fast`).** $0.04/sec at 1080p. Minimum 6s clip. Parameters are snake_case (`aspect_ratio`, `generate_audio: false`). CANARY REQUIRED before production use. For 6s+ non-character shots, this is the lowest-cost option pending canary pass.
 21. **Seedance 2.0 pricing confirmed (2026-05-26): Standard = $0.316/sec ($1.58/5s), Fast = $0.182/sec ($0.91/5s).** The $0.06/generation in AIMLAPI docs example was a misleading short-clip artifact. Standard is MORE expensive than Kling Pro ($1.46/5s) — never use. Fast (`bytedance/seedance-2-0-fast`) at $0.91/5s is cheaper than Kling Standard ($1.09/5s) but still more expensive than Wan 2.7 I2V (~$0.40/5s). Face content-policy block risk from Seedance lineage applies. CANARY REQUIRED before use. Only consider Fast variant if Wan 2.7 I2V canary fails.
-22. **Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) is the cheapest confirmed character-draft candidate on AIMLAPI** at ~$0.10/sec (updated 2026-05-30). 3s draft = ~$0.30 vs Kling Standard 3s = $0.65 — 54% savings. 2s ultra-draft = ~$0.20 — 69% savings (use for identity spot-checks only). No audio surcharge. First+last frame truck-lock available. CANARY REQUIRED. Do not use for finals — Kling Pro with Subject Binding 80-90 remains required. **T2V and R2V status update (2026-06-03):** AIMLAPI blog confirms full suite live; T2V/R2V model string doc pages not individually verified — check `docs.aimlapi.com` for `alibaba/wan-2-7-t2v` and `alibaba/wan-2-7-r2v` before first call. R2V supports up to 5 mixed refs (image/video/audio) with character binding — relevant for character consistency once verified.
-23. **Hailuo 2.3 Standard ≠ Fast (confirmed 2026-06-01):** Standard = `minimax/hailuo-2.3` at $0.0728/sec ($0.728/10s) — same price as Hailuo 02, do NOT use. Fast = `minimax/hailuo-2.3-fast` at $0.0416/sec ($0.416/10s) — this is the routing target for 5s non-character clips. Always use `-fast` suffix; standard variant is uncompetitive.
+22. **Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) is the cheapest confirmed character-draft candidate on AIMLAPI** at ~$0.10/sec (updated 2026-05-30). 3s draft = ~$0.30 vs Kling Standard 3s = $0.65 — 54% savings. 2s ultra-draft = ~$0.20 — 69% savings (use for identity spot-checks only). No audio surcharge. First+last frame truck-lock available. CANARY REQUIRED. Do not use for finals — Kling Pro with Subject Binding 80-90 remains required. R2V supports up to 5 mixed refs (image/video/audio) with character binding — relevant for character consistency once verified.
+23. **Hailuo 2.3 Standard ≠ Fast (confirmed 2026-06-01):** Standard = `minimax/hailuo-2.3` at $0.0728/sec ($0.728/10s) — same price as Hailuo 02, do NOT use. Fast = `minimax/hailuo-2.3-fast` at $0.0416/sec ($0.416/10s) — this is the routing target for 5s non-character T2V clips. Always use `-fast` suffix; standard variant is uncompetitive.
 24. **Veo 3.1 Extend Video confirmed on AIMLAPI (2026-06-01):** `google/veo-3.1-extend-video` (Standard) and `google/veo-3.1-fast-extend-video` (Fast). Takes `video_url` of existing Veo 3.1 clip + new `prompt`. Use to extend approved establishing shots beyond single 4/6/8s generation limit. CANARY REQUIRED — verify `video_url` param accepts CDN link, confirm actual per-second cost, check visual continuity at join.
 25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
+26. **Luma Ray Flash 2 confirmed on AIMLAPI (`luma/ray-flash-2`) — NEW 2026-06-05.** ~$0.048/sec (~$0.24/5s). Supports 9:16, I2V, first+last frame keyframes. **No audio generation** — no `generate_audio` param needed, no surcharge risk. Max 9s at 720p. CANARY REQUIRED. Use case: non-character I2V 5s clips where composition anchoring from a hero frame matters (e.g., truck exterior). Hailuo 2.3 Fast ($0.208/5s T2V) remains cheapest for 5s; Ray Flash 2 is the I2V alternative at ~$0.24.
+27. **Wan 2.7 T2V confirmed live on AIMLAPI (`alibaba/wan-2-7-t2v`) — 2026-06-05.** AIMLAPI docs page confirmed. Cost: ~$0.50/5s ($0.10/sec). Use for T2V establishing shots without characters when Veo 3.1 Lite is unavailable. Veo 3.1 Lite 720p (~$0.33/5s) is cheaper — prefer Veo. Wan 2.7 T2V is a Veo fallback at higher cost. CANARY REQUIRED before production.
