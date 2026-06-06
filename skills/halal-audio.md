@@ -191,6 +191,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
 | **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download — **REJECT for Snelverhuizen**: platform explicitly uses daf (frame drum) on tracks. Daf is percussion; Snelverhuizen policy prohibits all instruments. Do not use. |
 | **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
+| **Internet Archive — The Ultimate Nasheed Collection** — archive.org/details/nasheedplaylist | Varies per track | Check per track (CC0 tracks safe; verify others) | Check per track | Direct download — uploaded by TheNasheedMaster; "NO MUSIC" in title; Arabic, Urdu, Bangla nasheeds. Run nasheed_check.py before use — not all tracks in the collection are confirmed instruments-free by ear. |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 | **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
 
@@ -258,6 +259,18 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `loop` | bool | — | `True` = seamless loop output (no acrossfade post-processing needed) |
 | `prompt_influence` | float | 0–1 | Default 0.3; raise to 0.6+ if output drifts from description |
 | `model_id` | str | — | `"eleven_text_to_sound_v2"` |
+| `output_format` | str | see below | Default is MP3 22kHz/32kbps. **Always override for pipeline use.** |
+
+**`output_format` values for SFX v2** (format: `codec_samplerate_bitrate`):
+
+| Format string | Quality | Plan required | Use case |
+|---------------|---------|---------------|----------|
+| `mp3_44100_128` | Good — CD-rate MP3 | Free+ | **Pipeline default** — best quality without plan restriction |
+| `mp3_44100_192` | Better | Creator+ | Higher fidelity if on Creator plan |
+| `wav_44100` | Lossless | Pro+ | Lossless SFX master for long-term library storage |
+| `mp3_22050_32` | Low | Free | Not suitable for mixing — leave as fallback only |
+
+**Always request `mp3_44100_128` or better for pipeline SFX.** The default 22kHz/32kbps output introduces noticeable artifacts at the top of the frequency range, which are amplified after the highpass filter (§4g) and loudnorm stages.
 
 **Cost:** 200 credits (auto-duration) or 40 credits/second (custom). Uses the same ElevenLabs credit pool as TTS — not an additional subscription. Free plan: ~10,000 credits/month (~50 auto-gen or ~12 × 20s custom SFX free/month).
 
@@ -280,9 +293,10 @@ client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 audio = b"".join(client.text_to_sound_effects.convert(
     text="quiet Dutch residential street, birds chirping, distant light traffic, no music",
     model_id="eleven_text_to_sound_v2",
-    duration_seconds=20.0,  # 20-second ambient bed: 800 credits
-    loop=True,              # native seamless loop — skip acrossfade post-processing
-    prompt_influence=0.4,   # slightly higher adherence for descriptive prompts
+    duration_seconds=20.0,   # 20-second ambient bed: 800 credits
+    loop=True,               # native seamless loop — skip acrossfade post-processing
+    prompt_influence=0.4,    # slightly higher adherence for descriptive prompts
+    output_format="mp3_44100_128",  # always override default (22kHz/32kbps is too low for mixing)
 ))
 
 with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
@@ -662,7 +676,7 @@ The audio QA must also pass shariah-compliance.md hard gate:
 | Platform | Target LUFS | True Peak | Notes |
 |----------|-------------|-----------|-------|
 | Instagram Reels | -14 to -16 LUFS | -1.5 dBTP | Meta xHE-AAC; exact target not published; -16 is safe floor |
-| TikTok | **-16 LUFS** | -1.0 dBTP | Official TikTok spec (NOT -14) |
+| TikTok | **-14 to -16 LUFS** | -1.0 dBTP | TikTok does NOT apply in-feed loudness normalization — audio plays at delivered level. Target -14 to -16 LUFS to prevent clipping/distortion on phone speakers, not because TikTok normalises down. Going louder (e.g. -10 LUFS) will play louder; going quieter will play quieter. |
 | YouTube Shorts | -14 LUFS | -1.0 dBTP | YouTube target |
 | WhatsApp / Telegram | -16 LUFS | -1.0 dBTP | Voice-first, slightly lower |
 
@@ -751,6 +765,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music (even in ambience mode) — contains instrumentation | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
+| SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `wav_44100` for lossless SFX library masters. |
+| TikTok video sounds quieter than expected or louder than other platforms | TikTok does not apply in-feed loudness normalization | Content plays at delivered level. Master to -14 to -16 LUFS for clean phone playback. Do not over-compress to get louder — will sound distorted on mobile. |
 | PVC audio tags weak or ignored in eleven_v3 | PVCs not fully optimized for v3 as of April 2026 | Switch to a Voice Library voice (e.g. Willem) or an IVC. Do not use PVCs for eleven_v3 tag-dependent scripts until ElevenLabs confirms full PVC compatibility. |
 | Need to verify Willem voice quality before production | No UI check in pipeline | Call GET /v1/voices?search=Willem — check `recording_quality` field. Proceed only if "studio" or "good". If "in_review" labelling_status, hold and re-check next session. |
 | Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
