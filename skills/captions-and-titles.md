@@ -202,12 +202,14 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const result = await transcribe({
      inputPath: 'voiceover.wav',
-     whisperPath: WHISPER_PATH,         // REQUIRED — path from installWhisperCpp(to:)
+     whisperPath: WHISPER_PATH,          // REQUIRED — path from installWhisperCpp(to:)
      whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version
      model: 'large-v3-turbo',           // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
      tokenLevelTimestamps: true,        // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
      flashAttention: false,             // keep false on CPU; set true only with CUDA GPU
+     modelFolder: './whisper-models',   // optional: custom model folder (see caching note below)
+     printOutput: false,                // default is true — suppress console noise in production
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // captions → Caption[] ready for createTikTokStyleCaptions()
@@ -234,6 +236,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      tokensPerItem: 1,            // --max-len 1 → one word per Caption
      splitOnWord: true,           // --split-on-word → no mid-word segment breaks
      flashAttention: false,
+     modelFolder: './whisper-models',  // optional: point to shared model cache
+     printOutput: false,               // suppress console noise in production
    });
    const { captions } = toCaptions({ whisperCppOutput: result });
    // Each Caption covers exactly one word — good for createTikTokStyleCaptions()
@@ -243,6 +247,42 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **Optional parameters worth knowing:**
    - `onProgress?: (progress: number) => void` — callback receiving 0–1 progress updates during transcription (useful for long voiceovers)
    - `signal?: AbortSignal` — cancel an in-progress transcription via `AbortController`
+   - `modelFolder?: string` — if specified, `transcribe()` looks for `ggml-{model}.bin` in this folder instead of the default `{whisperPath}/models/` path. Use when model is stored separately from the whisper.cpp binary (e.g. a persistent Docker volume or S3-backed cache).
+   - `printOutput?: boolean` — defaults to `true`. Set `false` in production to suppress whisper.cpp CLI output from stdout. Already shown in examples above.
+
+   **Model caching pattern (important for cloud/containerized pipeline):**
+   `ggml-large-v3-turbo.bin` is ~820MB. In ephemeral containers it re-downloads every session without a cache. Avoid this with `downloadWhisperModel()`:
+
+   ```typescript
+   import { downloadWhisperModel, installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
+
+   const WHISPER_PATH = './whisper-cpp';
+   const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
+   const WHISPER_VERSION = '1.8.6';
+
+   await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
+
+   const { alreadyExisted } = await downloadWhisperModel({
+     model: 'large-v3-turbo',
+     folder: MODEL_FOLDER,  // downloads to MODEL_FOLDER/ggml-large-v3-turbo.bin
+     printOutput: false,    // suppress download progress messages
+     onProgress: (p) => process.stderr.write(`\rModel download: ${Math.round(p * 100)}%`),
+   });
+   if (alreadyExisted) console.log('Using cached model — no download needed');
+
+   const result = await transcribe({
+     inputPath: 'voiceover.wav',
+     whisperPath: WHISPER_PATH,
+     whisperCppVersion: WHISPER_VERSION,
+     model: 'large-v3-turbo',
+     modelFolder: MODEL_FOLDER, // transcribe() finds the bin file here
+     language: 'nl',
+     tokenLevelTimestamps: true,
+     flashAttention: false,
+     printOutput: false,
+   });
+   const { captions } = toCaptions({ whisperCppOutput: result });
+   ```
 
    **`additionalArgs` escape hatch:** Pass custom whisper.cpp CLI flags via `additionalArgs: ['--no-prints', '--print-special']` (string[] or key-value pair arrays). Only needed for non-standard whisper.cpp builds.
 
@@ -566,7 +606,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.471 — confirmed current as of 2026-06-04)
+### Full API (v4.0.473 — confirmed current as of 2026-06-05)
 
 | Export | Purpose |
 |--------|---------|
