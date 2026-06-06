@@ -122,6 +122,20 @@ for i in range(30):
 
 For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "vehicle movement, ghost driving" is the correct substitute for what was previously listed as `motion_strength: 0.3`.
 
+## CRITICAL: Parameter Mutual Exclusivity (Kling v3)
+
+**`tail_image_url`, `static_mask_url` (static_mask), `dynamic_masks`, and `camera_control` are MUTUALLY EXCLUSIVE in Kling v3. Only ONE can be used per API call.** Confirmed across multiple sources (June 2026). Passing more than one will cause API rejection or silent ignore.
+
+**Choose ONE per shot:**
+- `static_mask_url` — pixel-level freeze; strongest ghost-driving prevention for truck/stationary shots
+- `camera_control` — explicit camera movement; cannot be combined with masks or tail frame
+- `dynamic_masks` — motion brush for selective region animation; cannot be combined with others
+- `tail_image_url` — end-frame anchoring; weakest stationarity control (allows mid-clip drift); cannot be combined with others
+
+**This replaces the previous Five-Layer Truck Protocol which incorrectly combined all three. See `kling-truck-prompting.md` for the corrected two-template approach.**
+
+---
+
 ## Camera Control
 
 **camera_control.type options:**
@@ -200,14 +214,22 @@ camera drift, sudden zooms, background shifting, unstable details, background mo
 
 ### Ghost Driving (Truck Movement) — HIGHEST PRIORITY
 
-Triple-lock approach:
+**UPDATED (June 2026):** In Kling v3, `static_mask_url`, `tail_image_url`, and `camera_control` are mutually exclusive — only ONE can be used per call. Previous multi-layer combinations are invalid.
 
-1. **Prompt constraint:** ALWAYS include "truck remains completely stationary, no vehicle movement"
-2. **Negative prompt:** ALWAYS include "vehicle movement, driving, rolling, ghost driving, sliding vehicle"
-3. **Static mask (nuclear option):** White pixels = freeze, black = allow motion. Pass as `static_mask` parameter.
-4. **Tail image:** Use identical start/end frame via `tail_image_url` to force stationarity.
+**Strategy A — Maximum stationarity (final delivery shots):**
+1. **Prompt constraint:** "stationary truck, parked, engine off, no vehicle movement, no forward creep"
+2. **Negative prompt:** "vehicle movement, driving, rolling, ghost driving, sliding vehicle, wheel rotation, truck rocking"
+3. **Static mask:** `static_mask_url` — white over entire truck body, black for environment. Strongest protection.
+4. **cfg_scale: 0.7** — strict adherence
+5. NO camera_control, NO tail_image_url (incompatible with static_mask in v3)
 
-See `kling-truck-prompting.md` for the dedicated truck shot workflow.
+**Strategy B — Cinematic orbit (when camera movement is required):**
+1. **Prompt constraint + negative prompt** (same as above)
+2. **camera_control** with single non-zero value (e.g., `tilt: 2`)
+3. **cfg_scale: 0.7**
+4. NO static_mask_url, NO tail_image_url (incompatible with camera_control in v3)
+
+See `kling-truck-prompting.md` for complete templates.
 
 ### Breathing Artifacts
 
@@ -258,11 +280,20 @@ prompt="Subject blinks once naturally. Slight confident smile forms gradually. H
 negative_prompt="face distortion, morphing faces, identity drift, breathing movement, body sway, expression change, extra fingers, plastic skin, flickering, sliding feet, color shift"
 ```
 
-### Truck/Product Hero
+### Truck/Product Hero — Strategy A (static_mask, no camera_control)
 ```python
 cfg_scale=0.7, duration="5",
-camera={"tilt": 3},
-prompt="Slow camera orbit around truck. Light reflections glide gently across surface. Branding text stays perfectly sharp and stable. Truck completely stationary, no vehicle movement. Foreground leaves drift subtly. Motion gradually eases to stop.",
+# NO camera_control — incompatible with static_mask_url in Kling v3
+static_mask_url=truck_freeze_mask_url,  # White over truck body, black for environment
+prompt="Stationary truck, parked, engine off, no vehicle movement. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Foreground leaves drift subtly. Motion eases to stop.",
+negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering, color shift, jittery, inconsistent lighting"
+```
+
+### Truck/Product Hero — Strategy B (camera_control, no static_mask)
+```python
+cfg_scale=0.7, duration="5",
+camera={"tilt": 2},  # ONE non-zero value. NO static_mask_url in this strategy.
+prompt="Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Camera motion eases to stop.",
 negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering, color shift, jittery, inconsistent lighting"
 ```
 
@@ -297,8 +328,8 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
 | motion_strength | — | — | **Not a standard I2V parameter.** Motion Control (V2V) variant only. Omit from all I2V calls. |
 | negative_prompt | string | "" | Max 2500 chars |
-| tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** Same image = forces stationarity. |
-| camera_control | object | — | Named preset OR simple config (not both). See camera control section. |
+| tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** **Incompatible with static_mask_url, dynamic_masks, and camera_control (Kling v3 mutual exclusivity — pick only ONE of these four per call).** Same image = forces stationarity but allows mid-clip drift. |
+| camera_control | object | — | Named preset OR simple config (not both). **Incompatible with static_mask_url, dynamic_masks, and tail_image_url (Kling v3 mutual exclusivity).** See camera control section. |
 | elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
 | static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |

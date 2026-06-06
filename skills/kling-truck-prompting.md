@@ -28,9 +28,22 @@ Kling v3 interprets any vehicle in frame as potentially moving. Without explicit
 - Deform the cargo box geometry
 - Morph the SNELVERHUIZEN branding text
 
-## The Solution: Five-Layer Freeze Protocol
+## CRITICAL: Kling v3 Mutually Exclusive Parameters
 
-Every truck shot MUST apply ALL five layers. Omitting any layer increases ghost-driving risk.
+**`tail_image_url`, `static_mask_url`, and `camera_control` are MUTUALLY EXCLUSIVE in Kling v3. Only ONE can be used per API call.** Passing more than one will cause the API to reject the call or silently ignore the extras. Previous templates that combined all three are WRONG.
+
+**Priority for truck shots:**
+- `static_mask_url` → strongest ghost-driving protection (freezes pixels) → use for maximum stationarity
+- `camera_control` → cinematic movement → use when visual dynamism matters more than perfect freeze
+- `tail_image_url` → weakest (forces start=end frame, but allows drift in between) → **do not use alone for truck shots**
+
+Pick one strategy per shot (see templates below).
+
+---
+
+## The Four-Layer Freeze Protocol
+
+Every truck shot MUST apply ALL four layers. Layer 3 and Layer 4 are now strategy-based (pick ONE, not both).
 
 ### Layer 1: Prompt Constraint
 
@@ -56,7 +69,17 @@ warping, deformed hands, extra fingers, sliding feet, identity drift,
 watermark, camera shake, inconsistent lighting, plastic skin, color shift
 ```
 
-### Layer 3: Static Mask (Motion Brush)
+### Layer 3: CFG Scale
+
+MUST use `cfg_scale: 0.7` for all truck shots. Higher adherence preserves the hero frame composition more strictly, reducing drift.
+
+For shots where the truck is secondary (background element): `cfg_scale: 0.5` MAY be acceptable, but include all other layers.
+
+### Layer 4: Pick ONE — Static Mask (preferred) OR Camera Control
+
+**These are mutually exclusive. Pick one per shot:**
+
+**Option A — Static Mask (PREFERRED for final delivery):**
 
 Generate a mask image where:
 - **White pixels** = FREEZE (no motion allowed)
@@ -64,56 +87,78 @@ Generate a mask image where:
 
 Paint the ENTIRE vehicle body WHITE (frozen). Leave the environment (sky, trees, people, ground) BLACK.
 
-**MUST NOT paint the vehicle body black.** The vehicle body MUST remain unpainted (white = frozen).
-
 **Mask technical requirements:**
 - **Aspect ratio MUST exactly match the hero frame** (e.g., 9:16 → mask must also be 9:16). Mismatch = task failure.
-- If using dynamic_masks simultaneously, mask resolution must also match exactly.
 - Supported formats: PNG, JPG, JPEG, WEBP. Max 10MB.
+- Background must be solid black (not transparent).
 
 ```python
-# Include in API call:
+# Include in API call — OMIT camera_control and tail_image_url entirely:
 {
     "static_mask_url": "<url_to_mask_covering_entire_truck>"
 }
 ```
 
-### Layer 4: Endpoint Frame (Tail Image)
+**Option B — Camera Control (for cinematic shots where movement > freeze):**
 
-Use the SAME hero frame as both `image_url` (start) and `tail_image_url` (end). This forces the model to return to the identical composition at the final frame — preventing net displacement. **Important:** this does NOT guarantee zero motion during the clip. The truck can still drift forward and back between the start and end frames. Use tail_image_url as a second-order safeguard; primary stationarity control must be in the prompt (Layer 1) and negative prompt (Layer 2).
+Use when the shot requires a visible camera orbit or push-in. Accept higher ghost-driving risk; compensate with stronger prompt anchors.
 
 ```python
+# Include in API call — OMIT static_mask_url and tail_image_url entirely:
 {
-    "image_url": hero_frame_url,
-    "tail_image_url": hero_frame_url,  # Same image — forces stationarity
+    "camera_control": {
+        "type": "simple",
+        "config": {
+            "horizontal": 0, "vertical": 0, "pan": 0,
+            "tilt": 2, "roll": 0, "zoom": 0
+        }
+    }
 }
 ```
 
-### Layer 5: CFG Scale
+**DO NOT use `tail_image_url` as a substitute** — it prevents net displacement but allows significant mid-clip drift, making it the weakest option alone. If neither static_mask nor camera_control is needed, omit all three and rely on prompt + negative_prompt + cfg_scale 0.7.
 
-MUST use `cfg_scale: 0.7` for all truck shots. Higher adherence preserves the hero frame composition more strictly, reducing drift.
+---
 
-For shots where the truck is secondary (background element): `cfg_scale: 0.5` MAY be acceptable, but include all other layers.
+## Complete API Call Templates
 
-## Complete API Call Template — Truck Shot
+### Template A: Maximum Stationarity (static_mask — PREFERRED for final shots)
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", json={
     "model": "klingai/video-v3-pro-image-to-video",
     "image_url": hero_frame_url,
-    "tail_image_url": hero_frame_url,
-    "prompt": "Slow camera orbit. Stationary truck, parked, engine off, no vehicle movement, no forward creep. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion gradually eases to stop.",
+    # NO tail_image_url — incompatible with static_mask_url in v3
+    # NO camera_control — incompatible with static_mask_url in v3
+    "prompt": "Stationary truck, parked, engine off, no vehicle movement, no forward creep. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion eases to stop.",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,
     "cfg_scale": 0.7,
     "negative_prompt": "vehicle movement, driving, rolling, ghost driving, sliding vehicle, wheel rotation, truck rocking, suspension bounce, forward creep, vehicle deformation, metal warping, chassis flex, door opening, text morphing, label warping, branding distortion, logo change, geometry distortion, reflection artifacts, surface inconsistency, blurry, distorted, low quality, jittery, flickering, morphing faces, warping, deformed hands, extra fingers, sliding feet, identity drift, watermark, camera shake, inconsistent lighting, plastic skin, color shift",
     "static_mask_url": truck_freeze_mask_url,
+}, headers=headers, timeout=30)
+```
+
+### Template B: Cinematic Orbit (camera_control — when visual movement is needed)
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", json={
+    "model": "klingai/video-v3-pro-image-to-video",
+    "image_url": hero_frame_url,
+    # NO tail_image_url — incompatible with camera_control in v3
+    # NO static_mask_url — incompatible with camera_control in v3
+    "prompt": "Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement, no forward creep. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Camera motion eases to stop.",
+    "duration": "5",
+    "aspect_ratio": "9:16",
+    "generate_audio": False,
+    "cfg_scale": 0.7,
+    "negative_prompt": "vehicle movement, driving, rolling, ghost driving, sliding vehicle, wheel rotation, truck rocking, suspension bounce, forward creep, vehicle deformation, metal warping, chassis flex, door opening, text morphing, label warping, branding distortion, logo change, geometry distortion, reflection artifacts, surface inconsistency, blurry, distorted, low quality, jittery, flickering, morphing faces, warping, deformed hands, extra fingers, sliding feet, identity drift, watermark, camera shake, inconsistent lighting, plastic skin, color shift",
     "camera_control": {
         "type": "simple",
         "config": {
             "horizontal": 0, "vertical": 0, "pan": 0,
-            "tilt": 3, "roll": 0, "zoom": 0
+            "tilt": 2, "roll": 0, "zoom": 0  # ONE non-zero value only
         }
     },
 }, headers=headers, timeout=30)
