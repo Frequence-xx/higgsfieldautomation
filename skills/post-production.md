@@ -279,7 +279,12 @@ ffmpeg -i clip.mp4 -c copy \
 
 **For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
 
-**PySceneDetect v0.7.1 (in development, not yet released):** Will add `--expand` flag to the `split-video` command (extends clip boundaries to video edges rather than cutting at exact scene timestamps) and an `expand_scenes_to_bounds()` API helper. Monitor: https://github.com/Breakthrough/PySceneDetect/blob/main/website/pages/changelog.md
+**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-07):** Will add:
+- `--expand` flag to `split-video` (extends first/last clip to video boundaries — no footage lost)
+- `expand_scenes_to_bounds()` API helper in scene manager module
+- `backend` keyword argument for `scenedetect.detect()` — accepts `"opencv"` (default), `"pyav"`, or `"moviepy"` to select the video backend programmatically (useful in headless/server pipelines)
+
+Monitor: https://github.com/Breakthrough/PySceneDetect/blob/main/website/pages/changelog.md
 
 ---
 
@@ -355,6 +360,8 @@ ffmpeg -i normalized.mp4 \
 
 **Note:** Both platforms transcode H.264 to AV1 internally for delivery — that is Meta/TikTok's pipeline, not ours. Upload H.264; uploading AV1 causes a double-transcode with quality loss.
 
+**TikTok "Upload HD" creator toggle (2026):** When the owner uploads directly via the TikTok app, advise them to enable "Upload HD" on the posting screen (tap "More options" → toggle "Upload HD") before submitting. This sends the file at higher quality before TikTok's compression pass. For Desktop/Studio uploads, high-quality mode is applied automatically — no toggle needed.
+
 ### 5c. Platform Specs Reference (2026)
 
 | Platform | Resolution | FPS | Codec | Audio | Max File | Max Length |
@@ -364,7 +371,7 @@ ffmpeg -i normalized.mp4 \
 | YouTube Shorts | 1080×1920 | 30 | H.264 | AAC 256k 48kHz | — | 3 min |
 | WhatsApp Status | 1080×1920 | 30 | H.264 | AAC 128k | **16 MB** (video message) | 60s |
 
-**Instagram Reels max length note:** Any video under 15 minutes uploaded to Instagram is auto-classified as a Reel (confirmed 2026-06-03). In-app recording supports up to 20 minutes on select accounts. The algorithmic sweet spot for discovery is under 90 seconds. Our ads are 30–60s — well within all limits.
+**Instagram Reels max length note:** Any video under 15 minutes uploaded from gallery is auto-classified as a Reel; in-app recording cap is 20 minutes (rolling out — not universal). **Algorithm discovery threshold:** under 90 seconds = widest non-follower reach; over 3 minutes = algorithm stops recommending to non-followers entirely. The 3-minute cutoff is the hard penalty — content above it surfaces mainly to existing followers. Our ads are 30–60s — well within all limits.
 
 **TikTok upload:** Mobile app cap is 287.6 MB (iOS) / 72 MB (Android). Always upload via TikTok Studio (desktop) for master-quality files — supports up to 10 GB with no in-app compression.
 
@@ -746,6 +753,7 @@ Before marking video as delivered:
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
 - [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise fork — nihui binary tops out at v4.6), check ghost artifacts
+- [ ] Instagram algorithm: our 30–60s ads are well under the 90s sweet spot and far under the 3-min non-follower cutoff — no action needed, but flag if a future brief pushes past 3 minutes
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
 - [ ] TikTok repurpose: re-check right ~180px dead zone (wider than Instagram; updated Jan 2026) — see §5g
 - [ ] All text overlays composited (see text-overlay-compositing.md)
