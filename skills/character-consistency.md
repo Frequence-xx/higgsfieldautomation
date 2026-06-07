@@ -337,7 +337,9 @@ python facefusion.py headless-run \
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
-**GSwap — Future Watch (research stage, March 2026):** 3D head swap using neural Gaussian portrait representation embedded in SMPL-X body surface. Models head, torso, and motion together (not just 2D face patch), with neural re-rendering for natural background integration. Addresses FaceFusion's known failure mode: detached/misaligned look under strong head motion. Not yet packaged as a tool. Monitor for open-source release — would replace FaceFusion for clips with large head rotation or motion blur.
+**GSwap — Future Watch (research stage, no OSS code as of 2026-06-07):** 3D head swap using neural Gaussian portrait representation embedded in SMPL-X body surface (arXiv 2603.23168, IEEE TVCG, March 2026). Models head, torso, and motion together (not just 2D face patch), with neural re-rendering for natural background integration. Addresses FaceFusion's known failure mode: detached/misaligned look under strong head motion. Project page: ustc3dv.github.io/GSwap/ — no public code release confirmed. Monitor for open-source release — would replace FaceFusion for clips with large head rotation or motion blur.
+
+**MAGREF — Future Watch (ICLR 2026, code released, 80GB GPU required):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves. Inference requires **~70 GB VRAM (80 GB recommended GPU)** — not practical for our pipeline today. Monitor for quantized/lighter versions that run on smaller GPUs.
 
 **lip_syncer processor (pass 9 finding, 2026-05-23): sync mouth to voiceover**
 
@@ -425,8 +427,9 @@ Nano Banana Pro text-only. Not reusable. Best for wide shots, back-of-head, silh
 - **Background:** Pure flat white or green screen — MANDATORY for Kling Element binding
 - **Lighting:** Soft, even, diffused. All 4 angles MUST be from the same lighting setup
 - **Expression:** Neutral across ALL reference images
-- **Ref count sweet spot:** 3–4 refs optimal; cap at 4 (Kling hard limit). More than 4 increases copy-paste artifact risk ("view-dependent copy-paste," per arXiv 2508.09476 Mixture of Facial Experts research).
+- **Ref count sweet spot:** 3–4 refs optimal; cap at 4 (Kling hard limit). More than 4 increases copy-paste artifact risk ("view-dependent copy-paste," per arXiv 2508.09476 MoFE; further confirmed by Mv²ID, arXiv 2603.21299, March 2026).
 - **Angular diversity > expression diversity:** front + 3/4 + profile is the minimal effective multi-view set (confirmed by Mv²ID and MoFE research). Do NOT replace an angle ref with an expression variant — cover angles first.
+- **Include a tight face crop as the 4th ref (pass 15 finding, 2026-06-07):** Within the 4-ref cap, replace the full-body standing ref with a tight face crop (eyes-to-chin, no hair, flat background). Mv²ID (arXiv 2603.21299) establishes that region-focused conditioning on the face area is the primary identity signal under large angle variations — simply adding more full-body refs exacerbates copy-paste without improving identity lock. Save as `assets/characters/{name}/face_crop.png` (crop from approved front-view photo). Include as ref 3 or 4. **Especially effective when the character appears in profile or 3/4 view in the generated clip** — the model can extract identity from the face-crop ref even when the full-body angle differs.
 - **Array order does not matter for Kling elements binding.** No published evidence of order sensitivity. Focus on angle coverage.
 - **Do NOT feed generated frames back as references.** Always re-anchor from original approved photos
 - **Each clip in a video sequence MUST independently derive character identity** from original approved reference photos
@@ -546,7 +549,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-03)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-07)
 
 Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
@@ -604,7 +607,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-03)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-07)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
