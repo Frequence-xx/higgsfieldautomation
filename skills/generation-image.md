@@ -22,7 +22,7 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
-## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (19 days away as of 2026-06-06)
+## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (17 days away as of 2026-06-08)
 
 Google is retiring both Gemini image preview models on **June 25, 2026**:
 - `gemini-3-pro-image-preview` → GA replacement: `gemini-3-pro-image`
@@ -54,7 +54,7 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 | Flux Kontext Max T2I | `flux/kontext-max/text-to-image` | Brand color stills without input ref | 0 | ~$0.08 | 768x1344 |
 | FLUX.2 Pro Edit | `blackforestlabs/flux-2-pro-edit` | Multi-ref brand asset compositing, up to 3 refs on AIMLAPI | 3 | ~$0.07 | native |
 | FLUX.2 Max | `blackforestlabs/flux-2-max`⁑ | Highest quality T2I, up to 10 refs — when Kontext Max 2-ref limit is insufficient | 10 | ~$0.09 | native |
-| GPT Image 2 | `gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K | 0‡ | ~$0.07-0.35§ | 1K–2K |
+| GPT Image 2 | `openai/gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K; up to 16 refs | 16‡ | ~$0.07-0.35§ | 1K–2K–4K |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
 | Grok Imagine Quality | `x-ai/grok-imagine-image-quality`† | T2I + I2I scenery drafts; 3 refs; strong text | 3 | ~$0.055 (1K), ~$0.07 (2K) | 9:16 native |
@@ -64,15 +64,17 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 
 ‖**Gemini 2.5 Flash Image (2026-05-28):** The original "Nano Banana" (Gemini 2.5 Flash Image) is available on AIMLAPI at ~$0.039/img. T2I only, no reference images, no Gemini 3 reasoning. Use ONLY as a sub-NB2 draft tier for rough composition/layout checks before committing NB2 credits. Do NOT use for character or brand-critical shots — quality is significantly below NB2. **AIMLAPI model string `google/gemini-2.5-flash-image` — run canary to confirm before production use.** Native 9:16 output. Pricing: ~42% cheaper than NB2 ($0.039 vs $0.067 at 1K).
 
-†NB2 (Gemini 3.1 Flash Image, **GA as of 2026-06**) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Native GA model ID: `gemini-3.1-flash-image` (no `-preview`). Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration. **NEW (2026-06, Preview):** NB2 now accepts video files as input — enables generating stills from existing approved footage (thumbnail extraction, keyframe generation). Not yet confirmed on AIMLAPI endpoint; use for native Google API workflows only until canary confirms.
+†NB2 (Gemini 3.1 Flash Image, **GA as of 2026-06**) — **confirmed on AIMLAPI, $0.067/img at 1K**. Canary flag removed. Native GA model ID: `gemini-3.1-flash-image` (no `-preview`). Supports up to 14 reference images total (max 5 character identity refs, remainder for objects/vehicles/scenes). Context window 131K tokens (vs NBP's 65K) — handles more complex multi-ref prompts. **`thinking_level` is NOT a valid image generation API parameter** (2026-05-22 correction). Recommended for prompt iteration before final NBP Edit pass — saves ~$0.13/iteration. **NEW (2026-06, GA confirmed):** NB2 now accepts video files as input — pass a video file or public YouTube URL alongside a text prompt to generate thumbnails, keyframes, or stills from approved footage. Confirmed GA on Google native API (May 28, 2026). Not yet confirmed on AIMLAPI endpoint; run canary before relying on it in production.
 
 **NB2 resolution tiers (Google official rates):** `"resolution": "512"` ($0.045/img, ~4-6s) → `"1K"` ($0.067/img) → `"2K"` ($0.101/img) → `"4K"` ($0.151/img). Use `"512"` for layout/composition checks before committing to 1K — saves ~33% per draft pass. Note: 512px is specified as `"512"` (no K suffix), not `"0.5K"`. AIMLAPI may map this to their own pricing tier — run a canary if using 512 for the first time.
 
+**NBP (Nano Banana Pro) 2K = same price as 1K (2026-06-08):** Google's native API prices both `"1K"` and `"2K"` for NBP at **$0.134/image** — they consume the same token count (~1,120 output tokens). This means 2K (1536×2688px) is a free quality upgrade over 1K (768×1344px). **CANARY REQUIRED on AIMLAPI:** Run a test call with `"resolution": "2K"` and confirm AIMLAPI charges the same as 1K before switching production calls. If confirmed, update all NBP production calls from `"1K"` to `"2K"`.
+
 **NB2 Image Search Grounding:** NB2 can pull real photos from Google Image Search before generating (e.g., Dutch residential streets, specific truck models). This uses a `google_search` tool with `search_types: ["image_search"]` in the native Gemini Interactions API format. **NOT available via AIMLAPI's OpenAI-compatible endpoint.** If you need real-world visual references, supply downloaded images as explicit refs instead.
 
-‡GPT Image 2 supports up to **16 reference images** per call (every reference billed at high-fidelity input rate). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. AIMLAPI model string: `openai/gpt-image-2`. Confirmed `size` values: `1024x1536` (9:16 portrait), `1536x1024` (landscape), `1024x1024` (square). Quality tiers: `low`, `medium`, `high`. Run canary to verify AIMLAPI reference image support before using in production — OpenAI confirms it, AIMLAPI implementation unverified.
+‡GPT Image 2 (`openai/gpt-image-2`, released 2026-04-21) supports up to **16 reference images** per call (every reference billed at high-fidelity input rate). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. **⚠️ CRITICAL parameter notes:** (1) Do NOT pass `input_fidelity` — this parameter does not exist on GPT Image 2 and will cause the request to fail (exists on older models only; GPT Image 2 always processes at high fidelity). (2) `background: "transparent"` is NOT supported — requests with this param will fail. Size: custom dimensions, both edges multiples of 16, max 3840px per edge, ratio under 3:1, total pixels 655,360–8,294,400. Recommended 9:16 size: `1152x2048` (true 9:16, both divisible by 16). Quality tiers: `low`, `medium`, `high`. Output format: `png` (default), `jpeg`, `webp`. Run canary to verify AIMLAPI reference image support before using in production — OpenAI confirms it, AIMLAPI implementation unverified. 3–5 well-chosen refs outperform 16 mixed ones.
 
-§GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Imagen 4 Fast ($0.02) for iteration, GPT Image 2 only for finals requiring superior text accuracy.
+§GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Gemini 2.5 Flash Image ($0.039) or NB2 ($0.045 at 512px) for cheap iteration drafts; GPT Image 2 only for finals requiring superior Dutch text accuracy. Imagen 4 Fast **retires June 24, 2026** — do not use as iteration fallback.
 
 **GA model IDs clarification (2026-06-03):** Google's native GA model strings are `gemini-3-pro-image` (NBP) and `gemini-3.1-flash-image` (NB2). AIMLAPI wraps these under `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` — these AIMLAPI strings are unchanged and should continue working post-June-25 assuming AIMLAPI updates their backend routing. The `-preview` suffix is in AIMLAPI's internal doc URLs but NOT in the model strings you pass in API calls. Run a canary before June 22 to confirm.
 
@@ -90,7 +92,7 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 
 **Both models:** Do NOT use as primary character model until canary confirms face adherence vs. NBP Edit baseline. Parameter names (other than `prompt`, `image_urls`, `size`, `seed`) may differ from NBP/Kontext — verify in canary.
 
-**⚠️ IMAGEN 4 RETIREMENT — CRITICAL (2026-06-02 update):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 22 days away**. Google's official replacement: `gemini-3-pro-image-preview` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs). Gemini 2.5 Flash Image (`gemini-2.5-flash-image`) shuts down **October 2, 2026**.
+**⚠️ IMAGEN 4 RETIREMENT — CRITICAL (2026-06-08 update):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 16 days away**. Google's official replacement: `gemini-3-pro-image` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs). Gemini 2.5 Flash Image (`gemini-2.5-flash-image`) shuts down **October 2, 2026**.
 
 **Imagen 4 note (2026-05-08):** Imagen 4 is T2I only — no reference image input. Use for scenery, establishing shots, CTA cards, and text-heavy stills. For character or brand-asset shots requiring refs, use NBP Edit or Kontext Max. Imagen 4 Fast ($0.02) replaces NBP Pro as the cheapest non-ref draft tier. **[DEPRECATED — see retirement notice above]**
 
@@ -595,22 +597,26 @@ hero_url = resp.json()["data"][0]["url"]
 
 **CANARY NOTE:** Imagen 4 pricing on AIMLAPI — run a $0.10 test before batch production use to verify exact cost per image and response structure. Model strings confirmed in AIMLAPI docs as of 2026-05.
 
-### GPT Image 2 — CTA Cards with Dutch Text (2026-05-16)
+### GPT Image 2 — CTA Cards with Dutch Text (2026-06-08 update)
 
-Use ONLY for CTA cards and text-heavy brand stills. T2I only, no reference image support. Strength: 99% text accuracy in Dutch vs ~60% for older models. Token-based pricing — run canary before production.
+Use for CTA cards and text-heavy brand stills. Supports up to 16 reference images (AIMLAPI unverified — canary required). Strength: 99% text accuracy in Dutch vs ~60% for older models. Token-based pricing — run canary before production.
+
+**⚠️ BANNED PARAMS on GPT Image 2:** Do NOT include `input_fidelity` (breaks the call) or `background: "transparent"` (not supported — will fail).
 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
-    "model": "gpt-image-2",
+    "model": "openai/gpt-image-2",
     "prompt": "Clean professional CTA card on white background. Large bold orange text reading 'SNELVERHUIZEN.NL' centered at top. Below it in smaller text: '085 3331133'. Below that: 'VERHUIZEN ZONDER ZORGEN' in bold. Orange is exactly #FC8434. 9:16 vertical format. Minimal design, no people, no decoration.",
-    "size": "1024x1536",   # confirmed 9:16 portrait — values must be divisible by 16, ratio 1:3 to 3:1
+    "size": "1152x2048",   # true 9:16 portrait — multiples of 16, ratio < 3:1
     "quality": "high",
     "n": 1,
+    # DO NOT add: input_fidelity (doesn't exist on gpt-image-2, breaks the call)
+    # DO NOT add: background: "transparent" (not supported on gpt-image-2)
 }, headers=headers, timeout=120)
 hero_url = resp.json()["data"][0]["url"]
 ```
 
-**CANARY REQUIRED:** GPT Image 2 uses token-based pricing on AIMLAPI. Run one test call and check actual cost before committing to a batch. Confirm `size` parameter values accepted by AIMLAPI. If cost exceeds $0.20/image, fall back to Imagen 4 Ultra for text stills.
+**CANARY REQUIRED:** GPT Image 2 uses token-based pricing on AIMLAPI. Run one test call and check actual cost before committing to a batch. Confirm `size: "1152x2048"` accepted by AIMLAPI. If cost exceeds $0.25/image, re-evaluate against NBP Edit. Imagen 4 Ultra fallback **retires June 24, 2026** — do not use as fallback.
 
 ## NBP → Veo Keyframe Bridge (2026-05-12)
 
