@@ -35,15 +35,19 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      # response.loss → float (overall alignment confidence, lower is better)
 
      # Convert to Remotion Caption format:
+     # ⚠️ SPACE CONVENTION: createTikTokStyleCaptions() uses text.startsWith(' ') to detect
+     # page boundaries. ElevenLabs returns clean words WITHOUT leading spaces. You MUST add
+     # a leading space to every word except the first — otherwise all words land in one page
+     # and word-by-word highlighting never fires.
      captions = [
          {
-             "text": w.text,
+             "text": ("" if i == 0 else " ") + w.text,
              "startMs": int(w.start * 1000),
              "endMs": int(w.end * 1000),
              "timestampMs": int((w.start + w.end) / 2 * 1000),
              "confidence": 1 - w.loss,  # loss → confidence inversion
          }
-         for w in response.words
+         for i, w in enumerate(response.words)
      ]
      ```
 
@@ -85,16 +89,19 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
        )
 
    # Convert to Remotion Caption format:
+   # ⚠️ SPACE CONVENTION: same as forced alignment — Scribe v2 returns clean words.
+   # Add leading space to every word except the first so createTikTokStyleCaptions()
+   # can detect page-break boundaries via text.startsWith(' ').
+   word_tokens = [w for w in result.words if w.type == "word"]  # filter out spacing tokens
    captions = [
        {
-           "text": w.text,
+           "text": ("" if i == 0 else " ") + w.text,
            "startMs": int(w.start * 1000),
            "endMs": int(w.end * 1000),
            "timestampMs": int((w.start + w.end) / 2 * 1000),
            "confidence": 1.0,
        }
-       for w in result.words
-       if w.type == "word"  # filter out spacing tokens (type == "spacing")
+       for i, w in enumerate(word_tokens)
    ]
    ```
 
@@ -606,7 +613,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.473 — confirmed current as of 2026-06-05)
+### Full API (v4.0.474 — confirmed current as of 2026-06-08)
 
 | Export | Purpose |
 |--------|---------|
@@ -743,6 +750,18 @@ const { segments } = CaptionsInternals.ensureMaxCharactersPerLine({
 Use this BEFORE `createTikTokStyleCaptions()` when you have long Dutch phrases that would otherwise overflow the 1080px canvas width.
 
 **Simpler alternative for basic line-wrapping:** Set `maxWidth: '80%'` (or a pixel value like `maxWidth: 840`) directly on the caption container `<div>`. This lets the browser/Remotion renderer wrap naturally without needing pre-processing. Use `ensureMaxCharactersPerLine` when you need precise control over per-word line breaks (e.g. preventing orphan 1-word tail); use `maxWidth` CSS when simple visual wrapping is enough.
+
+### CRITICAL: Leading-Space Convention for Page Breaks
+
+`createTikTokStyleCaptions()` detects page boundaries by checking `text.startsWith(' ')` in each `Caption`. A new page is started **only** when a caption whose text begins with a space arrives after `combineTokensWithinMilliseconds` have elapsed.
+
+**Source behavior by provider:**
+- ✅ **whisper.cpp / `toCaptions()`** — already adds leading spaces; works out of the box
+- ✅ **WhisperX** — wav2vec2 BPE tokens naturally carry leading spaces; works out of the box
+- ❌ **ElevenLabs forced alignment** — returns clean words (no spaces); MUST add manually (see fix above)
+- ❌ **ElevenLabs Scribe v2** — same; MUST add manually (see fix above)
+
+**Failure mode if missing:** Every word is appended to the FIRST page; `createTikTokStyleCaptions` never breaks; the orange highlight advances but the same block of text stays on screen for the entire voiceover.
 
 ### Key Parameter: combineTokensWithinMilliseconds
 
