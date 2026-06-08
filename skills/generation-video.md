@@ -36,11 +36,15 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 |-------|---------------|------------|---------------------|
 | Kling O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.56** |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720x1280 (9:16) | **$1.09** |
+| Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$1.46** |
+| Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | **1080x1920 (9:16)** | **$1.46** |
 
 **Use Standard for iteration/testing, Pro for final output. O1 Reference-to-Video is the cheapest option for character shots requiring multi-image identity lock — see Kling O1 section below.**
 
-**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Pro I2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni, Kling v3 Motion Control, Kling 4K (unverified).
+**T2V vs I2V pricing:** Native Kling v3 T2V and I2V cost the same per second — AIMLAPI passes through the same rate. T2V with elements/subject binding is useful when no hero frame exists, but our static-first validation funnel almost always produces a hero frame first. Use I2V by default; T2V only when hero frame generation is not feasible.
+
+**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni, Kling v3 Motion Control, Kling 4K (unverified).
 
 ## Complete API Call Template
 
@@ -394,9 +398,14 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 
 ## Multi-Shot Prompting (multi_prompt on AIMLAPI)
 
-Kling v3 supports generating up to 6 sequential shots in one API call. **On AIMLAPI the parameter is `multi_prompt` (not `guidances` — that is the base Kling API name).** Confirmed available for T2V; I2V multi-shot works by combining a start frame with per-shot prompts.
+Kling v3 supports generating up to 6 sequential shots in one API call. **On AIMLAPI the parameter is `multi_prompt` (not `guidances` — that is the base Kling API name).** Confirmed available for T2V and I2V.
+
+**CRITICAL: `multi_shot: True` is REQUIRED to activate multi-shot mode for ALL Kling v3 variants (Standard and Pro, T2V and I2V).** Without this flag, `multi_prompt` is silently ignored and the model falls back to single-shot generation using the main `prompt` field. Confirmed across multiple Kling v3 platform implementations (June 2026). Previously documented as O3-only — this was incorrect; it applies to all v3 tiers.
+
+**HALAL RISK: Audio is always enabled in multi-shot mode.** `generate_audio: false` is ignored when `multi_shot: True` is set — the model generates audio for every multi-shot sequence. **Strip audio immediately post-generation:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4` — do NOT play audio before stripping.
 
 **Constraints:**
+- `multi_shot: True` MUST be set (top-level flag) — without it, multi_prompt is silently ignored
 - Main `prompt` field MUST be empty when `multi_prompt` is used
 - `tail_image_url` is INCOMPATIBLE with multi-shot — omit it
 - Total video duration = sum of all shot durations (max 15s total)
@@ -404,12 +413,16 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 - Each entry takes `prompt` and `duration` — no `index` field required on AIMLAPI
 
 ```python
-"prompt": "",  # MUST be empty
+"multi_shot": True,   # REQUIRED — without this, multi_prompt is silently ignored
+"prompt": "",         # MUST be empty
+"generate_audio": False,  # Set this anyway, but NOTE: may be ignored in multi-shot mode
 "multi_prompt": [
     {"prompt": "@Element1 walks to the truck, confident stride", "duration": 5},
     {"prompt": "@Element1 loads a box into the truck, smooth motion", "duration": 5},
     {"prompt": "Truck parked on street, environment settling, motion eases to stop", "duration": 5}
 ]
+# AFTER GENERATION: strip audio before delivery
+# ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4
 ```
 
 **Multi-shot failure modes (v3-specific — absent in single-shot Kling 2.6):**
@@ -417,6 +430,7 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 - Audio desync at cut boundaries (if audio is enabled — always keep it off)
 - Tonal shift between cuts (lighting or color grade jumps)
 - Lighting inconsistency across shots
+- **Silent fallback to single-shot (missing `multi_shot: True` flag)** — check output duration to confirm multi-shot fired
 
 **Multi-shot anti-drift technique:** Restate a continuity anchor inside every shot prompt:
 ```python

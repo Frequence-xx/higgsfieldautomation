@@ -97,7 +97,9 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) | Cost (3s) |
 |-------|---------------|-----------|---------------------|----------|
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
+| Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
+| Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
 | Veo 3.1 Lite T2V 720p | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.33** ($0.065/sec, 5s equiv) | ~$0.26 (4s) |
 | Veo 3.1 Lite T2V 1080p | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.83** ($0.104/sec × 8s) | — |
 | Veo 3.1 I2V | `google/veo-3.1-i2v` | 720p/1080p | **~$1.00** ($0.20/sec × 5s) | ~$0.60 (3s) |
