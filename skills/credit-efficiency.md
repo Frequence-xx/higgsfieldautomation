@@ -153,6 +153,12 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Flux Kontext Max | `flux/kontext-max/image-to-image` | **$0.10** | Typography, character lock |
 | FLUX.2 Pro | `blackforestlabs/flux-2-pro` | **$0.07** | Brand color #FC8434 matching |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | **$0.10** | Money shots / CTA |
+| Wan 2.7 Image Pro (DRAFT) | `alibaba/wan-2-7-image-pro` | **~$0.06** | Draft hero frames, multi-ref identity test — CANARY REQUIRED |
+| Wan 2.7 Image (DRAFT) | `alibaba/wan-2-7-image` | **~$0.04** est. | Ultra-cheap T2I draft stills — CANARY REQUIRED |
+
+*Wan 2.7 Image Pro (NEW — 2026-06-09): AIMLAPI model string `alibaba/wan-2-7-image-pro`. ~$0.06/image on AIMLAPI (example in AIMLAPI docs: 120k credits = $0.06); Segmind lists $0.037/image. Reference image parameter: `image_urls` (array, up to 9 refs). Character Locking feature locks facial geometry and clothing across batch generations — up to 9 input refs, up to 12 consistent outputs in one run. 4K native output. **Limitation:** No Subject Binding slider equivalent. Identity lock is architectural (multi-ref embedding), not parametric (no 0-100 strength dial). NOT a replacement for NBP Edit on finals — use for cheap draft iterations only. 69% cheaper than NBP Edit ($0.195 → ~$0.06). Canary: call with one character ref + 9:16 aspect_ratio. Verify actual AIMLAPI cost and compare face consistency vs NBP Edit baseline.*
+
+*Wan 2.7 Image standard (`alibaba/wan-2-7-image`): estimated ~$0.04/image. Cheaper but weaker multi-ref character locking than Pro variant. Best for pure T2I scenery where character identity is not needed.*
 
 *GPT Image 2 (NEW — 2026-04-21, updated 2026-06-03): AIMLAPI model string `openai/gpt-image-2` confirmed live. Medium quality sticker price $0.053/img = 3.7× cheaper than NBP Edit. **However, billing is token-based ($30/M output tokens + $8/M input tokens at high fidelity).** When processing character reference images (mandatory high-fidelity input), actual cost is 2–3× the sticker price — real character reference cost approaches $0.10–$0.42/image. The advantage over NBP Edit ($0.195) shrinks significantly for character work. GPT Image 2 has NO Subject Binding equivalent — does not lock face identity across generations the way NBP Edit does. Best use case remains text-heavy stills (layouts, CTA frames with text) not character hero frames. CANARY REQUIRED — verify 9:16 aspect ratio support and actual billing amount before routing character work here.*
 
@@ -636,31 +642,37 @@ Note: "Kling v4" does not exist. Our production strings remain `klingai/video-v3
 
 ---
 
-### Grok Imagine Video 1.5 (`xai/grok-imagine-video`) — FUTURE WATCH, NOT ON AIMLAPI YET (2026-06-07)
+### Grok Imagine Video 1.5 (`xai/grok-imagine-video`) — AIMLAPI DOCS PAGE CONFIRMED, CANARY REQUIRED (2026-06-09)
 
-**Context:** Released June 3, 2026. Immediately claimed #1 on Image-to-Video Arena (+52 Elo over v1.0, beating Seedance 2.0 and Veo 3.1).
+**Context:** Released June 3, 2026. #1 on Image-to-Video Arena (+52 Elo over v1.0). AIMLAPI docs page confirmed: `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video`.
 
-**Pricing (xAI native API only):**
-- 480p: **$0.08/sec** — 5s = $0.40, 3s = $0.24
-- 720p: **$0.14/sec** — 5s = $0.70
-- Image input surcharge: **$0.01/image**
-- Audio always included (no extra charge, but also no disable parameter)
+**Pricing:**
+- xAI API: $0.05/sec (480p), $0.07/sec (720p) + $0.01/image input
+- AIMLAPI estimated (~1.3× markup): **~$0.065/sec (480p) = ~$0.325/5s**, **~$0.091/sec (720p) = ~$0.455/5s**
+- Audio always included at no extra charge (baked into per-second rate)
+- AIMLAPI model string (unverified — from URL pattern): `xai/grok-imagine-video` — confirm in canary
 
-**Why it matters for this pipeline (when it lands on AIMLAPI):**
-- At 480p: cheaper than Kling Standard ($0.218/sec) for I2V non-character draft passes
+**Why it matters for this pipeline:**
 - I2V supported — can animate truck hero frames and B-roll
-- Video extension (2-10s per call) — chaining for longer establishing shots
-- Max 15s clip length
+- First+last frame keyframe control available
+- Reference-to-video: up to 7 reference images for character consistency
+- Max 15s clip, 24fps, 480p or 720p, 9:16 supported
+- At 480p (~$0.065/sec): cheaper than Kling Standard ($0.218/sec) for non-character I2V drafts
 
 **Critical blocker — audio always generated:**
 - Every Grok Imagine Video generation produces audio (dialogue, SFX, ambient) in a single pass
 - **No `generate_audio: false` parameter exists.** Audio cannot be disabled.
 - Workaround: `ffmpeg -i input.mp4 -an -c:v copy output.mp4` strips audio post-generation
-- Shari'ah risk during review: AI-generated audio may include music before strip. Strip immediately on download — do NOT play audio during QA. Always deliver with audio stripped.
+- Shari'ah compliance: AI-generated audio may include music. **Strip immediately on download — do NOT play audio during QA.** Always deliver with audio stripped.
 
-**AIMLAPI status:** NOT confirmed as of 2026-06-07. Grok Imagine Image Pro IS on AIMLAPI (`xai/grok-imagine-image-pro`). Video described as "planned" on AIMLAPI blog. Monitor `docs.aimlapi.com/api-references/video-models` for a Grok Imagine Video page.
+**NOT text-to-video in preview:** Only I2V and reference-to-video modes available in the 1.5 preview.
 
-**Do NOT add to production routing until confirmed on AIMLAPI.** This is a watch item only.
+**Canary test before routing production shots:**
+1. Submit one 5s 480p I2V call: truck hero frame, `aspect_ratio: "9:16"`, confirm model string from AIMLAPI docs
+2. Record actual cost from AIMLAPI dashboard — verify ~$0.325 (480p, 5s)
+3. On download: strip audio immediately (`ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`)
+4. Run brand binary checklist: box sealed, logo orange, no ghost driving
+5. If passes → route non-character I2V 5s truck drafts here (replaces Kling Standard at $0.65)
 
 ---
 
@@ -704,5 +716,6 @@ Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 5
 25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
 26. **Luma Ray Flash 2 confirmed on AIMLAPI (`luma/ray-flash-2`) — NEW 2026-06-05.** ~$0.048/sec (~$0.24/5s). Supports 9:16, I2V, first+last frame keyframes. **No audio generation** — no `generate_audio` param needed, no surcharge risk. Max 9s at 720p. CANARY REQUIRED. Use case: non-character I2V 5s clips where composition anchoring from a hero frame matters (e.g., truck exterior). Hailuo 2.3 Fast ($0.208/5s T2V) remains cheapest for 5s; Ray Flash 2 is the I2V alternative at ~$0.24.
 27. **Wan 2.7 T2V confirmed live on AIMLAPI (`alibaba/wan-2-7-t2v`) — 2026-06-05.** AIMLAPI docs page confirmed. Cost: ~$0.50/5s ($0.10/sec). Use for T2V establishing shots without characters when Veo 3.1 Lite is unavailable. Veo 3.1 Lite 720p (~$0.33/5s) is cheaper — prefer Veo. Wan 2.7 T2V is a Veo fallback at higher cost. CANARY REQUIRED before production.
-28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-07.** `site:docs.aimlapi.com` search returns Wan 2.6 R2V as the only live R2V model. Do NOT call `alibaba/wan-2-7-r2v` until its AIMLAPI doc page appears. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V.
-29. **Grok Imagine Video 1.5 is NOT on AIMLAPI as of 2026-06-07.** It launched June 3, 2026 on xAI API (api.x.ai) and is #1 on I2V Arena. Pricing: $0.08/sec (480p), $0.14/sec (720p). Audio is always generated — no disable parameter. AIMLAPI-only pipeline = cannot use until it lands on AIMLAPI. Monitor `docs.aimlapi.com/api-references/video-models` for a Grok Imagine Video entry. When it arrives: audio strip required (`ffmpeg -an`) immediately on download before any QA playback.
+28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-09.** The model is live on Replicate and WaveSpeedAI but NOT on AIMLAPI. Do NOT call `alibaba/wan-2-7-r2v` until its AIMLAPI doc page appears. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
+29. **Grok Imagine Video 1.5 AIMLAPI docs page NOW CONFIRMED (2026-06-09).** AIMLAPI page: `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video`. xAI pricing: $0.05/sec (480p), $0.07/sec (720p). AIMLAPI estimated: ~$0.065/sec (480p) = ~$0.325/5s. Audio is always generated — no disable parameter. **AUDIO STRIP REQUIRED** (`ffmpeg -i input.mp4 -an -c:v copy output.mp4`) immediately on every download — before QA playback. CANARY REQUIRED before routing production shots. Not T2V — I2V and reference-to-video only in preview.
+30. **Wan 2.7 Image Pro and Standard now on AIMLAPI (2026-06-09).** `alibaba/wan-2-7-image-pro` at ~$0.06/image (69% cheaper than NBP Edit $0.195). Multi-ref via `image_urls` array (up to 9 refs). Character Locking feature for cross-generation identity consistency. Use for draft hero frame iterations only — NOT for finals (no Subject Binding strength dial; identity lock is less precise than NBP Edit). `alibaba/wan-2-7-image` (standard) at ~$0.04/image — even cheaper but weaker character locking. CANARY REQUIRED for both variants.
