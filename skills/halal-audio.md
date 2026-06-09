@@ -54,8 +54,11 @@ No music. No instruments. Ever. Audio is restricted to:
 | Similarity Boost | 72 | >80 introduces artifacts in Dutch |
 | Style Exaggeration | 15 | Slight energy; 0 = flat, >30 = over-dramatic |
 | Speaker Boost | true | Improves clarity on mobile speakers |
+| **Speed** | **0.95** | 5% slowdown aids pronunciation of "SNELVERHUIZEN" and "085 3331133". REST API range: 0.25–4.0 (Agents Platform caps at 0.7–1.2). Default is `None` (= 1.0). See note below. |
 | **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
+
+**`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.50+; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
 
 **Willem voice_id**: The `voice_id` string for Willem is not published in any SDK reference or public list — it is a Voice Library community voice. Retrieve it once and store in project config. As of the April 7, 2026 API update, the voice response also includes `recording_quality` and `labelling_status` — check these when first retrieving:
 ```python
@@ -136,6 +139,8 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 When splitting a long script, pass the prior call's request ID in the next call so the model maintains natural flow across the join point. Max 3 IDs. Pass them in chronological order.
 
 ```python
+from elevenlabs import VoiceSettings
+
 # Chunk 1 — no previous context
 r1 = client.text_to_speech.convert(
     voice_id=VOICE_ID,
@@ -143,6 +148,13 @@ r1 = client.text_to_speech.convert(
     model_id="eleven_v3",
     language_code="nl",
     apply_text_normalization="on",
+    voice_settings=VoiceSettings(
+        stability=0.60,
+        similarity_boost=0.72,
+        style=0.15,
+        use_speaker_boost=True,
+        speed=0.95,  # 5% slowdown for Dutch brand-name clarity
+    ),
 )
 request_id_1 = r1.request_id  # save for next call
 
@@ -153,6 +165,13 @@ r2 = client.text_to_speech.convert(
     model_id="eleven_v3",
     language_code="nl",
     apply_text_normalization="on",
+    voice_settings=VoiceSettings(
+        stability=0.60,
+        similarity_boost=0.72,
+        style=0.15,
+        use_speaker_boost=True,
+        speed=0.95,
+    ),
     previous_request_ids=[request_id_1],
 )
 ```
@@ -307,7 +326,7 @@ with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
 
 ### ⚠ ElevenLabs Music API — DO NOT USE for halal ambient SFX
 
-ElevenLabs added a Music API with `generation_mode: "ambience"` (May 2026, SDK v2.49.0). Despite the name "ambience", this is a **music generation API** — it generates AI-composed music with instrumentation. Even in `ambience` mode, output is likely to contain musical elements (tonal pads, harmonics, rhythmic content).
+ElevenLabs Music API (`music_v1` model, SDK v2.49.0+) exposes three `generation_mode` values: `"track"` (full song), `"loop"` (seamless looping section), and `"ambience"` (atmospheric texture). Despite the word "ambience", **all three modes are music generation** — they produce AI-composed output with instrumentation, melody, or rhythmic content. The API also supports `force_instrumental=True` to strip vocals, but this produces purely instrumental music (confirmed: instruments present) — not halal-compatible.
 
 **Rule: never use ElevenLabs Music API in this pipeline.** The SFX v2 API (`eleven_text_to_sound_v2`) is the correct tool for instrument-free ambient beds. The Music API exists for background music use cases — incompatible with Snelverhuizen halal audio policy. If an ambient SFX v2 generation sounds musical, that is a prompt issue (include "no music, no instruments, no melody" in the text prompt) — it is NOT a reason to switch to the Music API.
 
@@ -764,7 +783,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
-| Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music (even in ambience mode) — contains instrumentation | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
+| Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
+| Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.50+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
+| `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
 | SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `wav_44100` for lossless SFX library masters. |
 | TikTok video sounds quieter than expected or louder than other platforms | TikTok does not apply in-feed loudness normalization | Content plays at delivered level. Master to -14 to -16 LUFS for clean phone playback. Do not over-compress to get louder — will sound distorted on mobile. |
 | PVC audio tags weak or ignored in eleven_v3 | PVCs not fully optimized for v3 as of April 2026 | Switch to a Voice Library voice (e.g. Willem) or an IVC. Do not use PVCs for eleven_v3 tag-dependent scripts until ElevenLabs confirms full PVC compatibility. |
