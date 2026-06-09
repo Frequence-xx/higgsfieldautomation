@@ -196,7 +196,7 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 **TNTwise REAL Video Enhancer v2.4.1** (stable, 2026-01-02) is the recommended tool. Also available on Steam (released 2026-02-11) for easier Windows/Mac install. It wraps RIFE with scene change detection (prevents blending artifacts at cuts), and supports TensorRT (NVIDIA RTX, fastest), PyTorch CUDA/ROCm (AMD), and NCNN Vulkan (any modern GPU).
 
-**v2.4.2 pre-release note (2026-01-09, still pre-release as of May 2026):** Fixes a conflict between PySceneDetect and restoration models (upscaling/denoising) when both are enabled simultaneously — if your pipeline uses RVE's built-in scene detection alongside a restoration model, upgrading to 2.4.2 once stable resolves random crashes. Also adds decimal frame timestep support, input folder structure for output files, and fixes FFmpeg reading stopping randomly. **Current stable: 2.4.1.** Monitor releases at https://github.com/TNTwise/REAL-Video-Enhancer/releases.
+**v2.4.2 pre-release note (2026-01-09, still pre-release as of June 2026):** Fixes a conflict between PySceneDetect and restoration models (upscaling/denoising) when both are enabled simultaneously — if your pipeline uses RVE's built-in scene detection alongside a restoration model, upgrading to 2.4.2 once stable resolves random crashes. Also adds decimal frame timestep support, input folder structure for output files, and fixes FFmpeg reading stopping randomly. **Current stable: 2.4.1.** Monitor releases at https://github.com/TNTwise/REAL-Video-Enhancer/releases.
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
@@ -204,6 +204,7 @@ Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
 Model selection for live-action / AI-generated video:
 - **rife-v4.25** — **best for diffusion-generated video (Kling, Veo output) and general default.** Practical-RIFE project explicitly states v4.24+ is suitable for diffusion model video post-processing; v4.25 is the maintainer's recommended default for most scenes. Use this as our pipeline default.
+- **rife-v4.25.lite** — lower-cost variant of v4.25 (2024-10-20). Use on server/headless environments with limited VRAM where full v4.25 OOMs. CLI: `-m rife-v4.25.lite` with the TNTwise binary. Quality is slightly below v4.25 full.
 - **rife-v4.26.heavy** — highest quality variant of v4.26, significantly more GPU-intensive. Reserve for final delivery polish on important clips only (character close-ups, hero moments). Not in RVE GUI — CLI only via rife-ncnn-vulkan binary.
 - **rife-v4.26** — latest standard model (2024-09-21). Similar quality to v4.25 on most content; use if v4.25 produces artifacts on a specific clip.
 - **rife-v4.22** — prior recommendation (superseded). v4.24+ is the current guidance for diffusion video; retain only as legacy fallback.
@@ -279,7 +280,7 @@ ffmpeg -i clip.mp4 -c copy \
 
 **For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
 
-**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-07):** Will add:
+**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-09, date TBD):** Will add:
 - `--expand` flag to `split-video` (extends first/last clip to video boundaries — no footage lost)
 - `expand_scenes_to_bounds()` API helper in scene manager module
 - `backend` keyword argument for `scenedetect.detect()` — accepts `"opencv"` (default), `"pyav"`, or `"moviepy"` to select the video backend programmatically (useful in headless/server pipelines)
