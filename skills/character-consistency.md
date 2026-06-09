@@ -81,8 +81,10 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
             ]
         }
     ],
+    "negative_prompt": "morphing, face morphing, shifting jawline, hairstyle change, outfit change, extra characters, age change, blurry, flickering, extra limbs",
+    "generate_audio": False,
     "duration": 5,
-    "aspect_ratio": "16:9"
+    "aspect_ratio": "9:16"
 }, headers=headers)
 ```
 
@@ -99,6 +101,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
         {"frontal_image_url": "karel/front.png", "reference_image_urls": ["karel/three_quarter.png", "karel/profile.png"]}
     ],
     "generate_audio": False,
+    "negative_prompt": "morphing, face morphing, shifting jawline, hairstyle change, outfit change, extra characters, age change, blurry, flickering, extra limbs, distorted anatomy",
     "duration": 5,
     "aspect_ratio": "9:16"
 }, headers=headers)
@@ -339,7 +342,17 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 **GSwap — Future Watch (research stage, no OSS code as of 2026-06-07):** 3D head swap using neural Gaussian portrait representation embedded in SMPL-X body surface (arXiv 2603.23168, IEEE TVCG, March 2026). Models head, torso, and motion together (not just 2D face patch), with neural re-rendering for natural background integration. Addresses FaceFusion's known failure mode: detached/misaligned look under strong head motion. Project page: ustc3dv.github.io/GSwap/ — no public code release confirmed. Monitor for open-source release — would replace FaceFusion for clips with large head rotation or motion blur.
 
-**MAGREF — Future Watch (ICLR 2026, code released, 80GB GPU required):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves. Inference requires **~70 GB VRAM (80 GB recommended GPU)** — not practical for our pipeline today. Monitor for quantized/lighter versions that run on smaller GPUs.
+**MAGREF — Future Watch (ICLR 2026, code released, FP8 available):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1 14B. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves.
+
+**VRAM requirements (pass 16 update, 2026-06-09):**
+- Full BF16/FP16: ~70 GB (single H100 required)
+- FP8 quantized (ComfyUI): **~40–50 GB** — fits A100 40GB at 480p, H100 80GB at 720p
+
+**FP8 ComfyUI integration now available:** Kijai published `Wan2_1-Wan-I2V-MAGREF-14B_fp8_e4m3fn.safetensors` (Hugging Face: `Kijai/WanVideo_comfy`) with ComfyUI nodes at `kijai/ComfyUI-WanVideoWrapper`. FP8 reduces from 70GB to ~40-50GB with minimal quality loss. Still requires datacenter GPU — not practical for our current cloud pipeline. Monitor for further quantization (GGUF/INT8) that runs on 24GB consumer GPU.
+
+**Gloria — Future Watch (arXiv 2603.29931, March 2026):** Consistent character video generation via "content anchors" — a compact set of anchor frames covering multiple viewpoints AND expression variants. Key mechanisms: (1) **Superset Content Anchoring** — includes both intra-clip and extra-clip cues in the anchor set to prevent view-dependent copy-paste artifacts; (2) **RoPE as Weak Condition** — distinct positional encodings assigned to video vs. conditioning tokens, preventing multi-reference identity collapse. Research model; no public production code as of 2026-06-09.
+
+**Practical implication for our pipeline:** Gloria validates the multi-view anchor strategy (front + 3/4 + profile + face-crop). It also suggests that adding one mild expression variant (e.g., a slight smile) alongside angle refs could further reduce identity collapse in clips that require the character to smile. However, Mv²ID (arXiv 2603.21299) established angular diversity > expression diversity in our current 4-ref cap. **Current policy unchanged.** If a clip drifts specifically on expression-heavy action (character smiling or laughing), test substituting the full-body ref with a smiling expression ref to see if it improves anchoring.
 
 **lip_syncer processor (pass 9 finding, 2026-05-23): sync mouth to voiceover**
 
@@ -549,9 +562,11 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-07)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-09)
 
-Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-09.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+
+**O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
 **O3 advantages for character shots:**
 - Multi-shot: up to 6 shots in a single API call with consistent character across all shots (max 15s total, each shot ≥ 3s)
@@ -607,7 +622,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-07)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-09)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
