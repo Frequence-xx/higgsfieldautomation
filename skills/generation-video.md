@@ -44,7 +44,11 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 **T2V vs I2V pricing:** Native Kling v3 T2V and I2V cost the same per second — AIMLAPI passes through the same rate. T2V with elements/subject binding is useful when no hero frame exists, but our static-first validation funnel almost always produces a hero frame first. Use I2V by default; T2V only when hero frame generation is not feasible.
 
+**⚠️ PRICING VERIFICATION REQUIRED (June 2026):** The AIMLAPI docs page for `v3-standard/text-to-video` reportedly shows **$0.084/sec ($0.42/5s audio off)**, which contradicts the $1.09/5s in the routing matrix above. This could be: (a) AIMLAPI reduced prices, (b) T2V/I2V now priced differently, or (c) misattribution of fal.ai pricing ($0.084/sec confirmed on fal.ai). Cannot verify directly (docs return 403). **Check AIMLAPI dashboard before next production session.** Do NOT update CLAUDE.md routing matrix until confirmed.
+
 **Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni, Kling v3 Motion Control, Kling 4K (unverified).
+
+**fal.ai O3 naming history (for reference):** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. Current fal.ai endpoint is `fal-ai/kling-video/v3/...` (not `o3`). Kling O3 is NOT on AIMLAPI as of June 2026 — O3 absence on AIMLAPI is still the confirmed status.
 
 ## Complete API Call Template
 
@@ -578,6 +582,8 @@ If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where 
 
 See `character-consistency.md` O3 section for the complete `kling_elements` call template.
 
+**Voice control in v3 T2V (AIMLAPI, confirmed June 2026 — DO NOT USE in our pipeline):** AIMLAPI v3 Standard T2V now supports `voice_list` parameter for character dialogue ($0.154/sec surcharge). Voice references in prompts use `<<<voice_1>>>` triple-angle-bracket syntax (distinct from element `@Element1` syntax). **Our pipeline never uses audio (Shari'ah compliance) — always set `generate_audio: false`. This feature is documented for awareness only.**
+
 ## Kling 3.0 4K Variant — Future Watch (Not Yet Confirmed on AIMLAPI)
 
 Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 23, 2026.**
@@ -588,7 +594,7 @@ Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 
 
 **4K I2V supported features:** single-shot (start frame only), multi-shot, start+end frame, element control with video character and multi-image inputs. Duration range: 3–15 seconds (same as pro mode). Motion Control and voice are NOT available in 4K mode.
 
-**AIMLAPI status:** UNVERIFIED. Multiple sources describe 4K as a "mode toggle" (not a separate endpoint), which makes method 1 more likely. Two possible access methods — (1) pass `"mode": "4k"` alongside standard I2V parameters — **try this first, most likely to be correct**; (2) use a dedicated model string (e.g., `klingai/video-v3-4k-image-to-video`) — fal.ai uses this approach, AIMLAPI may not. Test method 1 first (zero extra cost if rejected); if AIMLAPI returns an error, check docs index for a 4K model string. Fall back to Pro 1080p if neither works. Use for final-delivery hero clips only.
+**AIMLAPI status:** UNVERIFIED. Two possible access methods — (1) pass `"mode": "4k"` alongside standard I2V parameters — **try this first, strongly preferred**: multiple independent sources (native Kling API docs, WaveSpeedAI, Atlas Cloud) confirm `mode: "4k"` is the canonical approach in the base Kling API; (2) use a dedicated model string (e.g., `klingai/video-v3-4k-image-to-video`) — **fal.ai uses this approach exclusively** (confirmed: fal added `fal-ai/kling-video/v3/4k/image-to-video` on May 23, 2026 as a dedicated endpoint, NOT via `mode` parameter). Since fal.ai chose dedicated model strings while most other platforms use `mode: "4k"`, AIMLAPI is more likely to follow the `mode` parameter approach than fal.ai's exception. Test method 1 first (zero extra cost if rejected); if AIMLAPI returns a parameter error, fall back to method 2 with a dedicated model string. Fall back to Pro 1080p if neither works. Use for final-delivery hero clips only.
 
 ## Error Handling
 
