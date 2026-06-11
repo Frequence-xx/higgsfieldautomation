@@ -65,6 +65,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - **Dutch supported** (`language: "nl"` or leave null for auto-detect)
    - **Word-level timestamps** returned in response: `words[].text`, `words[].start` (seconds), `words[].end` (seconds)
    - **Pricing:** $0.22/hour of audio — a 30-second voiceover costs ~$0.002. Negligible.
+   - **File size limit:** Up to 5.0GB per submission (increased from 3.0GB in June 2026). Our 30-60s WAV files (~5–20MB) are far below this.
    - **Keyterm biasing** (`+$0.05/hr`): pass up to 100 brand terms to force correct spelling. Use for Dutch brand names that would otherwise be mangled:
      ```python
      keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
@@ -613,7 +614,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.474 — confirmed current as of 2026-06-08)
+### Full API (v4.0.475 — confirmed current as of 2026-06-10)
 
 | Export | Purpose |
 |--------|---------|
