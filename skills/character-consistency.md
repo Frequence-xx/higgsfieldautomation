@@ -344,11 +344,23 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 **MAGREF — Future Watch (ICLR 2026, code released, FP8 available):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1 14B. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves.
 
-**VRAM requirements (pass 16 update, 2026-06-09):**
+**VRAM requirements (pass 17 update, 2026-06-11):**
 - Full BF16/FP16: ~70 GB (single H100 required)
 - FP8 quantized (ComfyUI): **~40–50 GB** — fits A100 40GB at 480p, H100 80GB at 720p
+- **GGUF quantized: ~9–11 GB** — consumer GPU now feasible (see below)
 
-**FP8 ComfyUI integration now available:** Kijai published `Wan2_1-Wan-I2V-MAGREF-14B_fp8_e4m3fn.safetensors` (Hugging Face: `Kijai/WanVideo_comfy`) with ComfyUI nodes at `kijai/ComfyUI-WanVideoWrapper`. FP8 reduces from 70GB to ~40-50GB with minimal quality loss. Still requires datacenter GPU — not practical for our current cloud pipeline. Monitor for further quantization (GGUF/INT8) that runs on 24GB consumer GPU.
+**FP8 ComfyUI integration:** Kijai published `Wan2_1-Wan-I2V-MAGREF-14B_fp8_e4m3fn.safetensors` (Hugging Face: `Kijai/WanVideo_comfy`) with ComfyUI nodes at `kijai/ComfyUI-WanVideoWrapper`. FP8 reduces from 70GB to ~40-50GB.
+
+**GGUF now available (pass 17 finding, 2026-06-11):** QuantStack released `QuantStack/MAGREF_Wan2.1_I2V_14B-GGUF` on Hugging Face — GGUF quantized versions using city96 conversion scripts, usable with `kijai/ComfyUI-GGUF` node. VRAM by quant level:
+
+| Quant | VRAM | Notes |
+|-------|------|-------|
+| Q3_K_S | ~7 GB | 480p only; visible quality loss |
+| Q4_K_M | ~9.65 GB | Fits 12–16 GB GPU; good quality floor |
+| Q5_K_M | ~10.8 GB | Recommended: near-FP8 quality, fits 12 GB with margin |
+| Q8_0 | ~15.4 GB | Effectively lossless vs FP16; needs 24 GB |
+
+**Generation speed caveat:** Wan 2.1 14B at Q4 on a single consumer GPU generates a 5s clip in 4–15 minutes (vs seconds for cloud API). Impractical for production throughput — but now feasible for local QA testing and identity calibration runs. Do not use for production clips until cloud-hosted MAGREF API appears (no AIMLAPI endpoint as of 2026-06-11).
 
 **Gloria — Future Watch (arXiv 2603.29931, March 2026):** Consistent character video generation via "content anchors" — a compact set of anchor frames covering multiple viewpoints AND expression variants. Key mechanisms: (1) **Superset Content Anchoring** — includes both intra-clip and extra-clip cues in the anchor set to prevent view-dependent copy-paste artifacts; (2) **RoPE as Weak Condition** — distinct positional encodings assigned to video vs. conditioning tokens, preventing multi-reference identity collapse. Research model; no public production code as of 2026-06-09.
 
@@ -621,6 +633,44 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - AIMLAPI endpoint pattern will shift from `/v3/` to `/o3/`
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
+
+## Wan 2.7 R2V — Character Shots at 3× Lower Cost (VERIFY on AIMLAPI before use)
+
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. As of 2026-06-11, I2V and T2V are confirmed on AIMLAPI; R2V status is unconfirmed (canary required before production). Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) is the confirmed live fallback.
+
+**Why it matters:** ~$0.10/sec → **$0.50/5s clip**, vs Kling O1 at $1.46/5s. 3× cost reduction for character shots if identity lock quality is acceptable.
+
+**Key parameters (Together AI format; AIMLAPI format expected similar):**
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "alibaba/wan-2-7-r2v",   # UNVERIFIED on AIMLAPI — run canary first
+    "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
+    "media": {
+        "reference_images": [
+            {"image": "https://cdn.example.com/crew_lead/front.png"},
+            {"image": "https://cdn.example.com/crew_lead/three_quarter.png"},
+            {"image": "https://cdn.example.com/crew_lead/face_crop.png"},
+        ]
+        # total reference_images + reference_videos ≤ 5
+    },
+    "resolution": "720p",         # "720p" or "1080p"; use 720p for drafts
+    "ratio": "9:16",
+    "seconds": 5,
+    "generate_audio": False,      # confirm param name on AIMLAPI — may differ
+}, headers=headers, timeout=120)
+```
+
+**Prompt binding syntax:** Plain identifiers "Image1", "Image2", "Video1" (NOT `@Element1` Kling syntax). Each identifier maps to its position in the `reference_images` array.
+
+**Multi-character:** "Image1 and Image2 carry a box together toward the truck" — up to 5 subjects, each with independent identity from their ref.
+
+**Critical limitations vs Kling O1:**
+- **No Subject Binding weight parameter** — no face_adherence dial. Identity lock is architectural (embedding-based), not parametric. Cannot increase face adherence on retry.
+- Face consistency quality vs Kling O1 is unverified for our olive/brown-skin characters (Karel, Mourad). Run InsightFace QA on first output.
+- Maximum 5 references total (images + video). Same cap as Kling O1's 4 + image_url.
+- No `face_consistency: True` equivalent for occlusion recovery.
+
+**When to test:** After Wan 2.7 R2V AIMLAPI canary confirms (check credit-efficiency.md status). Start with one Karel/Mourad draft at 720p ($0.50). Score with InsightFace — PASS threshold still 0.62 (same per-character floor). Only adopt for production if score consistently ≥ 0.62 across 3 draft runs.
 
 ## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-09)
 
