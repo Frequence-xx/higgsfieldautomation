@@ -213,10 +213,16 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Internet Archive — The Ultimate Nasheed Collection** — archive.org/details/nasheedplaylist | Varies per track | Check per track (CC0 tracks safe; verify others) | Check per track | Direct download — uploaded by TheNasheedMaster; "NO MUSIC" in title; Arabic, Urdu, Bangla nasheeds. Run nasheed_check.py before use — not all tracks in the collection are confirmed instruments-free by ear. |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 | **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
+| **Nasheed Without Music** — youtube.com/@NasheedWithoutMusic. (channel: UChHmS2ziIi1bIeHjtvmQfJw) | Unknown / per-video | YouTube: check individual video description (channel name implies free use; terms not published). Outside YouTube: unconfirmed — email nomusicbiz@gmail.com before commercial use. | Check per video | yt-dlp |
+| **Nasheed Vocals™** — youtube.com/@nasheedvocals | Unknown / per-video | **Unconfirmed** — check individual video description before any use. Outside YouTube: unconfirmed — contact via YouTube before commercial use. | Check per video | yt-dlp |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
 
 **Riad Nasheeds:** YouTube channel specialising in 100% vocal-only humming nasheeds — no instruments, no lyrics (pure melodic humming). Tracks are labelled "No Copyright Nasheed" on their YouTube titles. Before any commercial use (including boosted/paid social ads), email riadnasheeds@gmail.com to confirm commercial terms. For YouTube-only distribution, check individual video description for permission statement. Use yt-dlp to download (same command as NCN below).
+
+**Nasheed Without Music:** YouTube `youtube.com/@NasheedWithoutMusic.` — channel focused exclusively on nasheeds without instruments. Contact email: nomusicbiz@gmail.com. Commercial terms outside YouTube are unconfirmed — email before using in paid/boosted ads. For YouTube-only distribution, check each video description for the specific permission statement. Run nasheed_check.py (§9) before use — title suggests vocal-only but verify by ear.
+
+**Nasheed Vocals™:** YouTube `youtube.com/@nasheedvocals` — vocals-only nasheeds with English lyrics. License terms not published on the channel page. **Unconfirmed for any commercial use** — check individual video descriptions and contact via YouTube before use. Run nasheed_check.py before use.
 
 **Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
 
@@ -897,6 +903,7 @@ with open("voiceover_raw.mp3", "rb") as f:
         timestamps_granularity="word",  # word-level start/end times
         keyterms=BRAND_KEYTERMS,        # biases model toward brand names (see note below)
         no_verbatim=True,               # strips filler words for clean script comparison
+        diarize=False,                  # single-speaker VO — skip diarization overhead. Cannot combine diarize=True with use_multi_channel=True.
     )
 
 # Check transcript against script
