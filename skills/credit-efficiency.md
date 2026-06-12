@@ -113,18 +113,22 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Hailuo 02 I2V (6s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.437** ($0.0728/sec × 6s) | No audio param — NOTE: $0.28 flat was fal.ai price, AIMLAPI is per-second |
 | Hailuo 02 I2V (10s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.728** ($0.0728/sec × 10s) | NOT the cheapest — LTXV 2 Fast wins at $0.40/10s; Hailuo 2.3 Fast at $0.416/10s |
 | Hailuo 2.3 Fast | `minimax/hailuo-2.3-fast` | 1080p 24fps | **$0.0416/sec** ($0.416/10s flat — corrected 2026-05-19) | 5s = $0.208 (cheapest non-char 5s clip) |
-| LTXV 2 Fast I2V | `ltxv/ltxv-2-fast` | 1080p | **$0.04/sec** ($0.24/6s min) | CANARY REQUIRED — cheapest 6s+ non-char I2V; audio OFF required |
+| LTXV 2 Fast I2V | `ltxv/ltxv-2-fast` | 1080p | **$0.04/sec** (fal.ai confirmed); **~$0.052/sec on AIMLAPI** (unconfirmed — verify on first canary) | CANARY REQUIRED; if $0.052 confirmed, Hailuo 2.3 Fast is cheaper at all durations |
 | LTXV 2 Standard I2V | `ltxv/ltxv-2` | 1080p | **$0.06/sec** ($0.36/6s min) | Higher quality, slower than Fast |
 | Luma Ray Flash 2 I2V | `luma/ray-flash-2` | 720p (9:16 ✓) | **~$0.048/sec** (~$0.24/5s, AIMLAPI $0.002/M pixels) | No audio generation, no surcharge risk — CANARY REQUIRED. I2V + first+last frame. Max 9s. |
 | Seedance 2.0 (canary) | `bytedance/seedance-2-0` | TBD | **~$0.18/sec est.** (AIMLAPI docs example shows $0.06/gen — unverified) | CANARY REQUIRED — exact AIMLAPI price unknown; face content-policy risk |
+| PixVerse V5.5 I2V | `pixverse/v5-5-image-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; audio optional via `generate_audio_switch: false`; CANARY REQUIRED |
+| PixVerse V5.5 T2V | `pixverse/v5-5-text-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; same price as I2V; CANARY REQUIRED |
+| Sora 2 Standard I2V | `openai/sora-2-i2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026. Audio ALWAYS generated — no disable param. DO NOT USE. |
+| Sora 2 Standard T2V | `openai/sora-2-t2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026. Audio ALWAYS generated. DO NOT USE. |
 
-**Non-character video routing by duration (updated 2026-06-05):**
-- **5s clip:** Hailuo 2.3 Fast ($0.208) — cheapest; Luma Ray Flash 2 (~$0.24) is I2V alternative if Hailuo quality insufficient
-- **6-9s clip:** LTXV 2 Fast ($0.04/sec, $0.24/6s) — beats Hailuo 2.3 Fast ($0.25/6s) and Luma Ray Flash 2 ($0.288/6s)
-- **10s clip:** LTXV 2 Fast ($0.40/10s) — beats Hailuo 2.3 Fast ($0.416/10s) and Luma Ray Flash 2 ($0.48/10s)
+**Non-character video routing by duration (updated 2026-06-12):**
+- **5s clip:** Hailuo 2.3 Fast ($0.208) — cheapest T2V; Luma Ray Flash 2 (~$0.24) is I2V alternative if Hailuo quality insufficient
+- **6-9s clip:** IF LTXV confirmed at $0.04/sec → LTXV 2 Fast ($0.24/6s) beats Hailuo 2.3 Fast ($0.25/6s). IF LTXV confirmed at $0.052/sec → Hailuo 2.3 Fast ($0.25/6s) WINS — use Hailuo. **Verify LTXV billing before committing 6s routing.**
+- **10s clip:** IF LTXV at $0.04/sec → LTXV 2 Fast ($0.40/10s) beats Hailuo 2.3 Fast ($0.416/10s). IF LTXV at $0.052/sec → Hailuo 2.3 Fast ($0.416/10s) WINS.
 - **CORRECTION 2026-05-23:** Hailuo 02 is $0.0728/sec on AIMLAPI (NOT $0.28 flat — that was fal.ai pricing). Hailuo 02 is no longer recommended for any clip length.
 
-**LTXV 2 Fast note (confirmed 2026-05-22, updated 2026-06-03):** `ltxv/ltxv-2-fast` is LIVE on AIMLAPI. $0.04/sec at 1080p. Parameters use snake_case (not camelCase like Veo): `aspect_ratio`, `generate_audio`, `image_url`. `generate_audio: false` REQUIRED — audio defaults ON. Minimum duration 6s, max 20s. I2V supported. CANARY REQUIRED before production use. **LTX-2.3 caveat:** LTX released v2.3 in Q2 2026 at $0.05/sec (confirmed on other providers). If AIMLAPI has silently updated the `ltxv/ltxv-2-fast` endpoint to point to LTX-2.3, cost would be $0.05/sec not $0.04. Verify actual billing from AIMLAPI dashboard on first test call — record exact invoice amount before routing production shots.
+**LTXV 2 Fast note (confirmed 2026-05-22, updated 2026-06-12):** `ltxv/ltxv-2-fast` is LIVE on AIMLAPI. $0.04/sec confirmed on fal.ai; AIMLAPI may charge ~$0.052/sec (indirect evidence only — consistent with LTX-2.3 backend update). Parameters use snake_case (not camelCase like Veo): `aspect_ratio`, `generate_audio`, `image_url`. `generate_audio: false` REQUIRED — audio defaults ON. Minimum duration 6s, max 20s. I2V supported. CANARY REQUIRED before production use. **CRITICAL: Record exact AIMLAPI billing on first test call.** If $0.052/sec confirmed, Hailuo 2.3 Fast ($0.0416/sec) becomes cheaper at ALL durations — revise routing table if so.
 
 **Veo 3.1 Lite pricing update (2026-05-06):** Resolution-tiered pricing confirmed. 720p: $0.05/sec (Vertex) → ~$0.065/sec on AIMLAPI (estimated, ~1.3× markup). 1080p: $0.08/sec (Vertex) → ~$0.104/sec on AIMLAPI (production-verified ✓). **Use 720p for B-roll drafts — saves ~37% vs 1080p.** Duration valid values: **4, 6, or 8 seconds ONLY** — 5 is invalid. 1080p requires duration=8.
 
@@ -537,17 +541,18 @@ Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-cha
 **Use case:** Non-character B-roll, establishing shots, truck exterior without character. I2V capability gives it a composition advantage over Veo 3.1 Lite T2V (which is T2V only). DO NOT use for character face shots — no Subject Binding equivalent.
 
 **Duration-based routing vs competitors (6s clip):**
-- LTXV 2 Fast 6s at 1080p: **$0.24** ← cheapest 6s option
-- Hailuo 2.3 Fast 6s at 1080p: $0.25
+- LTXV 2 Fast 6s at 1080p: **$0.24** (if $0.04/sec confirmed on AIMLAPI) OR **$0.312** (if $0.052/sec)
+- Hailuo 2.3 Fast 6s at 1080p: $0.25 — wins if LTXV confirms at $0.052/sec
 - Hailuo 02 6s at 1080p: $0.28 (flat)
 - Veo 3.1 Lite 720p 6s: ~$0.39
 
 **Canary checklist (run before production use):**
 1. Submit one 6s I2V call: `ltxv/ltxv-2-fast`, truck hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
-2. Verify actual cost ~$0.24 from AIMLAPI dashboard
-3. Run brand binary checklist: box sealed, no ghost driving, logo color correct
-4. Compare motion quality vs Hailuo 2.3 Fast on same scene
-5. If passes → route 6-9s non-character shots to LTXV 2 Fast (saves $0.01-0.15/clip vs alternatives)
+2. **Verify actual cost from AIMLAPI dashboard — critical.** Expected $0.24 if $0.04/sec; if ~$0.31 it's $0.052/sec (LTX-2.3 backend update)
+3. If $0.052/sec confirmed → Hailuo 2.3 Fast ($0.0416/sec) is cheaper at ALL durations — revise non-character routing
+4. Run brand binary checklist: box sealed, no ghost driving, logo color correct
+5. Compare motion quality vs Hailuo 2.3 Fast on same scene
+6. If passes at $0.04/sec → route 6-9s non-character shots here. If billing is $0.052/sec → use Hailuo 2.3 Fast instead.
 
 ---
 
@@ -678,14 +683,79 @@ Note: "Kling v4" does not exist. Our production strings remain `klingai/video-v3
 
 ### NB2 Edit (`google/nano-banana-2`)
 
-Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 512px, $0.12 at 2K, $0.151 at 4K). Ranked best for character-locked generation — face, clothing, accessories stable across scenes (confirmed Atlas Cloud benchmark). AIMLAPI may charge flat or tiered — canary test to verify actual price.
+Draft-tier image model. Google official rate: **$0.067/image at 1K** ($0.045 at 512px, $0.12 at 2K, $0.151 at 4K — pricing verified March 2026, corrected from prior $0.08 estimate). With AIMLAPI ~1.3× markup → ~$0.087/image at 1K on AIMLAPI. Ranked best for character-locked generation — face, clothing, accessories stable across scenes (confirmed Atlas Cloud benchmark). AIMLAPI may charge flat or tiered — canary test to verify actual price.
 
 **Canary test (3 steps, one API call):**
 1. Call `google/nano-banana-2` with 1 ref image, 9:16, simple prompt
 2. Verify: response has `data[0].url`, aspect ratio is 9:16, cost logged from AIMLAPI dashboard
 3. If cost ≤ $0.10 → unlock as draft tier for prompt iteration before NBP Edit finals
 
-**Expected savings if canary passes:** $0.115/iteration image ($0.195 NBP → ~$0.08 NB2 at 1K). Over 5 hero frame iterations = $0.575 saved per shot's iteration phase.
+**Expected savings if canary passes:** ~$0.108/iteration image ($0.195 NBP → ~$0.087 NB2 at 1K, AIMLAPI est.). Over 5 hero frame iterations = $0.54 saved per shot's iteration phase.
+
+---
+
+### PixVerse V5.5 (`pixverse/v5-5-image-to-video`, `pixverse/v5-5-text-to-video`) — AIMLAPI CONFIRMED, CANARY REQUIRED (2026-06-12)
+
+**AIMLAPI docs pages confirmed:** `docs.aimlapi.com/api-references/video-models/pixverse/v5-5-image-to-video` and `/v5-5-text-to-video`.
+
+**Pricing: $0.78/5s = $0.156/sec on AIMLAPI** (I2V and T2V same price).
+
+**Parameters:**
+- `aspect_ratio`: 9:16 confirmed — vertical output supported
+- `resolution`: "360p", "540p", "720p", "1080p" — 1080p limited to 5s or 8s clips; 720p up to 10s
+- `generate_audio_switch`: boolean — **set `false` to disable audio** (optional, not forced)
+- `duration`: 5, 8, or 10 seconds depending on resolution tier
+- Also supports `generate_multi_clip_switch` and `thinking_type` optional params
+- Style presets: "anime", "3d_animation", "clay", "comic", "cyberpunk"
+
+**Cost position vs alternatives (5s clip):**
+- Hailuo 2.3 Fast (T2V): $0.208 ← cheapest non-char T2V
+- Luma Ray Flash 2 (I2V): ~$0.24
+- LTXV 2 Fast (I2V, 6s min): $0.24
+- **PixVerse V5.5 (I2V or T2V): $0.78** ← NOT competitive for non-character shots
+
+**Character draft position:**
+- Wan 2.7 I2V 3s draft: $0.30 ← cheapest character draft (canary)
+- **PixVerse V5.5 3s draft: $0.468** ← mid-tier
+- Kling v3 Standard 3s draft: $0.65 ← current production draft
+
+At $0.156/sec, PixVerse V5.5 is 28% cheaper than Kling Standard but 56% more expensive than Wan 2.7 I2V. **Not a primary routing target** while Wan 2.7 and LTXV are available. Potential fallback if both Wan 2.7 and LTXV canaries fail.
+
+**Character consistency claims:** "strict character consistency across frames, no identity shift" — stronger than Hailuo or LTXV claims. May be valuable as mid-tier character draft if Wan 2.7 I2V fails.
+
+**Canary checklist (before production use):**
+1. Submit one 5s I2V call: `pixverse/v5-5-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio_switch: false`, `resolution: "720p"`
+2. Record actual cost from AIMLAPI dashboard — verify $0.78
+3. Run brand binary checklist + Shari'ah compliance
+4. Compare face identity retention vs NBP Edit baseline
+5. If character retention ≥ 80% of Kling Standard → route as fallback draft (after Wan 2.7 I2V fails)
+
+**Note:** PixVerse V5.6 exists (released Jan 2026, supports start+end frame control, 5-15s) but is NOT confirmed on AIMLAPI as of 2026-06-12. Only V5.5 has a confirmed AIMLAPI docs page.
+
+---
+
+### Sora 2 (`openai/sora-2-i2v`, `openai/sora-2-t2v`, `openai/sora-2-pro-i2v`, `openai/sora-2-pro-t2v`) — AIMLAPI CONFIRMED, NOT RECOMMENDED (2026-06-12)
+
+**AIMLAPI docs page confirmed:** `docs.aimlapi.com/api-references/video-models/openai/sora-2-i2v`.
+
+**⚠️ SUNSET: Sora 2 API ends September 24, 2026. Do not build pipeline dependency on this model.**
+
+**OpenAI pricing (Standard tier, per-second):** $0.10/sec (720p). AIMLAPI estimated (~1.3× markup): **~$0.13/sec = ~$0.65/5s**.
+
+**Model strings:**
+- `openai/sora-2-i2v` — Standard I2V (720p)
+- `openai/sora-2-t2v` — Standard T2V (720p)
+- `openai/sora-2-pro-i2v` — Pro I2V ($0.30-$0.70/sec, very expensive)
+- `openai/sora-2-pro-t2v` — Pro T2V ($0.30-$0.70/sec, very expensive)
+
+**Critical blockers:**
+1. **Audio is always generated** — no `generate_audio` disable parameter. Audio includes dialogue, SFX, soundscapes, lip-sync. Same issue as Grok Imagine Video 1.5. **AUDIO STRIP REQUIRED** immediately on download: `ffmpeg -i input.mp4 -an -c:v copy output.mp4`
+2. **Shari'ah compliance risk** — AI-generated audio may include music. Strip before ANY playback.
+3. **Sunset September 24, 2026** — pipeline dependency is a 3-month risk.
+
+**Cost verdict:** Sora 2 Standard at ~$0.65/5s = same cost as Kling v3 Standard 3s ($0.65). Not cheaper. Wan 2.7 I2V at $0.30/3s is 54% cheaper for drafts. Pro tier ($0.30-$0.70/sec) is more expensive than Kling Pro.
+
+**Routing decision: NOT recommended for this pipeline.** Forced audio strips, sunset deadline, and no cost advantage over existing models make it a poor fit. Do not canary unless Kling and Wan 2.7 both fail simultaneously.
 
 ## Rules
 
@@ -708,7 +778,7 @@ Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 5
 17. **Hailuo 02 pricing CORRECTED (2026-05-23): $0.0728/sec on AIMLAPI** — NOT $0.28/clip flat (the flat price was fal.ai). At $0.437/6s and $0.728/10s, Hailuo 02 is the most expensive non-character video option on AIMLAPI. Do NOT use. Route to LTXV 2 Fast ($0.04/sec) or Hailuo 2.3 Fast ($0.0416/sec) instead.
 18. **Non-character routing by duration (updated 2026-05-23):** 5s → Hailuo 2.3 Fast ($0.208). 6-10s → LTXV 2 Fast ($0.04/sec, $0.24/6s, $0.40/10s) after canary. Hailuo 02 removed from routing — $0.0728/sec makes it uncompetitive. AIMLAPI string: `minimax/hailuo-2.3-fast`, `ltxv/ltxv-2-fast`.
 19. **Wan 2.7 I2V and T2V are now LIVE on AIMLAPI. R2V is likely live.** I2V: `alibaba/wan-2-7-i2v` (confirmed). T2V: `alibaba/wan-2-7-t2v` (AIMLAPI docs confirmed 2026-06-05). R2V: `alibaba/wan-2-7-r2v` (likely live — Wan 2.6 R2V precedent; verify docs page). All at ~$0.10/sec. NO `generate_audio` param on any Wan 2.7 variant. T2V use case: wide establishing shots without characters (~$0.50/5s, more expensive than Veo Lite ~$0.33 but usable when Veo unavailable). CANARY REQUIRED for T2V and R2V before production.
-20. **LTXV 2 Fast is live on AIMLAPI (`ltxv/ltxv-2-fast`).** $0.04/sec at 1080p. Minimum 6s clip. Parameters are snake_case (`aspect_ratio`, `generate_audio: false`). CANARY REQUIRED before production use. For 6s+ non-character shots, this is the lowest-cost option pending canary pass.
+20. **LTXV 2 Fast is live on AIMLAPI (`ltxv/ltxv-2-fast`).** Confirmed $0.04/sec at 1080p on fal.ai; AIMLAPI may charge ~$0.052/sec (indirect evidence, unconfirmed — consistent with a silent backend update to LTX-2.3). **Record actual AIMLAPI billing on first test call before committing to routing.** If $0.052/sec confirmed: 6s = $0.312 (vs Hailuo 2.3 Fast $0.25 at 6s — Hailuo wins at 6s), 10s = $0.52 (vs Hailuo 2.3 Fast $0.416 — Hailuo wins at all durations). Minimum 6s clip. Parameters are snake_case (`aspect_ratio`, `generate_audio: false`). CANARY REQUIRED before production use.
 21. **Seedance 2.0 pricing confirmed (2026-05-26): Standard = $0.316/sec ($1.58/5s), Fast = $0.182/sec ($0.91/5s).** The $0.06/generation in AIMLAPI docs example was a misleading short-clip artifact. Standard is MORE expensive than Kling Pro ($1.46/5s) — never use. Fast (`bytedance/seedance-2-0-fast`) at $0.91/5s is cheaper than Kling Standard ($1.09/5s) but still more expensive than Wan 2.7 I2V (~$0.40/5s). Face content-policy block risk from Seedance lineage applies. CANARY REQUIRED before use. Only consider Fast variant if Wan 2.7 I2V canary fails.
 22. **Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) is the cheapest confirmed character-draft candidate on AIMLAPI** at ~$0.10/sec (updated 2026-05-30). 3s draft = ~$0.30 vs Kling Standard 3s = $0.65 — 54% savings. 2s ultra-draft = ~$0.20 — 69% savings (use for identity spot-checks only). No audio surcharge. First+last frame truck-lock available. CANARY REQUIRED. Do not use for finals — Kling Pro with Subject Binding 80-90 remains required. R2V supports up to 5 mixed refs (image/video/audio) with character binding — relevant for character consistency once verified.
 23. **Hailuo 2.3 Standard ≠ Fast (confirmed 2026-06-01):** Standard = `minimax/hailuo-2.3` at $0.0728/sec ($0.728/10s) — same price as Hailuo 02, do NOT use. Fast = `minimax/hailuo-2.3-fast` at $0.0416/sec ($0.416/10s) — this is the routing target for 5s non-character T2V clips. Always use `-fast` suffix; standard variant is uncompetitive.
@@ -716,6 +786,9 @@ Draft-tier image model. Google official rate: **$0.08/image at 1K** ($0.045 at 5
 25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
 26. **Luma Ray Flash 2 confirmed on AIMLAPI (`luma/ray-flash-2`) — NEW 2026-06-05.** ~$0.048/sec (~$0.24/5s). Supports 9:16, I2V, first+last frame keyframes. **No audio generation** — no `generate_audio` param needed, no surcharge risk. Max 9s at 720p. CANARY REQUIRED. Use case: non-character I2V 5s clips where composition anchoring from a hero frame matters (e.g., truck exterior). Hailuo 2.3 Fast ($0.208/5s T2V) remains cheapest for 5s; Ray Flash 2 is the I2V alternative at ~$0.24.
 27. **Wan 2.7 T2V confirmed live on AIMLAPI (`alibaba/wan-2-7-t2v`) — 2026-06-05.** AIMLAPI docs page confirmed. Cost: ~$0.50/5s ($0.10/sec). Use for T2V establishing shots without characters when Veo 3.1 Lite is unavailable. Veo 3.1 Lite 720p (~$0.33/5s) is cheaper — prefer Veo. Wan 2.7 T2V is a Veo fallback at higher cost. CANARY REQUIRED before production.
-28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-09.** The model is live on Replicate and WaveSpeedAI but NOT on AIMLAPI. Do NOT call `alibaba/wan-2-7-r2v` until its AIMLAPI doc page appears. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
+28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-12.** Listed as "Coming Soon" in the AIMLAPI model database. Do NOT call until a dedicated docs page appears at `docs.aimlapi.com`. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
 29. **Grok Imagine Video 1.5 AIMLAPI docs page NOW CONFIRMED (2026-06-09).** AIMLAPI page: `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video`. xAI pricing: $0.05/sec (480p), $0.07/sec (720p). AIMLAPI estimated: ~$0.065/sec (480p) = ~$0.325/5s. Audio is always generated — no disable parameter. **AUDIO STRIP REQUIRED** (`ffmpeg -i input.mp4 -an -c:v copy output.mp4`) immediately on every download — before QA playback. CANARY REQUIRED before routing production shots. Not T2V — I2V and reference-to-video only in preview.
 30. **Wan 2.7 Image Pro and Standard now on AIMLAPI (2026-06-09).** `alibaba/wan-2-7-image-pro` at ~$0.06/image (69% cheaper than NBP Edit $0.195). Multi-ref via `image_urls` array (up to 9 refs). Character Locking feature for cross-generation identity consistency. Use for draft hero frame iterations only — NOT for finals (no Subject Binding strength dial; identity lock is less precise than NBP Edit). `alibaba/wan-2-7-image` (standard) at ~$0.04/image — even cheaper but weaker character locking. CANARY REQUIRED for both variants.
+31. **NB2 pricing corrected (2026-06-12): $0.067/image at 1K** (Google direct API, verified March 2026). Prior entry had $0.08 — corrected. With AIMLAPI ~1.3× markup → ~$0.087/image at 1K estimated. Batch API (Google direct) offers $0.034/image at 1K — but AIMLAPI does not expose Google Batch discount. Savings vs NBP Edit on AIMLAPI: $0.195 − $0.087 = $0.108/draft image (55% savings). CANARY REQUIRED on AIMLAPI to confirm exact price.
+32. **PixVerse V5.5 confirmed on AIMLAPI (2026-06-12): `pixverse/v5-5-image-to-video` and `pixverse/v5-5-text-to-video`.** Price: $0.78/5s = $0.156/sec. Audio optional via `generate_audio_switch: false` (NOT forced). 9:16 confirmed. 1080p max 5s or 8s; 720p up to 10s. NOT competitive for non-character shots (Hailuo 2.3 Fast and LTXV 2 Fast are 3-4× cheaper). Potential fallback for character drafts if Wan 2.7 I2V canary fails — 28% cheaper than Kling Standard, with strong character retention claims. CANARY REQUIRED before any production use.
+33. **Sora 2 confirmed on AIMLAPI (2026-06-12) — DO NOT USE.** Model strings: `openai/sora-2-i2v`, `openai/sora-2-t2v`, `openai/sora-2-pro-i2v`, `openai/sora-2-pro-t2v`. Estimated ~$0.13/sec (Standard 720p). DOUBLE DISQUALIFIER: (1) Audio is ALWAYS generated — no disable parameter, strip required on every download; (2) **API sunsets September 24, 2026** — do not build pipeline dependency. No cost advantage vs existing models. Do not canary.
