@@ -403,6 +403,8 @@ Instagram Reels UI elements overlay the video. Critical danger zones to avoid fo
 
 This directly governs `drawtext` y-coordinates in text-overlay-compositing.md. When calculating `y=` values in FFmpeg `drawtext`, measure from top edge.
 
+**Meta March 2026 — Unified Stories + Reels safe zone (paid ads only):** Meta unified Instagram Stories and Instagram Reels into a single 9:16 safe zone for paid ad creatives. One asset now works across both placements without re-cropping. The unified **ad** safe zone is more conservative than organic Reels: top 14% (~269px), bottom 20–35% (~384–672px depending on format), sides 6% each (~65px). **For our organic delivery (no paid boost), the existing organic safe zone values above remain correct.** If Farouq ever boosts a Reel as a paid ad, apply the stricter unified margins: keep all text and logos within a ~950 × 1267px center area (y=269 to y=1536, x=65 to x=1015).
+
 ### 5g. TikTok Safe Zone (Text / Logo Placement)
 
 TikTok's right-side dead zone is significantly wider than Instagram's — this is the most common placement mistake when repurposing Reels assets for TikTok.
@@ -477,6 +479,8 @@ Use `tune=0` (VQ) for all Snelverhuizen archive video encodes — it is the psyc
 **CRITICAL:** Do NOT upload AV1 to Instagram (rejected) or TikTok (triggers double-transcode). AV1 archive is for internal reference only — always deliver H.264 to platforms and owners.
 
 **Preset guide (SVT-AV1):** Preset 0–4 = slow, highest quality. Preset 6 = good balance. Preset 8–12 = fast/realtime. Default `preset 6` is right for our archive use case.
+
+**SVT-AV1-PSY archived (Feb 12, 2026):** The SVT-AV1-PSY psychovisual fork was officially archived — its perceptual features (including tune=0 as default) are being merged into mainline SVT-AV1. Our pipeline already uses mainline SVT-AV1 with `-svtav1-params tune=0` (VQ), so there is no change required. An active community fork (`svt-av1-psyex` by BlueSwordM, latest 3.0.2-B) exists if more aggressive psychovisual options are ever needed, but mainline SVT-AV1 4.1 with tune=0 is the correct choice for our archive encodes.
 
 ---
 
@@ -763,7 +767,7 @@ Before marking video as delivered:
 - [ ] Export: H.264, -pix_fmt yuv420p, -movflags +faststart, AAC 48kHz 256kbps
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
-- [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h
+- [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
