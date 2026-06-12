@@ -44,11 +44,11 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 **T2V vs I2V pricing:** Native Kling v3 T2V and I2V cost the same per second — AIMLAPI passes through the same rate. T2V with elements/subject binding is useful when no hero frame exists, but our static-first validation funnel almost always produces a hero frame first. Use I2V by default; T2V only when hero frame generation is not feasible.
 
-**⚠️ PRICING VERIFICATION REQUIRED (June 2026):** The AIMLAPI docs page for `v3-standard/text-to-video` reportedly shows **$0.084/sec ($0.42/5s audio off)**, which contradicts the $1.09/5s in the routing matrix above. This could be: (a) AIMLAPI reduced prices, (b) T2V/I2V now priced differently, or (c) misattribution of fal.ai pricing ($0.084/sec confirmed on fal.ai). Cannot verify directly (docs return 403). **Check AIMLAPI dashboard before next production session.** Do NOT update CLAUDE.md routing matrix until confirmed.
+**PRICING RESOLVED (June 2026):** AIMLAPI Kling v3 Standard = **$0.218/sec = $1.09/5s** (confirmed correct). The $0.084/sec figure causing the previous discrepancy is the **official Kling direct API rate** (kling.ai/dev/pricing) and **fal.ai rate** — NOT AIMLAPI pricing. AIMLAPI charges ~2.6× the native Kling rate for all v3 tiers: Standard $0.218/sec vs $0.084/sec native; Pro $0.291/sec vs $0.112/sec on fal.ai. This atypically high AIMLAPI markup (vs the ~1.3× assumed for most models) is confirmed. The $1.09/5s Standard and $1.46/5s Pro figures in the routing matrix are accurate — no changes needed.
 
-**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni, Kling v3 Motion Control, Kling 4K (unverified).
+**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni (`klingai/video-v3-omni` — confirmed absent from AIMLAPI docs index June 2026; available on fal.ai, Replicate, Runware, Freepik), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself is absent).
 
-**fal.ai O3 naming history (for reference):** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. Current fal.ai endpoint is `fal-ai/kling-video/v3/...` (not `o3`). Kling O3 is NOT on AIMLAPI as of June 2026 — O3 absence on AIMLAPI is still the confirmed status.
+**fal.ai naming note:** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. For v3 Pro on fal.ai, use `fal-ai/kling-video/v3/pro/image-to-video`. For O3/Omni on fal.ai, it's a separate model: `fal-ai/kling-video/o3/standard/image-to-video`. **Kling O3 is NOT on AIMLAPI as of June 12, 2026** — confirmed absent from AIMLAPI docs index. AIMLAPI's own blog post listing Kling models only mentions Kling 2.6 Pro and Kling v3 Pro. Also note: fal.ai Kling v3 Standard pricing ($0.084/sec) is ~2.6× cheaper than AIMLAPI ($0.218/sec) — the AIMLAPI-only mandate is a real cost penalty for Kling Standard tier.
 
 ## Complete API Call Template
 
@@ -367,10 +367,12 @@ Pass reference images to keep a character's face consistent across clips. **No `
 ```python
 "elements": [
     {
-        "video_url": "https://cdn.example.com/character_reference_clip.mp4"
+        "video_url": "https://cdn.example.com/character_reference_clip.mp4"  # max 8s
     }
 ]
 ```
+
+**Video element max duration: 8 seconds.** The model builds a "Visual DNA" from the clip to lock face+clothing identity. Longer clips are not more effective — 3-8s of clear single-character footage is optimal.
 
 ### Referencing elements in the prompt — REQUIRED
 
@@ -399,6 +401,8 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 **Motion Control limit:** When using Motion Control V2V, max 1 element is supported (vs 3 for standard I2V). Element binding in Motion Control also requires `character_orientation: "video"`.
 
 **Note:** CLAUDE.md refers to "Subject Binding face adherence 80-90" — this describes the quality target to achieve via reference image quality, not an API parameter value.
+
+**Voice binding limitation:** Voice binding via video elements works ONLY with video elements (element containing `video_url`), NOT image elements (`frontal_image_url` + `reference_image_urls`). Passing a voice reference with an image-only element returns an error. For Snelverhuizen: we never use voice (Shari'ah compliance), so this is documentation-only awareness.
 
 ## Multi-Shot Prompting (multi_prompt on AIMLAPI)
 
@@ -490,7 +494,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) released March 5, 2026 and is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai, Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, EachLabs, and Media.io — but **NOT on AIMLAPI as of June 2026** (AIMLAPI docs index still shows only v2.6-pro/motion-control). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
+**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) released March 5, 2026 and is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, EachLabs, and Media.io — but **NOT on AIMLAPI as of June 12, 2026** (confirmed absent: no `v3-standard-motion-control` or `v3-pro-motion-control` page in AIMLAPI docs index). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -560,7 +564,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of June 2026** — O3 (Replicate model string: `kwaivgi/kling-v3-omni-video`; expected AIMLAPI string when added: `klingai/video-v3-omni`) is available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, and Runware (including a dedicated O3 4K variant) — but not AIMLAPI docs index. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of June 12, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:**
 - Multi-image element building: up to **7 reference images** per call (vs. 3 for v3 Pro)
@@ -586,7 +590,7 @@ See `character-consistency.md` O3 section for the complete `kling_elements` call
 
 ## Kling 3.0 4K Variant — Future Watch (Not Yet Confirmed on AIMLAPI)
 
-Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 23, 2026.**
+Kling 3.0 supports native 4K output (3840×2160, up to 60fps, 16-bit HDR). **4K API rollout: April 23, 2026.** Runware confirms model string `klingai:kling-video@o3-4k` (O3-based, not a standalone model). fal.ai exposes it as `fal-ai/kling-video/v3/4k/image-to-video`. June 12, 2026: Kling launched a $25,000 4K creative contest (not a new model announcement — 4K was already live).
 
 **How 4K works (native Kling API):** The native Kling API accepts `"mode": "4k"` as a top-level parameter. However, third-party API wrappers implement 4K differently: **fal.ai exposes it as a dedicated model endpoint** (`fal-ai/kling-video/v3/4k/image-to-video`), not a parameter toggle. Runware similarly exposes a separate "Kling VIDEO O3 4K API" model. This means AIMLAPI may use either a separate model string or the `mode` parameter — do NOT assume either approach without a canary test.
 
@@ -594,7 +598,11 @@ Kling 3.0 supports native 4K output (3840×2160, up to 60fps). **Released April 
 
 **4K I2V supported features:** single-shot (start frame only), multi-shot, start+end frame, element control with video character and multi-image inputs. Duration range: 3–15 seconds (same as pro mode). Motion Control and voice are NOT available in 4K mode.
 
-**AIMLAPI status:** UNVERIFIED. Two possible access methods — (1) pass `"mode": "4k"` alongside standard I2V parameters — **try this first, strongly preferred**: multiple independent sources (native Kling API docs, WaveSpeedAI, Atlas Cloud) confirm `mode: "4k"` is the canonical approach in the base Kling API; (2) use a dedicated model string (e.g., `klingai/video-v3-4k-image-to-video`) — **fal.ai uses this approach exclusively** (confirmed: fal added `fal-ai/kling-video/v3/4k/image-to-video` on May 23, 2026 as a dedicated endpoint, NOT via `mode` parameter). Since fal.ai chose dedicated model strings while most other platforms use `mode: "4k"`, AIMLAPI is more likely to follow the `mode` parameter approach than fal.ai's exception. Test method 1 first (zero extra cost if rejected); if AIMLAPI returns a parameter error, fall back to method 2 with a dedicated model string. Fall back to Pro 1080p if neither works. Use for final-delivery hero clips only.
+**Native Kling API approach (confirmed):** `mode` parameter selects resolution tier: `"std"` (720p), `"pro"` (1080p), `"4k"` (3840×2160). Pass `"mode": "4k"` on the existing model string.
+
+**Third-party model strings:** Runware uses `klingai:kling-video@3-4k` (v3 base) and `klingai:kling-video@o3-4k` (O3 4K). fal.ai uses dedicated path `fal-ai/kling-video/v3/4k/image-to-video`.
+
+**AIMLAPI status:** UNCONFIRMED. No 4K-specific model page appears in AIMLAPI docs index. Neither `klingai/video-v3-pro-4k` nor a `mode: "4k"` mention appears in AIMLAPI's indexed model pages. Since O3 itself (`klingai/video-v3-omni`) is also absent from AIMLAPI, access to the O3-based 4K variant is doubly blocked. The most likely AIMLAPI access path when it lands: `mode: "4k"` on existing v3 Pro string (canonical approach from native API) — try this first; dedicated model string as fallback. Fall back to 1080p Pro if neither works. Use only for final-delivery hero clips; 4K costs ~44% more than Pro 1080p.
 
 ## Error Handling
 
