@@ -339,13 +339,24 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** **Incompatible with static_mask_url, dynamic_masks, and camera_control (Kling v3 mutual exclusivity — pick only ONE of these four per call).** Same image = forces stationarity but allows mid-clip drift. |
 | camera_control | object | — | Named preset OR simple config (not both). **Incompatible with static_mask_url, dynamic_masks, and tail_image_url (Kling v3 mutual exclusivity).** See camera control section. |
 | elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
-| static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. |
+| static_mask_url / static_mask | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. **⚠️ PARAMETER NAME CANARY REQUIRED:** Native Kling API uses `static_mask`; AIMLAPI wrapper may use `static_mask_url` or pass through as `static_mask`. Test both before production truck shot. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
 | multi_prompt | array | — | Multi-shot prompting (up to 6 shots) — **AIMLAPI parameter name**. Base Kling API calls this `guidances`. **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
 
 ## Elements (Subject Binding) — Exact AIMLAPI Structure
 
-Pass reference images to keep a character's face consistent across clips. **No `face_weight` or `face_adherence` numeric parameter exists on AIMLAPI** — adherence is entirely driven by reference image quality and count.
+Pass reference images to keep a character's face consistent across clips.
+
+**`face_consistency: true` is the confirmed v3 boolean for face identity lock** (June 2026). Set this in the generation body alongside `elements`. It forces the model to refer back to the element reference images to reconstruct the face even when partially occluded. This replaces the older numeric `face_adherence` slider (UI/wrapper abstraction — not the raw v3 API parameter name).
+
+```python
+"face_consistency": True,   # Add at generation root level alongside elements
+"elements": [...]
+```
+
+**`elements` cannot coexist with `voice_list`** (mutual exclusivity confirmed). Since our pipeline never uses voice, this is documentation-only awareness — `voice_list` must never appear in our calls.
+
+**No numeric `face_weight` or `face_adherence` parameter exists in raw v3 API** — adherence is driven by `face_consistency: true` + reference image quality and count. CLAUDE.md's "Subject Binding 80-90" describes the quality TARGET to achieve, not an API parameter value.
 
 ### Image-based element (standard I2V)
 

@@ -87,10 +87,18 @@ Generate a mask image where:
 
 Paint the ENTIRE vehicle body WHITE (frozen). Leave the environment (sky, trees, people, ground) BLACK.
 
+**Mask construction best practice (June 2026):**
+- **Truck body:** white (entire cab + cargo box)
+- **Road/ground plane — bottom ~30% of frame:** white — this prevents camera from interpreting ground surface as motion vectors (ghost-driving root cause)
+- **Background buildings, sky:** white
+- **Character area only:** black (what you want animated)
+- Aim for 70–90% white coverage on truck-primary shots; leave only the moving subject black
+
 **Mask technical requirements:**
 - **Aspect ratio MUST exactly match the hero frame** (e.g., 9:16 → mask must also be 9:16). Mismatch = task failure.
 - Supported formats: PNG, JPG, JPEG, WEBP. Max 10MB.
 - Background must be solid black (not transparent).
+- **⚠️ PARAMETER NAME:** Native Kling API: `static_mask`. AIMLAPI wrapper may use `static_mask_url` or `static_mask` — **canary test required** before first production use. Try `static_mask` first (native name); fall back to `static_mask_url` if rejected.
 
 ```python
 # Include in API call — OMIT camera_control and tail_image_url entirely:
