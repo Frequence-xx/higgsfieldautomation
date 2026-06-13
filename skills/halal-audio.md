@@ -928,6 +928,14 @@ Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO
 - Returns entities in `result.entities` with text, type, and character positions
 - Skip for Snelverhuizen VO QA — irrelevant for brand voiceover scripts
 
+**`entity_redaction` + `redaction_format` (Scribe v2 — April 2026 upgrade, distinct from `entity_detection`):**
+Actively masks detected entities IN the transcript text. `entity_detection` only annotates (transcript text is untouched); `entity_redaction` rewrites the transcript, replacing PII with placeholder tokens.
+- `entity_redaction="all"` — redact all categories (pii/phi/pci/other/offensive_language)
+- Accepts: `"all"`, single category (`"pii"`, `"phi"`, `"pci"`, `"other"`, `"offensive_language"`), or list of specific entity types
+- `redaction_format` controls the placeholder: `"redacted"` → `{REDACTED}` (default); `"entity_type"` → `{ENTITY_TYPE}` (e.g., `{CREDIT_CARD}`); `"enumerated_entity_type"` → `{ENTITY_TYPE_N}` (e.g., `{CREDIT_CARD_1}`)
+- **+30% cost surcharge** applies (same surcharge as entity_detection; ~$0.29/hr if BOTH active simultaneously)
+- Skip for Snelverhuizen VO QA — brand voiceover scripts contain no PII; entity_detection and entity_redaction are both irrelevant to this pipeline
+
 **`no_verbatim=True`:** removes filler words, false starts, and disfluencies from the transcript — makes script diff cleaner. Use for VO QA (comparing against intended script). Omit for caption timing use (fillers shift word timestamps).
 
 **Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
