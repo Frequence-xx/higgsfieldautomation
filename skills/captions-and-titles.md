@@ -257,6 +257,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - `signal?: AbortSignal` — cancel an in-progress transcription via `AbortController`
    - `modelFolder?: string` — if specified, `transcribe()` looks for `ggml-{model}.bin` in this folder instead of the default `{whisperPath}/models/` path. Use when model is stored separately from the whisper.cpp binary (e.g. a persistent Docker volume or S3-backed cache).
    - `printOutput?: boolean` — defaults to `true`. Set `false` in production to suppress whisper.cpp CLI output from stdout. Already shown in examples above.
+   - `translateToEnglish?: boolean` — **defaults to `false`. NEVER set to `true` for Dutch voiceovers** — it translates the transcript to English, producing English captions over Dutch audio. Also: do NOT use a `*.en` model (e.g. `base.en`) when this is `true`, as `.en` models cannot translate non-English audio. For this pipeline: always omit or explicitly pass `translateToEnglish: false`.
 
    **Model caching pattern (important for cloud/containerized pipeline):**
    `ggml-large-v3-turbo.bin` is ~820MB. In ephemeral containers it re-downloads every session without a cache. Avoid this with `downloadWhisperModel()`:
@@ -547,6 +548,25 @@ The standard for professional short-form video in 2026. Active word changes colo
 - Each word stays highlighted for full spoken duration + 50–100ms
 - Spring config: damping 12, stiffness 200, mass 1.0
 
+**`Easing.spring` (new in Remotion v4.0.476) — inline spring for `interpolate()`:**
+
+Previously, scaling an active word required calling the standalone `spring()` function (needs `frame`, `fps`, `config`). With `Easing.spring`, you can pass spring physics directly to `interpolate()` without a separate hook — cleaner for per-token animations inside a `.map()`:
+
+```tsx
+import { interpolate, Easing } from 'remotion';
+
+// In a token map — no useCurrentFrame() needed per-token
+const progress = interpolate(
+  isActive ? 1 : 0,  // binary: active or not
+  [0, 1],
+  [1, 1.05],
+  { easing: Easing.spring({ damping: 12, stiffness: 200, mass: 1.0 }), extrapolateRight: 'clamp' }
+);
+// → scale value that springs to 1.05 when active, springs back to 1.0 when not active
+```
+
+`Easing.spring` config: `{ damping?, mass?, stiffness?, overshootClamping? }` — same fields as `spring()` config. Internal simulation runs at 30fps. If `overshootClamping: true`, value never exceeds 1 (good for opacity animations).
+
 **Performance data:** +15% engagement lift for business/educational content. 70% of top creators use a variation.
 
 ### Spring Pop (For Name Cards and Title Text)
@@ -614,7 +634,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.475 — confirmed current as of 2026-06-10)
+### Full API (v4.0.476 — confirmed current as of 2026-06-13)
 
 | Export | Purpose |
 |--------|---------|
