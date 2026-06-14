@@ -280,7 +280,7 @@ ffmpeg -i clip.mp4 -c copy \
 
 **For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
 
-**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-09, date TBD):** Will add:
+**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-14, date TBD):** Will add:
 - `--expand` flag to `split-video` (extends first/last clip to video boundaries — no footage lost)
 - `expand_scenes_to_bounds()` API helper in scene manager module
 - `backend` keyword argument for `scenedetect.detect()` — accepts `"opencv"` (default), `"pyav"`, or `"moviepy"` to select the video backend programmatically (useful in headless/server pipelines)
@@ -744,6 +744,24 @@ ffmpeg -i graded.mp4 \
 **Limitation:** VGS is NOT SVG — it uses its own language. Static SVG files cannot be directly imported. Use for programmatically-defined shapes (rectangles, arcs, lines) where dynamic coordinates or exact brand colors matter. For complex imported vector art, continue using the PNG overlay workflow.
 
 **Documentation:** https://ffmpeg.org/drawvg-reference.html
+
+---
+
+## 11. Tool Version Status (confirmed 2026-06-14)
+
+All post-production tools confirmed unchanged as of study cycle 126 (2026-06-14):
+
+| Tool | Confirmed current version | Status |
+|------|--------------------------|--------|
+| FFmpeg stable | 8.1.1 (released 2026-05-04) | No 8.2 release — all pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable |
+| Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 or newer — v4.25 remains pipeline default for diffusion video |
+| TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | No new stable since v2.4.1 |
+| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released |
+| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 — current pipeline commands unchanged |
+| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified June 2026 |
+| TikTok safe zones | unchanged | ~180px right, 324px bottom, 130px top, 60px left — verified June 2026 |
+
+No command updates needed in this cycle. All existing FFmpeg commands in §§1-10 are current.
 
 ---
 
