@@ -574,9 +574,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-09)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-14)
 
-Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-09.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-14.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -634,16 +634,16 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Wan 2.7 R2V — Character Shots at 3× Lower Cost (VERIFY on AIMLAPI before use)
+## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. As of 2026-06-11, I2V and T2V are confirmed on AIMLAPI; R2V status is unconfirmed (canary required before production). Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) is the confirmed live fallback.
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-14, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI.
 
 **Why it matters:** ~$0.10/sec → **$0.50/5s clip**, vs Kling O1 at $1.46/5s. 3× cost reduction for character shots if identity lock quality is acceptable.
 
 **Key parameters (Together AI format; AIMLAPI format expected similar):**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # UNVERIFIED on AIMLAPI — run canary first
+    "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI (confirmed 2026-06-14) — use wan-2-6-r2v
     "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
     "media": {
         "reference_images": [
@@ -670,9 +670,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - Maximum 5 references total (images + video). Same cap as Kling O1's 4 + image_url.
 - No `face_consistency: True` equivalent for occlusion recovery.
 
-**When to test:** After Wan 2.7 R2V AIMLAPI canary confirms (check credit-efficiency.md status). Start with one Karel/Mourad draft at 720p ($0.50). Score with InsightFace — PASS threshold still 0.62 (same per-character floor). Only adopt for production if score consistently ≥ 0.62 across 3 draft runs.
+**When to test:** Wan 2.7 R2V is not on AIMLAPI as of 2026-06-14. Monitor AIMLAPI changelog for a future R2V endpoint. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
 
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-09)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-14)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
