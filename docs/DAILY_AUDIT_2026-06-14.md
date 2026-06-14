@@ -525,5 +525,27 @@ TOP 3 ACTIES:
 3. HOOG — prune captions (6.082) + gen-video (5.689) + gen-image (8.677) + post-prod (5.583).
    Na 6 splits: C6-fouten 8→2 → Skills ~100%.
 
-$0 besteed. 51 dagen geen video. 15 bundelings. 26e audit zonder BOT_TOKEN.
+$0 besteed. 51 dagen geen video. 15 bundelings (+ SC125 = 16). 26e audit zonder BOT_TOKEN.
+SC125 (+): LTXV 2 Fast $0.052/sec bevestigd; Hailuo 2.3 Fast wins T2V routing definitief.
+SC125 (−): BUNDT pipeline.db + credit-efficiency.md (16e incident); credit-efficiency 9.397→9.485 (+88).
 ```
+
+---
+
+## ADDENDUM — SC125 (discovered post-audit, committed 2026-06-14 06:12 UTC)
+
+SC125 committed 13 seconds before the audit commit was pushed. It was not visible when the audit started (SC124 was the latest at that time).
+
+**SC125 (26ecc42):** Cost optimization (pass 16) — LTXV 2 Fast $0.052/sec confirmed on AIMLAPI. Hailuo 2.3 Fast ($0.0416/sec) wins T2V routing at ALL durations (definitive, no longer conditional). LTXV 2 Fast role clarified: I2V-only, 6s+ clips. Budget math tables corrected. Wan 2.7 R2V confirmed "Coming Soon" on AIMLAPI (consistent with SC124).
+
+**SC125 log (edbcc37):** pipeline.db root ✓ — but this is a SEPARATE DB log commit; see bundling note below.
+
+**Bundling:** SC125 (26ecc42) **BUNDLES `data/pipeline.db` + `skills/credit-efficiency.md` — 16th bundling incident.** NOT self-flagged. Commit message contains no bundling acknowledgment.
+
+**credit-efficiency.md word count:** 9,397 → **9,485** (+88). Despite 40 lines deleted and 37 inserted (net −3 lines), word density increased. credit-efficiency.md is now 4,485 words over C6 threshold — the emergency-split target GREW again. Running total: 14+ audits open, still growing.
+
+**Score impact:** Operator score would be marginally lower (Execution and Social both penalized for 16th bundling + credit-efficiency.md growth) if SC125 had been in scope. Estimated Operator: 2.47/5.0 (vs published 2.49/5.0). Skill score: unchanged at 92.5% (credit-efficiency.md remains 6/8; C6 count unchanged at 8 fails). Creative: unchanged.
+
+**SC125 positive finding:** LTXV 2 Fast $0.052/sec is now confirmed on AIMLAPI — this was a long-running canary. credit-efficiency.md routing table updated from conditional ("if priced ≤$0.055") to definitive routing. This is a meaningful resolution.
+
+**SC125 CLAUDE.md adjacency:** credit-efficiency.md is the 4th SC this window to grow a C6-failing file. CLAUDE.md: 0 updates. LTXV 2 Fast model string is now in credit-efficiency.md but NOT in CLAUDE.md routing matrix (19+ audit gap). 26-cycle CLAUDE.md adjacency gap continues.
