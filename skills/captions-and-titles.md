@@ -66,7 +66,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - **Word-level timestamps** returned in response: `words[].text`, `words[].start` (seconds), `words[].end` (seconds)
    - **Pricing:** $0.22/hour of audio — a 30-second voiceover costs ~$0.002. Negligible.
    - **File size limit:** Up to 5.0GB per submission (increased from 3.0GB in June 2026). Our 30-60s WAV files (~5–20MB) are far below this.
-   - **Keyterm biasing** (`+$0.05/hr`): pass up to 100 brand terms to force correct spelling. Use for Dutch brand names that would otherwise be mangled:
+   - **Keyterm biasing** (`+$0.05/hr`): pass up to **1,000 keyterms** (50 characters each, expanded April 2026 — was 100). Use for Dutch brand names that would otherwise be mangled. **⚠️ Billing note:** requests with >100 keyterms incur a minimum billable unit of 20 seconds. For our short 30-60s voiceovers this has no practical impact.
      ```python
      keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
      ```
@@ -82,7 +82,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    with open("voiceover.wav", "rb") as f:
        result = client.speech_to_text.convert(
            file=f,
-           model_id="scribe_v2",         # "scribe_v1" also works but v2 is more accurate
+           model_id="scribe_v2",         # ⚠️ scribe_v1 DEPRECATED — removed July 9, 2026. Use scribe_v2 only.
            language_code="nl",           # Dutch; omit for auto-detect
            timestamps_granularity="word", # required for word-level timestamps
            keyterms=["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133"],  # optional
@@ -634,7 +634,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.476 — confirmed current as of 2026-06-13)
+### Full API (v4.0.477 — confirmed current as of 2026-06-15)
 
 | Export | Purpose |
 |--------|---------|
@@ -696,7 +696,9 @@ export const CaptionComposition = () => {
 
 #### Page rendering with <Sequence> (recommended for performance)
 
-Each caption page as its own `<Sequence>` lets Remotion skip inactive pages during render:
+Each caption page as its own `<Sequence>` lets Remotion skip inactive pages during render.
+
+**New in v4.0.477 — `freeze` prop on `<Sequence>`:** You can now pass `freeze?: number | null` directly on `<Sequence>` instead of wrapping it in a separate `<Freeze>` component. When set, the sequence content freezes at that frame number. Useful for holding a caption page visible on screen after the audio ends — set `freeze={durationInFrames - 1}` to pin the last frame:
 
 ```tsx
 import { Sequence } from 'remotion';
@@ -716,6 +718,26 @@ const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilli
 // Inside CaptionPage: useCurrentFrame() returns frames RELATIVE to sequence start
 // → const relativeMs = (useCurrentFrame() / fps) * 1000;
 // → const isActive = relativeMs >= (token.fromMs - page.startMs) && relativeMs < (token.toMs - page.startMs);
+```
+
+**`freeze` prop example — hold last caption frame:**
+```tsx
+// Before v4.0.477: had to wrap in <Freeze>
+// After v4.0.477: pass freeze directly on <Sequence>
+{pages.map((page, i) => {
+  const durationFrames = Math.round(page.durationMs / 1000 * fps);
+  return (
+    <Sequence
+      key={i}
+      from={Math.round(page.startMs / 1000 * fps)}
+      durationInFrames={durationFrames}
+      freeze={i === pages.length - 1 ? durationFrames - 1 : undefined}
+      // ↑ last page only: freeze on final frame so caption persists until next scene cut
+    >
+      <CaptionPage page={page} fps={fps} />
+    </Sequence>
+  );
+})}
 ```
 
 #### Inline conditional (simpler, same result):
