@@ -104,6 +104,23 @@ for i in range(30):
 4. **Always specify what stays still** — "background remains static", "truck stays stationary"
 5. **Use physical verbs** — "walks", "lifts", "turns" (not abstract "dynamic energy")
 6. **Specify body parts** — "hair moves", "fingers grip" (not "person moves")
+7. **Describe the temporal arc** — explicitly state beginning → middle → end within the 5s clip. Without this, Kling treats prompts as a frozen moment and generates minimal motion. Example: "starts walking forward → reaches midpoint with confident stride → eases to stop at truck door". (June 2026 finding from community prompt guides.)
+
+### SCALE Framework (Alternative Structured Approach)
+
+A production-tested mnemonic for building complete prompts before writing them:
+
+| Letter | Component | What to specify |
+|--------|-----------|----------------|
+| **S** | Shot | Camera type + camera movement direction |
+| **C** | Character | Who / what is in frame (reference only — image has the visual details) |
+| **A** | Action | Motion timeline: what begins → what happens → how it settles |
+| **L** | Lighting & Location | Light quality changes (shift, glide) — NOT static description |
+| **E** | Extra | Style tags, texture, endpoint anchor |
+
+**Use as a pre-write checklist, not a prompt template.** The final prompt should still be 15-40 words of pure motion instruction — SCALE just ensures you haven't forgotten a layer before writing.
+
+**"Film director" framing (June 2026):** Kling performs best when prompts describe a scene being filmed, not just an image. Think: "this is what my virtual camera crew captures" rather than "this is what the image looks like."
 
 ## CFG Scale Guidelines
 
@@ -118,6 +135,8 @@ for i in range(30):
 | Character multi-shot sequence | 0.8 | Tighter identity lock across multi-shot; documented in Kling API examples |
 
 **Upper bound note:** 0.8 is the practical maximum for character shots. Values approaching 1.0 over-constrain motion and produce stiff, jittery output. Use 0.8 only for multi-shot sequences where identity consistency matters more than motion fluidity.
+
+**fal.ai April–May 2026 API parameter history (AIMLAPI unaffected):** On April 10, 2026 fal.ai temporarily dropped `cfg_scale` and `negative_prompt` when renaming their v3→o3 endpoints. On May 23 they reverted: /v3/ paths restored, `cfg_scale` and `negative_prompt` restored, and `image_url` switched back to `start_image_url`. **AIMLAPI kept `cfg_scale`, `negative_prompt`, and `image_url` throughout.** Do NOT copy fal.ai examples from April–May 2026 into AIMLAPI calls. Also: fal.ai uses `start_image_url`; AIMLAPI uses `image_url` — do not copy-paste between platforms.
 
 ## Motion Strength — NOT a Standard I2V Parameter
 
@@ -185,6 +204,8 @@ For truck shots: `cfg_scale: 0.7` + prompt "no vehicle movement" + negative "veh
 ## Negative Prompt Templates
 
 **Term ordering matters:** Kling weights earlier terms more heavily than later ones. Put your highest-priority failure prevention terms FIRST. For character shots: face/identity terms first. For truck shots: vehicle movement terms first.
+
+**Native default is weak:** Kling's built-in default is only `"blur, distort, and low quality"`. ALWAYS override with our full custom template — the default provides near-zero protection against ghost driving, breathing artifacts, or identity drift.
 
 ### Universal Baseline (ALWAYS include ALL)
 
