@@ -286,14 +286,20 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `model_id` | str | — | `"eleven_text_to_sound_v2"` |
 | `output_format` | str | see below | Default is MP3 22kHz/32kbps. **Always override for pipeline use.** |
 
-**`output_format` values for SFX v2** (format: `codec_samplerate_bitrate`):
+**`output_format` values for SFX v2** (format: `codec_samplerate_bitrate`) — confirmed from `AllowedOutputFormats` SDK type:
 
 | Format string | Quality | Plan required | Use case |
 |---------------|---------|---------------|----------|
 | `mp3_44100_128` | Good — CD-rate MP3 | Free+ | **Pipeline default** — best quality without plan restriction |
 | `mp3_44100_192` | Better | Creator+ | Higher fidelity if on Creator plan |
-| `wav_44100` | Lossless | Pro+ | Lossless SFX master for long-term library storage |
+| `opus_48000_128` | Good — Opus at 48kHz | Free+ | More space-efficient than `mp3_44100_128` at equal perceived quality; use for SFX library when storage matters |
+| `opus_48000_192` | Better — Opus at 48kHz | Free+ | High-fidelity Opus; smaller file than `mp3_44100_192` |
+| `pcm_48000` | Lossless | Pro+ | **Preferred lossless master** — uncompressed PCM at 48kHz (SFX v2 native rate). Replaces `wav_44100` — see note below. |
 | `mp3_22050_32` | Low | Free | Not suitable for mixing — leave as fallback only |
+
+**⚠ `wav_44100` is NOT in `AllowedOutputFormats` for the SFX v2 endpoint** (verified against SDK source `src/elevenlabs/types/allowed_output_formats.py`). Using it may raise a type error or be silently rejected. Use `pcm_48000` instead for lossless masters. Raw PCM can be read by FFmpeg with `-f s16le -ar 48000 -ac 2` flags if needed, or use `mp3_44100_192` for a high-quality non-lossless alternative.
+
+**SFX v2 native sample rate is 48kHz.** Requesting `pcm_48000` avoids any resampling from 44.1 kHz and gives the highest fidelity master. The `aresample=48000` step in §4e becomes a no-op (already at native rate).
 
 **Always request `mp3_44100_128` or better for pipeline SFX.** The default 22kHz/32kbps output introduces noticeable artifacts at the top of the frequency range, which are amplified after the highpass filter (§4g) and loudnorm stages.
 
@@ -321,7 +327,8 @@ audio = b"".join(client.text_to_sound_effects.convert(
     duration_seconds=20.0,   # 20-second ambient bed: 800 credits
     loop=True,               # native seamless loop — skip acrossfade post-processing
     prompt_influence=0.4,    # slightly higher adherence for descriptive prompts
-    output_format="mp3_44100_128",  # always override default (22kHz/32kbps is too low for mixing)
+    output_format="mp3_44100_128",  # Free/Starter plans: use mp3_44100_128 (always override default 22kHz/32kbps)
+    # Pro+ plans: use "pcm_48000" for lossless 48kHz master — wav_44100 is NOT in AllowedOutputFormats
 ))
 
 with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
@@ -792,7 +799,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
 | Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.50+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
-| SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `wav_44100` for lossless SFX library masters. |
+| SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `pcm_48000` for lossless SFX library masters (`wav_44100` is NOT in AllowedOutputFormats). |
+| `wav_44100` format rejected / TypeError in SFX v2 call | `wav_44100` is not in `AllowedOutputFormats` SDK type for the SFX endpoint | Use `pcm_48000` (lossless 48kHz, Pro+) or `mp3_44100_192` (high-quality non-lossless) instead. `pcm_48000` is the confirmed lossless master format for SFX v2. |
 | TikTok video sounds quieter than expected or louder than other platforms | TikTok does not apply in-feed loudness normalization | Content plays at delivered level. Master to -14 to -16 LUFS for clean phone playback. Do not over-compress to get louder — will sound distorted on mobile. |
 | PVC audio tags weak or ignored in eleven_v3 | PVCs not fully optimized for v3 as of April 2026 | Switch to a Voice Library voice (e.g. Willem) or an IVC. Do not use PVCs for eleven_v3 tag-dependent scripts until ElevenLabs confirms full PVC compatibility. |
 | Need to verify Willem voice quality before production | No UI check in pipeline | Call GET /v1/voices?search=Willem — check `recording_quality` field. Proceed only if "studio" or "good". If "in_review" labelling_status, hold and re-check next session. |
@@ -878,6 +886,8 @@ if __name__ == "__main__":
 ## 11. Dutch VO Transcription QA (Scribe v2)
 
 Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch. GA since March 11, 2026: 99 languages, 98% speaker label accuracy.
+
+**File size limit:** Scribe v2 batch accepts audio/video files up to **5.0GB** (increased from 3.0GB in June 2026 changelog). Supports WAV, MP3, MP4, M4A, WEBM, and other common formats. For VO QA, file sizes are always <<1GB — this limit only matters for long-form batch transcription.
 
 **When to run:** after every `eleven_v3` generation before mixing, to catch mispronounced proper nouns (SNELVERHUIZEN, 085 3331133) and confirm Dutch text normalisation applied correctly.
 
