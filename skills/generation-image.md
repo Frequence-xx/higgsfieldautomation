@@ -22,13 +22,15 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
-## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (11 days away as of 2026-06-14) — CANARY NOW URGENT
+## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (9 days away as of 2026-06-16) — JUNE 20 DEADLINE IS 4 DAYS AWAY
 
 Google is retiring both Gemini image preview models on **June 25, 2026**:
 - `gemini-3-pro-image-preview` → GA replacement: `gemini-3-pro-image`
 - `gemini-3.1-flash-image-preview` → GA replacement: `gemini-3.1-flash-image`
 
-**Google recommended migration deadline: June 20, 2026** — that is 6 days from today. After June 25, all calls to `-preview` native model IDs will fail. AIMLAPI's routing aliases should buffer this (see below), but run the canary NOW.
+**Google recommended migration deadline: June 20, 2026** — that is **4 days from today (June 16)**. After June 25, all calls to `-preview` native model IDs will fail. AIMLAPI's routing aliases should buffer this (see below), but run the canary NOW.
+
+**2026-06-16 GA confirmation:** The Google Cloud blog (May 28, 2026) confirms both NB2 and NBP are fully GA. 1K and 2K output are GA-stable. 4K remains in Preview. The blog does NOT explicitly state whether AIMLAPI has migrated their backend routing — that canary remains mandatory.
 
 **AIMLAPI routing note:** AIMLAPI model strings `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` are AIMLAPI's OWN routing aliases — they do NOT pass the `-preview` suffix to Google. This means they should survive the June 25 shutdown IF AIMLAPI has already migrated their backend routing to the GA model IDs. AIMLAPI's doc URLs still reference `-preview` internally, but this is a documentation artifact, not the API string you pass. **Run a canary call on `google/nano-banana-pro-edit` BEFORE JUNE 20 to confirm.** If calls return 404/model-not-found after June 25, contact AIMLAPI support immediately — do NOT assume the pipeline is broken before checking.
 
@@ -71,7 +73,7 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 
 **NB2 resolution tiers (Google official rates):** `"resolution": "512"` ($0.045/img, ~4-6s) → `"1K"` ($0.067/img) → `"2K"` ($0.101/img) → `"4K"` ($0.151/img). Use `"512"` for layout/composition checks before committing to 1K — saves ~33% per draft pass. Note: 512px is specified as `"512"` (no K suffix), not `"0.5K"`. AIMLAPI may map this to their own pricing tier — run a canary if using 512 for the first time.
 
-**NBP (Nano Banana Pro) 2K = same price as 1K (2026-06-10 update — community confirmed):** Google's native API prices both `"1K"` and `"2K"` for NBP at **$0.134/image** — they consume the same token count (~1,120 output tokens). This means 2K (1536×2688px) is a free quality upgrade over 1K (768×1344px). Confirmed by multiple independent sources (laozhang.ai, aifreeapi.com, evolink.ai) as of June 2026. **AIMLAPI billing not independently verified — run one canary call with `"resolution": "2K"` before switching all production calls.** If AIMLAPI charges the same, update all NBP production calls from `"1K"` to `"2K"` — free resolution doubling.
+**NBP (Nano Banana Pro) 2K = same price as 1K — ALWAYS use 2K in production (2026-06-16 confirmed):** Google's native API prices both `"1K"` and `"2K"` for NBP at **$0.134/image** — same token count. AIMLAPI charges **$0.195/image flat regardless of resolution** — 2K costs exactly the same as 1K on AIMLAPI. This means 2K (1536×2688px) is a free quality upgrade over 1K (768×1344px) with zero additional cost. Confirmed by multiple independent sources (laozhang.ai, aifreeapi.com, evolink.ai) and AIMLAPI flat-pricing model. **Update all production NBP calls from `"resolution": "1K"` to `"resolution": "2K"` immediately.** There is no reason to generate NBP at 1K on AIMLAPI.
 
 **Google Batch API — 50% off NBP (native Google API only):** Google's Batch API gives 50% off all image generation: 2K drops from $0.134 → **$0.067**, 4K from $0.24 → $0.12. Async processing, typical turnaround 2-6h (target 24h). **NOT available via AIMLAPI** — AIMLAPI doesn't expose the Batch API endpoint. Relevant only if the AIMLAPI-only constraint is relaxed in the future.
 
@@ -81,13 +83,30 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 
 ‡GPT Image 2 (`openai/gpt-image-2`, released 2026-04-21) supports up to **16 reference images** per call (every reference billed at high-fidelity input rate). Best use: CTA cards with complex Dutch text (e.g., phone numbers, URLs), text-heavy brand cards. **⚠️ CRITICAL parameter notes:** (1) Do NOT pass `input_fidelity` — this parameter does not exist on GPT Image 2 and will cause the request to fail (exists on older models only; GPT Image 2 always processes at high fidelity). (2) `background: "transparent"` is NOT supported — requests with this param will fail. Size: custom dimensions, both edges multiples of 16, max 3840px per edge, ratio under 3:1, total pixels 655,360–8,294,400. Recommended 9:16 size: `1152x2048` (true 9:16, both divisible by 16). Quality tiers: `low`, `medium`, `high`. Output format: `png` (default), `jpeg`, `webp`. Run canary to verify AIMLAPI reference image support before using in production — OpenAI confirms it, AIMLAPI implementation unverified. 3–5 well-chosen refs outperform 16 mixed ones.
 
-§GPT Image 2 uses token-based pricing on AIMLAPI — cost varies by resolution and prompt length. Run a $0.10 canary test to confirm exact cost before batch use. Use Gemini 2.5 Flash Image ($0.039) or NB2 ($0.045 at 512px) for cheap iteration drafts; GPT Image 2 only for finals requiring superior Dutch text accuracy. Imagen 4 Fast **retires June 24, 2026** — do not use as iteration fallback.
+§**GPT Image 2 quality tiers and thinking mode (2026-06-16 update):**
+
+**Quality parameter** (`"quality": "low"/"medium"/"high"`):
+| Tier | Cost (1K/1024px) | Use case |
+|------|-----------------|---------|
+| `"low"` | ~$0.006/img | Draft layout checks only |
+| `"medium"` | ~$0.053/img | Iteration pass |
+| `"high"` | ~$0.211/img | Final CTA card / brand-critical |
+
+**Thinking Mode** (separate from quality, enabled via `"thinking"` parameter): GPT Image 2 is the first image model with built-in reasoning — it plans layout, searches the web for references, and self-verifies output before delivering. Values: `"off"/"low"/"medium"/"high"`. Pricing for thinking mode is **variable** (depends on reasoning token usage). Use `"high"` quality + thinking `"medium"` for final Dutch-text CTA cards. Use `"medium"` quality + thinking `"off"` for iteration.
+
+**AIMLAPI token pricing:** $10.4/M input tokens, $39/M output tokens. Estimated effective cost per 1K image at high quality: ~$0.21–0.35 depending on prompt length.
+
+Use NB2 ($0.067) for cheap iteration drafts; GPT Image 2 `high` only for finals requiring superior Dutch text accuracy. Imagen 4 Fast **retires June 24, 2026** — do not use as iteration fallback.
 
 **GA model IDs clarification (2026-06-03):** Google's native GA model strings are `gemini-3-pro-image` (NBP) and `gemini-3.1-flash-image` (NB2). AIMLAPI wraps these under `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` — these AIMLAPI strings are unchanged and should continue working post-June-25 assuming AIMLAPI updates their backend routing. The `-preview` suffix is in AIMLAPI's internal doc URLs but NOT in the model strings you pass in API calls. Run a canary before June 22 to confirm.
 
-⁑**FLUX.2 Max (2026-05-31):** BFL's highest-quality T2I/I2I model. Available on AIMLAPI as `blackforestlabs/flux-2-max` — **CANARY REQUIRED** to confirm exact model string and parameter support. Pricing: ~$0.091/megapixel at BFL-native; ~$0.09/img at 1K on AIMLAPI (slightly more than Kontext Max but similar). Supports up to **10 reference images** — the key advantage over Kontext Max's 2-ref AIMLAPI ceiling. Use case: brand compositing shots needing more than 2 refs (character + truck + boxes + background scene) without paying NBP Edit prices. Do NOT use for character chain-editing — Kontext Pro/Max is better for sequential face edits. Run canary before production use.
+⁑**FLUX.2 Max (2026-06-16 update):** BFL's highest-quality T2I/I2I model. Available on AIMLAPI as `blackforestlabs/flux-2-max` — **CANARY REQUIRED** to confirm exact model string and parameter support. Pricing: ~$0.091/megapixel at BFL-native; ~$0.09/img at 1K on AIMLAPI (slightly more than Kontext Max but similar). Supports up to **10 reference images** — the key advantage over Kontext Max's 2-ref AIMLAPI ceiling. Use case: brand compositing shots needing more than 2 refs (character + truck + boxes + background scene) without paying NBP Edit prices. Do NOT use for character chain-editing — Kontext Pro/Max is better for sequential face edits. Run canary before production use.
 
-†**Grok Imagine Image Quality (2026-06-14 update):** xAI launched `grok-imagine-image-quality` on 2026-05-06 (consumer) / API available 2026-05-06. Predecessor `grok-imagine-image-pro` deprecated **2026-05-15** — do not use. Supports T2I and I2I editing with up to 3 reference images. 9:16 via `aspect_ratio: "9:16"`. Strong text rendering and photorealism. Practical use: cheap B-roll / environment drafts ($0.055 < NBP Pro's $0.13) when character accuracy isn't required. **AIMLAPI model string status (2026-06-14):** AIMLAPI docs confirm two separate xAI image model pages: `x-ai/grok-imagine-image` (base model, older) and `x-ai/grok-imagine-image-pro` (deprecated May 15). The Quality model's expected AIMLAPI string is **`x-ai/grok-imagine-image-quality`** (following AIMLAPI's x-ai/ naming convention) — **CANARY REQUIRED** to confirm this string is live. Prompt syntax and parameters are identical between Pro and Quality — no prompt changes needed when migrating. Do NOT use for character shots (no identity sheet support beyond 3 refs; no face adherence features).
+**FLUX.2 Max grounding search (2026-06-16):** FLUX.2 Max (NOT Kontext Max) has an exclusive **grounding search** capability that performs real-time web searches during generation — enables visualization of current events, trending products, or location-specific scenes without manual reference images. This is a BFL-native feature of the `flux-2-max` model family, NOT present in Flux Kontext Max. **AIMLAPI status: unconfirmed** — BFL documentation confirms the capability exists but the API parameter name is not yet publicly documented in sources accessible to this research. For our pipeline: grounding search is **not applicable** for branded character shots (we use explicit refs, not web search); potential use for establishing shots requiring real-world Dutch street context. Monitor for AIMLAPI parameter documentation before using.
+
+†**Grok Imagine Image Quality (2026-06-16 update):** xAI launched `grok-imagine-image-quality` on 2026-05-06 (consumer) / API available 2026-05-06. Predecessor `grok-imagine-image-pro` deprecated **2026-05-15** — do not use. Supports T2I and I2I editing with up to 3 reference images. 9:16 via `aspect_ratio: "9:16"` (confirmed). Supported aspect ratios: 2:1, 20:9, 16:9, 4:3, 3:2, 1:1, 2:3, 3:4, 9:16, 9:20, 1:2. Strong text rendering and photorealism. Practical use: cheap B-roll / environment drafts ($0.055–$0.07) when character accuracy isn't required.
+
+**AIMLAPI model string status (2026-06-16):** AIMLAPI official docs still only list `x-ai/grok-imagine-image` (base model) and `x-ai/grok-imagine-image-pro` (deprecated May 15) — the Quality model page is NOT visible in AIMLAPI's doc index as of this research pass. Third-party sources suggest AIMLAPI may expose the Quality model with path-style strings (`xai/grok-imagine-image-quality/text-to-image` and `xai/grok-imagine-image-quality/edit`) but this is NOT confirmed from AIMLAPI official documentation. The expected string following AIMLAPI's `x-ai/` naming convention remains **`x-ai/grok-imagine-image-quality`** — **CANARY REQUIRED** before production use. Prompt syntax and parameters are identical between Pro and Quality — no prompt changes needed when migrating. Do NOT use for character shots (no identity sheet support beyond 3 refs; no face adherence features).
 
 ✩**GPT Image 1.5 (2026-06-12):** Available on AIMLAPI as `openai/gpt-image-1.5`. Released December 2025 — sits between GPT Image 1 and GPT Image 2 in the OpenAI image generation family. Supports text-to-image generation, image editing, and variations. Key improvement over GPT Image 1: better instruction following on small details (changes what you ask for while keeping lighting, composition, and likeness stable across edits). Image I/O costs 20% cheaper than GPT Image 1. **For our pipeline:** Lower priority than GPT Image 2 for CTA cards (GPT Image 2 has better Dutch text accuracy at 99%). Consider as a cost-efficient alternative when GPT Image 2 pricing is prohibitive for draft-tier CTA cards. **CANARY REQUIRED** to verify exact AIMLAPI model string and parameter support — `openai/gpt-image-1.5` is the expected string based on AIMLAPI naming conventions for OpenAI models.
 
@@ -95,7 +114,7 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 
 ✧**Seedream 4.5 and 5.0 Lite Preview (2026-06-06, AIMLAPI docs confirmed):** ByteDance Seedream models confirmed on AIMLAPI with the following verified specs:
 
-**Seedream 4.5** (`bytedance/seedream-4-5`, $0.052/img): T2I + I2I via `image_urls` array (min 1, max 14 images — same slot count as NBP Edit). `size` parameter accepts `2K`/`4K` presets or custom pixel dimensions; supports 9:16. `seed` parameter supported. Significantly improved editing consistency vs v4.0 (preserves subject details, lighting, colour tone). At $0.052 vs NBP Edit's $0.195, this is a 73% cost saving if quality is acceptable — CANARY REQUIRED before production use. Primary use case: blockReason OTHER fallback for character composites; secondary: cheaper prompt iteration with refs (vs NB2 at $0.067).
+**Seedream 4.5** (`bytedance/seedream-4-5`, $0.052/img, **confirmed on AIMLAPI 2026-06-16**): T2I + I2I via `image_urls` array (min 1, max 14 images — same slot count as NBP Edit). `size` parameter accepts `2K`/`4K` presets or custom pixel dimensions; supports 9:16. `seed` parameter supported. Significantly improved face consistency vs v4.0 — retains fine details, better performance in distance shots, crowd shots, and wide-angle scenes. At $0.052 vs NBP Edit's $0.195, this is a 73% cost saving if quality is acceptable. Primary use case: blockReason OTHER fallback for character composites; secondary: cheaper prompt iteration with refs (vs NB2 at $0.067). **Run a canary to verify exact parameter names and response structure before first production call** (model is confirmed on AIMLAPI, but parameter syntax on AIMLAPI proxy vs native may differ).
 
 **Seedream 5.0 Lite Preview** (`bytedance/seedream-5-0-lite-preview`, ~$0.035/img — pricing unconfirmed on AIMLAPI pricing page directly): T2I + I2I via `image_urls`. Supports 9:16 via `size: "9:16"` literal string. Also accepts ratio strings (`"4:5"`, `"3:4"`) and pixel formats. Chain-of-thought reasoning enabled. Optional web search grounding add-on ($0.0069/call). Cheaper than NB2 at $0.067 if pricing confirms. CANARY REQUIRED.
 
@@ -141,7 +160,7 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "prompt": "Image 1: Mourad character reference sheet. Mourad-SV standing next to the truck cab, three-quarter view. Keep facial features identical to Image 1. Golden hour warm backlight, 85mm portrait, shallow DOF, vertical composition.",
     "image_urls": [mourad_sheet_url],
     "aspect_ratio": "9:16",
-    "resolution": "1K",
+    "resolution": "1K",  # NB2 is NOT flat-pricing on AIMLAPI — check cost before using 2K
     "num_images": 1,
     # NOTE: thinking_level is NOT a confirmed parameter for the image generation API endpoint.
     # It is a Gemini TEXT model parameter only. Do not add to image generation calls.
@@ -166,7 +185,7 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "google/nano-banana-pro",
     "prompt": "<scene description in creative-director natural language>",
     "aspect_ratio": "9:16",
-    "resolution": "1K",
+    "resolution": "2K",  # 2K = free upgrade over 1K on AIMLAPI flat pricing — always use 2K
     "num_images": 1,
 }, headers=headers, timeout=60)
 
@@ -181,7 +200,7 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "prompt": "Image 1: Mourad character reference sheet. Image 2: Truck reference. Generate Mourad standing next to the truck cab, three-quarter view. Keep facial features exactly the same as Image 1. Golden hour warm backlight, 85mm portrait lens, shallow depth of field, cinematic color grading, vertical composition.",
     "image_urls": [mourad_sheet_url, truck_ref_url],
     "aspect_ratio": "9:16",
-    "resolution": "1K",
+    "resolution": "2K",  # 2K = free upgrade over 1K on AIMLAPI flat pricing — always use 2K
     "num_images": 1,
 }, headers=headers, timeout=60)
 
@@ -204,13 +223,13 @@ hero_url = resp.json()["data"][0]["url"]
 
 ## 9:16 Resolution Reference
 
-| Resolution | Nano Banana Pro | Kontext Max | Imagen 4 | Cost |
+| Resolution | Nano Banana Pro | Kontext Max | Imagen 4 | Cost on AIMLAPI |
 |------------|-----------------|-------------|----------|------|
-| 1K | 768 x 1344 | 752 x 1392 | native 9:16 | ~$0.02-0.20 |
-| 2K | 1536 x 2688 | — | Ultra only | ~$0.06 (Ultra confirmed) |
-| 4K | 3072 x 5376 | — | — | ~$0.24 |
+| 1K | 768 × 1344 | 752 × 1392 | native 9:16 | NBP: $0.195 (DO NOT USE — use 2K for free) |
+| **2K ← USE THIS** | **1536 × 2688** | — | Ultra only | **NBP: $0.195 (same price, 4× pixels)** |
+| 4K | 3072 × 5376 | — | — | NBP: $0.195 (UNSTABLE — do not use) |
 
-**Safe zone (2026-05-08):** On Instagram Reels / TikTok, platform UI (profile, caption, buttons) occludes the **top 14%** and **bottom 20%** of the frame. Keep all brand elements, faces, and text out of these zones. For a 768×1344 frame: top 107px and bottom 269px are danger zones. Compose the hero in the middle 66% of vertical height.
+**Safe zone (2026-05-08):** On Instagram Reels / TikTok, platform UI (profile, caption, buttons) occludes the **top 14%** and **bottom 20%** of the frame. Keep all brand elements, faces, and text out of these zones. For a 1536×2688 frame (2K): top 215px and bottom 538px are danger zones. Compose the hero in the middle 66% of vertical height. (Previous safe zone values were for 1K 768×1344 — update compositing rigs to 2K dimensions.)
 
 ## Prompting Rules for NBP and NB2 (Gemini Image Models)
 
@@ -622,10 +641,12 @@ resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
     "model": "openai/gpt-image-2",
     "prompt": "Clean professional CTA card on white background. Large bold orange text reading 'SNELVERHUIZEN.NL' centered at top. Below it in smaller text: '085 3331133'. Below that: 'VERHUIZEN ZONDER ZORGEN' in bold. Orange is exactly #FC8434. 9:16 vertical format. Minimal design, no people, no decoration.",
     "size": "1152x2048",   # true 9:16 portrait — multiples of 16, ratio < 3:1
-    "quality": "high",
+    "quality": "high",     # low ~$0.006 | medium ~$0.053 | high ~$0.211 (at 1K equiv)
+    "thinking": "medium",  # off|low|medium|high — enables layout planning + self-check
     "n": 1,
     # DO NOT add: input_fidelity (doesn't exist on gpt-image-2, breaks the call)
     # DO NOT add: background: "transparent" (not supported on gpt-image-2)
+    # NOTE: thinking adds variable cost — use "off" for drafts, "medium" for finals
 }, headers=headers, timeout=120)
 hero_url = resp.json()["data"][0]["url"]
 ```
