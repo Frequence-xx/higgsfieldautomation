@@ -545,5 +545,30 @@ TOP 3 ACTIES:
 3. HOOG — DB-log SC128+SC130 toevoegen. Dual-DB pad (data/ vs root) ophelderen.
    Na 6+ splits: C6 8→2 → Skills ~96%.
 
-$0 besteed. 53 dagen geen video. 19 bundelingen. 28e audit zonder BOT_TOKEN.
+$0 besteed. 53 dagen geen video. 19 bundelingen (SC132 post-audit → 20). 28e audit zonder BOT_TOKEN.
 ```
+
+---
+
+## ADDENDUM — SC132 (discovered post-audit-write, pre-push)
+
+**Commit:** `584df5d` — Jun 16 06:13 UTC — *Study cycle 132: Cost optimization (pass 17) — Veo 3 Fast I2V, VEED Fabric, Wan 2.7 R2V status*
+
+**Files changed:** `pipeline.db` + `skills/credit-efficiency.md` — **⚠ BUNDLES — 20th bundling incident** ✗ NOT self-flagged.
+
+**Word count:** `credit-efficiency.md`: 9,678 → **10,546** (+868 SC132) — **C6+C8 FAIL — CROSSED 10,000 MILESTONE** — 5,546 over threshold. Emergency-split target for 14+ audits. Now #1 largest file by a significant margin.
+
+**Key content (SC132):**
+- Veo 3 Fast I2V/T2V confirmed on AIMLAPI (~$0.13/sec est.) — prefer Veo 3.1 Fast.
+- **Veo 3 Standard I2V: DO NOT USE** ($0.788/sec — 6× Kling v3 Pro) — critical cost guard.
+- VEED Fabric-1.0 Fast on AIMLAPI (A2V talking head, $0.08–0.15/sec, 9:16) — new tool.
+- Happy Horse 1.0: NOT on AIMLAPI (fal.ai exclusive). Prevents wasted research.
+- Wan 2.7 R2V: still "Coming Soon" on AIMLAPI as of 2026-06-16 — confirms SC131 finding.
+- DB path: root `pipeline.db` (same as SC131; consistent this time).
+
+**Impact on scores (if SC132 included in this window):**
+- Execution: would drop to **1.7/5.0** (three bundling incidents in one 4-SC window; credit-efficiency.md crossed 10K; SC132 not self-flagged)
+- Operator weighted: would drop to approximately **2.35/5.0**
+- Skills: 92.5% unchanged (same C6 criteria, just worse magnitude)
+
+**Credit-efficiency.md is now the largest file in the pipeline library at 10,546 words — 5,546 words over the C6 threshold — and was grown by the domain SC (cost-optimization) for the 3rd consecutive window.** Split is BLOCKED from converging without immediate action.
