@@ -758,6 +758,80 @@ At $0.156/sec, PixVerse V5.5 is 28% cheaper than Kling Standard but 56% more exp
 
 **Routing decision: NOT recommended for this pipeline.** Forced audio strips, sunset deadline, and no cost advantage over existing models make it a poor fit. Do not canary unless Kling and Wan 2.7 both fail simultaneously.
 
+---
+
+### Veo 3 Fast I2V / T2V (`google/veo-3-fast-image-to-video`, `google/veo-3-fast-text-to-video`) — AIMLAPI DOCS CONFIRMED, CANARY REQUIRED (2026-06-16)
+
+Both Veo 3 Fast variants confirmed on AIMLAPI docs:
+- I2V: `docs.aimlapi.com/api-references/video-models/google/veo-3-fast-image-to-video`
+- T2V: `docs.aimlapi.com/api-references/video-models/google/veo-3-fast-text-to-video`
+
+**Pricing:** fal.ai charges $0.10/sec (audio off) or $0.15/sec (audio on). AIMLAPI estimated (~1.3× markup): **~$0.13/sec = ~$0.65/5s** (audio off). Audio CAN be disabled — parameter exists (likely `generateAudio: false` — verify in canary).
+
+**Veo 3 Fast vs Veo 3.1 Fast:** Both are confirmed on AIMLAPI and estimated at ~$0.13/sec. **Veo 3.1 Fast is the newer/better model** — prefer Veo 3.1 Fast I2V (`google/veo-3.1-i2v-fast`) over Veo 3 Fast for quality. Veo 3 Fast exists as a fallback if 3.1 Fast is unavailable.
+
+**Do NOT confuse with Veo 3 Standard I2V ($0.788/sec) — 6× more expensive and NOT worth using.**
+
+**Canary test (low priority — Veo 3.1 Fast preferred):**
+1. Submit 5s call: `google/veo-3-fast-image-to-video`, truck hero frame, `generateAudio: false`, `aspectRatio: "9:16"`
+2. Confirm model string and actual AIMLAPI cost (~$0.65 expected)
+3. Run brand binary checklist
+
+---
+
+### Veo 3 Standard I2V (`google/veo-3-image-to-video`) — CONFIRMED ON AIMLAPI, DO NOT USE (2026-06-16)
+
+Confirmed on AIMLAPI docs page: `docs.aimlapi.com/api-references/video-models/google/veo-3-image-to-video`
+
+**Pricing: ~$0.788/sec on AIMLAPI** — confirmed from multiple research sources (120,000 credits for 8s clip example). At 5s = ~$3.94. At 8s = ~$6.30. **6-7× more expensive than Kling v3 Pro ($1.46/5s).** Veo 3 is the full native-audio 4K model — premium pricing for a premium product unsuitable for our per-clip budget.
+
+**DO NOT ROUTE ANY SHOTS HERE.** Cost ceiling of $15/video would be consumed by 2-4 Veo 3 Standard clips alone.
+
+---
+
+### VEED Fabric-1.0 Fast (`veed/fabric-1.0-fast`) — CONFIRMED ON AIMLAPI (2026-06-16)
+
+**AIMLAPI docs page confirmed:** `docs.aimlapi.com/api-references/video-models/veed/fabric-1.0-fast`  
+**AIMLAPI model page:** `aimlapi.com/models/veed-fabric-1-0-fast`
+
+**What it does:** Audio-to-Video (A2V) talking-head model. Takes a face image + audio file → generates a lip-synced, talking video. NOT a motion/cinematic model — specialized for character dialogue delivery. Fabric-1.0 Fast is optimized for fast generation; quality is maintained at 720p.
+
+**Pricing:**
+- 480p: **$0.08/sec** (~$0.40/5s)
+- 720p: **$0.15/sec** (~$0.75/5s)
+- 9:16 aspect ratio supported ✓
+- Max 30s per clip; clips can be stitched for longer outputs
+- Input: image URL (face) + audio URL (MP3/WAV/M4A)
+- No `generate_audio` param needed — no audio generation, audio is INPUT not output
+
+**Pipeline use case:** If a shot requires a character to visibly speak to camera (e.g., customer testimonial CTA), pass the NBP Edit hero frame + ElevenLabs voiceover MP3 to Fabric Fast. The result is a lip-synced talking head clip. This is DIFFERENT from our standard cinematic hero shots — use only when direct-to-camera speech delivery is the shot intent.
+
+**Shari'ah compliance:** Character must be modestly dressed in source image. Content of the audio is the voiceover script, so compliant by definition if script is halal. Maximum 3 retries on QA failures.
+
+**Cost vs Kling for equivalent 5s clip:**
+- VEED Fabric Fast 720p: **$0.75/5s** (includes lip-sync delivery)
+- Kling Standard 3s draft: $0.65 (cinematic motion, no speech delivery)
+- These are different shot types — not a direct substitution
+
+**Canary test (before any production use):**
+1. Submit one 5s call: `veed/fabric-1.0-fast`, NBP Edit hero frame URL + 5s ElevenLabs audio clip, `aspect_ratio: "9:16"`, `resolution: "720p"`
+2. Record actual AIMLAPI cost (~$0.75 expected)
+3. Verify lip-sync alignment with audio
+4. Run brand binary checklist + Shari'ah compliance (modest dress preserved from source image?)
+5. If passes → available for "character delivers CTA" shot type
+
+**Standard variant:** `veed/fabric-1.0` also confirmed on AIMLAPI at same per-second pricing, slower generation. Use Fast variant by default.
+
+---
+
+### Happy Horse 1.0 — NOT ON AIMLAPI (2026-06-16)
+
+fal.ai is the exclusive official API partner. No `docs.aimlapi.com` page found despite AIMLAPI blog post about the model. The AIMLAPI blog coverage was editorial content, NOT an API launch. Happy Horse 1.0 is **NOT available via AIMLAPI**. Since our pipeline is AIMLAPI-only (Farouq directive 2026-04-16), this model is **not actionable**. Do not canary.
+
+(Model capabilities for reference only: #1 on AI Arena leaderboard April 2026, T2V/I2V/R2V, native audio, 1080p, $0.182/sec 720p on fal.ai. Revisit if AIMLAPI adds it in future.)
+
+---
+
 ## Rules
 
 1. **MUST generate ONE at a time. MUST NOT batch multiple without confirmation.**
@@ -787,9 +861,13 @@ At $0.156/sec, PixVerse V5.5 is 28% cheaper than Kling Standard but 56% more exp
 25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
 26. **Luma Ray Flash 2 confirmed on AIMLAPI (`luma/ray-flash-2`) — NEW 2026-06-05.** ~$0.048/sec (~$0.24/5s). Supports 9:16, I2V, first+last frame keyframes. **No audio generation** — no `generate_audio` param needed, no surcharge risk. Max 9s at 720p. CANARY REQUIRED. Use case: non-character I2V 5s clips where composition anchoring from a hero frame matters (e.g., truck exterior). Hailuo 2.3 Fast ($0.208/5s T2V) remains cheapest for 5s; Ray Flash 2 is the I2V alternative at ~$0.24.
 27. **Wan 2.7 T2V confirmed live on AIMLAPI (`alibaba/wan-2-7-t2v`) — 2026-06-05.** AIMLAPI docs page confirmed. Cost: ~$0.50/5s ($0.10/sec). Use for T2V establishing shots without characters when Veo 3.1 Lite is unavailable. Veo 3.1 Lite 720p (~$0.33/5s) is cheaper — prefer Veo. Wan 2.7 T2V is a Veo fallback at higher cost. CANARY REQUIRED before production.
-28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-12.** Listed as "Coming Soon" in the AIMLAPI model database. Do NOT call until a dedicated docs page appears at `docs.aimlapi.com`. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
+28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-16.** Listed as "Coming Soon" in AIMLAPI model database. Search for `docs.aimlapi.com "wan-2-7" reference-to-video` returns NO results — only Wan 2.6 R2V page found. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
 29. **Grok Imagine Video 1.5 AIMLAPI docs page NOW CONFIRMED (2026-06-09).** AIMLAPI page: `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video`. xAI pricing: $0.05/sec (480p), $0.07/sec (720p). AIMLAPI estimated: ~$0.065/sec (480p) = ~$0.325/5s. Audio is always generated — no disable parameter. **AUDIO STRIP REQUIRED** (`ffmpeg -i input.mp4 -an -c:v copy output.mp4`) immediately on every download — before QA playback. CANARY REQUIRED before routing production shots. Not T2V — I2V and reference-to-video only in preview.
 30. **Wan 2.7 Image Pro and Standard now on AIMLAPI (2026-06-09).** `alibaba/wan-2-7-image-pro` at ~$0.06/image (69% cheaper than NBP Edit $0.195). Multi-ref via `image_urls` array (up to 9 refs). Character Locking feature for cross-generation identity consistency. Use for draft hero frame iterations only — NOT for finals (no Subject Binding strength dial; identity lock is less precise than NBP Edit). `alibaba/wan-2-7-image` (standard) at ~$0.04/image — even cheaper but weaker character locking. CANARY REQUIRED for both variants.
 31. **NB2 pricing corrected (2026-06-12): $0.067/image at 1K** (Google direct API, verified March 2026). Prior entry had $0.08 — corrected. With AIMLAPI ~1.3× markup → ~$0.087/image at 1K estimated. Batch API (Google direct) offers $0.034/image at 1K — but AIMLAPI does not expose Google Batch discount. Savings vs NBP Edit on AIMLAPI: $0.195 − $0.087 = $0.108/draft image (55% savings). CANARY REQUIRED on AIMLAPI to confirm exact price.
 32. **PixVerse V5.5 confirmed on AIMLAPI (2026-06-12): `pixverse/v5-5-image-to-video` and `pixverse/v5-5-text-to-video`.** Price: $0.78/5s = $0.156/sec. Audio optional via `generate_audio_switch: false` (NOT forced). 9:16 confirmed. 1080p max 5s or 8s; 720p up to 10s. NOT competitive for non-character shots (Hailuo 2.3 Fast and LTXV 2 Fast are 3-4× cheaper). Potential fallback for character drafts if Wan 2.7 I2V canary fails — 28% cheaper than Kling Standard, with strong character retention claims. CANARY REQUIRED before any production use.
 33. **Sora 2 confirmed on AIMLAPI (2026-06-12) — DO NOT USE.** Model strings: `openai/sora-2-i2v`, `openai/sora-2-t2v`, `openai/sora-2-pro-i2v`, `openai/sora-2-pro-t2v`. Estimated ~$0.13/sec (Standard 720p). DOUBLE DISQUALIFIER: (1) Audio is ALWAYS generated — no disable parameter, strip required on every download; (2) **API sunsets September 24, 2026** — do not build pipeline dependency. No cost advantage vs existing models. Do not canary.
+34. **Veo 3 Fast I2V/T2V confirmed on AIMLAPI docs (2026-06-16) — CANARY REQUIRED.** Model strings: `google/veo-3-fast-image-to-video` (I2V), `google/veo-3-fast-text-to-video` (T2V). Estimated ~$0.13/sec = ~$0.65/5s (fal.ai $0.10/sec + AIMLAPI markup). Audio CAN be disabled (verify param name in canary). **Prefer Veo 3.1 Fast I2V over Veo 3 Fast** — 3.1 is newer and higher quality at same estimated cost. Use Veo 3 Fast only if 3.1 Fast is unavailable.
+35. **Veo 3 Standard I2V on AIMLAPI (`google/veo-3-image-to-video`) — DO NOT USE.** $0.788/sec confirmed (~$3.94/5s). 6-7× more expensive than Kling v3 Pro. $15/video ceiling would be exhausted by 3-4 clips. Not cost-efficient at any quality level for this pipeline.
+36. **VEED Fabric-1.0 Fast on AIMLAPI (`veed/fabric-1.0-fast`) — CANARY REQUIRED.** A2V talking-head model. Takes face image + audio URL → lip-synced video. Pricing: $0.08/sec (480p), $0.15/sec (720p). 9:16 supported. Max 30s/clip. Use case: character delivers speech directly to camera, synced with ElevenLabs voiceover. NOT a replacement for cinematic motion shots — separate shot type only. `veed/fabric-1.0` (Standard) also confirmed.
+37. **Happy Horse 1.0 is NOT on AIMLAPI (2026-06-16).** fal.ai is the exclusive API partner. AIMLAPI blog post was editorial content, not an API launch. Confirms AIMLAPI-only pipeline is unaffected. Do not canary. Wan 2.7 R2V also still NOT live on AIMLAPI (same date) — Wan 2.6 R2V remains the live R2V option.
