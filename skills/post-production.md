@@ -412,13 +412,13 @@ TikTok's right-side dead zone is significantly wider than Instagram's — this i
 | Zone | Pixels from edge | What occupies it |
 |------|-----------------|------------------|
 | Bottom danger zone | Bottom **324px** (organic) / **370px** (ads/branded) | Caption, sound attribution, engagement buttons |
-| Right danger zone | Right **~180px** | Like, Comment, Share, Bookmark, "Add to Playlist" — right column expanded ~+16px in Jan 2026 |
+| Right danger zone | Right **~184px** | Like, Comment, Share, Bookmark, "Add to Playlist" — right column expanded ~+20px in Jan 2026 (from 164px base) |
 | Top danger zone | Top **130px** | Back button, overflow menu |
 | Left danger zone | Left **60px** | Profile avatar |
 
-**Effective safe content area: ~900 × 1466px, centered.** (Right margin updated to ~180px from prior 164px — "Add to Playlist" button expanded the right icon column in January 2026.)
+**Effective safe content area: ~836 × 1466px, centered.** (1080 − 60 left − 184 right = 836px; 1920 − 130 top − 324 bottom = 1466px. Right margin corrected from prior ~180px estimate: sources confirm Add to Playlist button added ~20px, not ~16px, making right margin ~184px. SC133 correction 2026-06-16.)
 
-**Key difference vs Instagram:** TikTok's right dead zone is ~180px vs Instagram's 120px. When reusing an asset designed for Instagram, any element within the right 180px may be hidden on TikTok. Re-check placement of logos, phone numbers, and CTAs before cross-posting.
+**Key difference vs Instagram:** TikTok's right dead zone is ~184px vs Instagram's 120px. When reusing an asset designed for Instagram, any element within the right 184px may be hidden on TikTok. Re-check placement of logos, phone numbers, and CTAs before cross-posting.
 
 **Upload bitrate guidance:** Upload at 8–15 Mbps for 1080p/30fps. Below 5 Mbps triggers TikTok's quality downgrade flag. Desktop upload via TikTok Studio supports up to **10 GB** — always upload via desktop for master-quality delivery, not mobile (mobile cap is 287 MB iOS / 72 MB Android).
 
@@ -747,9 +747,9 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-14)
+## 11. Tool Version Status (confirmed 2026-06-16, SC133)
 
-All post-production tools confirmed unchanged as of study cycle 126 (2026-06-14):
+All post-production tools confirmed as of study cycle 133 (2026-06-16):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
@@ -758,10 +758,11 @@ All post-production tools confirmed unchanged as of study cycle 126 (2026-06-14)
 | TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | No new stable since v2.4.1 |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 — current pipeline commands unchanged |
-| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified June 2026 |
-| TikTok safe zones | unchanged | ~180px right, 324px bottom, 130px top, 60px left — verified June 2026 |
+| Remotion | v4.0.477 (confirmed 2026-06-14) | No version change since SC129 — all Remotion commands current |
+| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified SC133 |
+| TikTok safe zones | **CORRECTED SC133** | ~184px right (was ~180px — corrected: 164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px (was 900×1466px — arithmetic error fixed) |
 
-No command updates needed in this cycle. All existing FFmpeg commands in §§1-10 are current.
+**SC133 correction (2026-06-16):** TikTok right dead zone updated to ~184px (from ~180px) — prior estimate of +16px for Add to Playlist was wrong; multiple 2026 sources confirm +20px expansion. Effective safe content area corrected from "~900 × 1466px" to "~836 × 1466px" (1080 − 60 − 184 = 836px). The "900px" figure was a carry-over error from before the right-column expansion — it only held when right margin was 120px (matching Instagram), which TikTok never was.
 
 ---
 
@@ -778,7 +779,7 @@ Before marking video as delivered:
 - [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise fork — nihui binary tops out at v4.6), check ghost artifacts
 - [ ] Instagram algorithm: our 30–60s ads are well under the 90s sweet spot and far under the 3-min non-follower cutoff — no action needed, but flag if a future brief pushes past 3 minutes
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
-- [ ] TikTok repurpose: re-check right ~180px dead zone (wider than Instagram; updated Jan 2026) — see §5g
+- [ ] TikTok repurpose: re-check right ~184px dead zone (wider than Instagram; Add to Playlist +20px Jan 2026, effective safe area ~836 × 1466px) — see §5g
 - [ ] All text overlays composited (see text-overlay-compositing.md)
 - [ ] Audio mixed per halal-audio.md — voiceover + SFX only, no instruments
 - [ ] Final mix loudness: -14 LUFS ±1.0, true peak ≤ -1.5 dBTP
