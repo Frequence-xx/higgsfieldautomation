@@ -636,41 +636,71 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-14, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI.
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-16, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI.
 
 **Why it matters:** ~$0.10/sec → **$0.50/5s clip**, vs Kling O1 at $1.46/5s. 3× cost reduction for character shots if identity lock quality is acceptable.
 
-**Key parameters (Together AI format; AIMLAPI format expected similar):**
+### AIMLAPI Wan 2.6 R2V — Correct Parameters (pass 19 finding, 2026-06-16)
+
+AIMLAPI's Wan 2.6 R2V uses **`video_urls`** (not `reference_images`) and **"character1"/"character2"** prompt binding (NOT "Image1"). It accepts VIDEO references only — not static images. This makes it less useful for photo-based character sheets (use Kling O1 instead for image refs).
+
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI (confirmed 2026-06-14) — use wan-2-6-r2v
-    "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
-    "media": {
-        "reference_images": [
-            {"image": "https://cdn.example.com/crew_lead/front.png"},
-            {"image": "https://cdn.example.com/crew_lead/three_quarter.png"},
-            {"image": "https://cdn.example.com/crew_lead/face_crop.png"},
-        ]
-        # total reference_images + reference_videos ≤ 5
-    },
-    "resolution": "720p",         # "720p" or "1080p"; use 720p for drafts
-    "ratio": "9:16",
-    "seconds": 5,
-    "generate_audio": False,      # confirm param name on AIMLAPI — may differ
+    "model": "alibaba/wan-2-6-r2v",
+    "prompt": "Character1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
+    "video_urls": [
+        "https://cdn.example.com/crew_lead/reference_clip.mp4",   # reference VIDEO clip
+    ],
+    # For 2 characters: video_urls=[clip1, clip2], prompt uses "Character1 and Character2 carry boxes"
+    "duration": 5,
+    "aspect_ratio": "9:16",
+    "generate_audio": False,   # confirm param name — may be different
 }, headers=headers, timeout=120)
 ```
 
-**Prompt binding syntax:** Plain identifiers "Image1", "Image2", "Video1" (NOT `@Element1` Kling syntax). Each identifier maps to its position in the `reference_images` array.
+**Critical constraints for Wan 2.6 R2V on AIMLAPI:**
+- `video_urls` takes VIDEO clips, not static images — requires recording a short reference clip of the character
+- Prompt binding: "character1", "character2" (lowercase c, by array order) — NOT "Image1"
+- Each reference clip must contain only ONE character (group video = identity merge failure)
+- Max 2 video references (Wan 2.6 limit, vs 5 in Wan 2.7)
+- Character drifts by shot 2 in multi-shot sequences (Wan 2.7 holds 3+ shots)
 
-**Multi-character:** "Image1 and Image2 carry a box together toward the truck" — up to 5 subjects, each with independent identity from their ref.
+### Wan 2.7 R2V — Key Improvements (for when it lands on AIMLAPI)
+
+**Key parameters (Together AI/fal.ai format; AIMLAPI format expected similar):**
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI as of 2026-06-16 — use wan-2-6-r2v
+    "prompt": "image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
+    "reference_images": [
+        "https://cdn.example.com/crew_lead/front.png",
+        "https://cdn.example.com/crew_lead/three_quarter.png",
+        "https://cdn.example.com/crew_lead/face_crop.png",
+    ],
+    # Wan 2.7 supports up to 5 total (images + videos + audio); AIMLAPI adapter may differ
+    "resolution": "720p",         # "720p" or "1080p"; use 720p for drafts
+    "aspect_ratio": "9:16",
+    "duration": 5,
+    "generate_audio": False,
+}, headers=headers, timeout=120)
+```
+
+**Prompt binding syntax (Wan 2.7):** "image1", "image2", "video1" (lowercase, no @ prefix). Each identifier maps to its position in the reference array. "image1 and image2 carry boxes together" for 2 characters.
+
+**Wan 2.7 R2V improvements over 2.6:**
+- Supports STATIC IMAGE references (not video-only like 2.6) — "image1" binding directly from character photo
+- Up to 5 references total (images + videos + audio), vs 2 video-only in 2.6
+- Character consistency holds across 3+ shots; 2.6 drifts at shot 2
+- Voice cloning via audio reference (1–10s WAV/MP3, 15MB max)
+- No `face_weight` dial — identity lock is architectural; cannot tune face adherence per-call
 
 **Critical limitations vs Kling O1:**
-- **No Subject Binding weight parameter** — no face_adherence dial. Identity lock is architectural (embedding-based), not parametric. Cannot increase face adherence on retry.
-- Face consistency quality vs Kling O1 is unverified for our olive/brown-skin characters (Karel, Mourad). Run InsightFace QA on first output.
-- Maximum 5 references total (images + video). Same cap as Kling O1's 4 + image_url.
+- **No Subject Binding weight parameter** — no face_adherence dial. Cannot increase face adherence on retry.
+- Face consistency quality vs Kling O1 unverified for olive/brown-skin characters (Karel, Mourad). Run InsightFace QA.
 - No `face_consistency: True` equivalent for occlusion recovery.
+- Single subject per reference — group photos cause identity merge failure.
 
-**When to test:** Wan 2.7 R2V is not on AIMLAPI as of 2026-06-14. Monitor AIMLAPI changelog for a future R2V endpoint. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
+**When to test Wan 2.7 R2V on AIMLAPI:** Monitor AIMLAPI changelog. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
 
 ## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-14)
 
