@@ -46,6 +46,8 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
+**⚠ Deprecation (July 9, 2026 removal):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected.
+
 ### Voice Parameters (all models)
 
 | Parameter | Value | Rationale |
@@ -295,6 +297,10 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `opus_48000_128` | Good — Opus at 48kHz | Free+ | More space-efficient than `mp3_44100_128` at equal perceived quality; use for SFX library when storage matters |
 | `opus_48000_192` | Better — Opus at 48kHz | Free+ | High-fidelity Opus; smaller file than `mp3_44100_192` |
 | `pcm_48000` | Lossless | Pro+ | **Preferred lossless master** — uncompressed PCM at 48kHz (SFX v2 native rate). Replaces `wav_44100` — see note below. |
+| `ultra_lossless` | Lossless (WAV, 705.6kbps, 44.1kHz) | Pro+ | **Prefer `pcm_48000` for SFX v2** — `ultra_lossless` resamples down from the native 48kHz. Use `ultra_lossless` for TTS outputs where 44.1kHz is the native model rate (eleven_v3). Added to AllowedOutputFormats in the June 2026 API update alongside TTS, Text-to-Dialogue, and Music endpoints. |
+| `opus_48000_32` | Low — Opus at 48kHz | Free+ | Low-bandwidth streaming only — not for SFX library |
+| `opus_48000_64` | Moderate — Opus at 48kHz | Free+ | Acceptable for previews; use `opus_48000_128` or higher for production |
+| `opus_48000_96` | Good — Opus at 48kHz | Free+ | Viable fallback if `opus_48000_128` unavailable on plan |
 | `mp3_22050_32` | Low | Free | Not suitable for mixing — leave as fallback only |
 
 **⚠ `wav_44100` is NOT in `AllowedOutputFormats` for the SFX v2 endpoint** (verified against SDK source `src/elevenlabs/types/allowed_output_formats.py`). Using it may raise a type error or be silently rejected. Use `pcm_48000` instead for lossless masters. Raw PCM can be read by FFmpeg with `-f s16le -ar 48000 -ac 2` flags if needed, or use `mp3_44100_192` for a high-quality non-lossless alternative.
@@ -796,6 +802,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Willem voice_id unknown / not in SDK reference | Voice Library community voices have no public ID list | Fetch once via `GET /v1/voices?search=Willem` and store in project config (see §0) |
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
+| `eleven_monolingual_v1` or `eleven_multilingual_v1` model ID in code throws 404 after July 9, 2026 | Both v1 models are removed July 9, 2026 (same day as scribe_v1) | Audit all scripts and configs for these model IDs. Replace with `eleven_multilingual_v2` (same cost, same Dutch quality). |
+| Want highest-quality TTS master audio (lossless, not PCM 48kHz) | eleven_v3 native rate is 44.1kHz; pcm_48000 involves upsampling for TTS | Use `ultra_lossless` output format (Pro+) for TTS masters — 705.6kbps, 44.1kHz WAV, natively matches eleven_v3 rate. For SFX v2 (native 48kHz), continue to use `pcm_48000`. |
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
 | Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.50+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
