@@ -28,6 +28,19 @@ Kling v3 interprets any vehicle in frame as potentially moving. Without explicit
 - Deform the cargo box geometry
 - Morph the SNELVERHUIZEN branding text
 
+## Physics-First Architecture: Why Ghost Driving Happens
+
+**Kling 3.0 model priority order (June 2026, confirmed from technical previews):**
+Physics → Temporal consistency → Motion quality → Visual fidelity → **Prompt adherence (last)**
+
+Prompt adherence is the LAST thing Kling preserves. When you write "stationary truck, parked" you are issuing a **prompt adherence** instruction. But the model's physics engine "knows" that trucks are vehicles that can roll, so ghost driving is a **physics simulation override** — it wins over your text prompt.
+
+**Implication:** Frame stationarity as physics state, not just motion instruction.
+- ❌ Weak (prompt adherence): `"the truck is stationary, parked"`
+- ✅ Stronger (physics framing): `"parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground, no kinetic energy"`
+
+Add physics-framing language to Layer 1 in addition to the standard stationarity phrases. Static mask (Layer 4A) remains the only hard override — it operates at pixel level, bypassing the physics engine entirely.
+
 ## CRITICAL: Kling v3 Mutually Exclusive Parameters
 
 **`tail_image_url`, `static_mask_url`, and `camera_control` are MUTUALLY EXCLUSIVE in Kling v3. Only ONE can be used per API call.** Passing more than one will cause the API to reject the call or silently ignore the extras. Previous templates that combined all three are WRONG.
@@ -47,10 +60,11 @@ Every truck shot MUST apply ALL four layers. Layer 3 and Layer 4 are now strateg
 
 ### Layer 1: Prompt Constraint
 
-MUST include ALL of these phrases in the motion prompt:
+MUST include ALL of these phrases in the motion prompt. Use physics-framing language (speaks to the model's physics engine, which has higher priority than prompt adherence):
 
 ```
 stationary truck, parked, engine off, no vehicle movement, no forward creep,
+parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground,
 the vehicle remains rigid and solid, metal does not deform
 ```
 
@@ -124,7 +138,7 @@ Use when the shot requires a visible camera orbit or push-in. Accept higher ghos
 }
 ```
 
-**DO NOT use `tail_image_url` as a substitute** — it prevents net displacement but allows significant mid-clip drift, making it the weakest option alone. If neither static_mask nor camera_control is needed, omit all three and rely on prompt + negative_prompt + cfg_scale 0.7.
+**DO NOT use the end-frame parameter as a substitute** — it prevents net displacement but allows significant mid-clip drift, making it the weakest option alone. Native Kling API name: `image_tail`. AIMLAPI wrapper: may use `tail_image_url` (canary required). If neither static_mask nor camera_control is needed, omit all three and rely on prompt + negative_prompt + cfg_scale 0.7.
 
 ---
 
@@ -138,7 +152,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
     "image_url": hero_frame_url,
     # NO tail_image_url — incompatible with static_mask_url in v3
     # NO camera_control — incompatible with static_mask_url in v3
-    "prompt": "Stationary truck, parked, engine off, no vehicle movement, no forward creep. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion eases to stop.",
+    "prompt": "Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion eases to stop.",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,
@@ -156,7 +170,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
     "image_url": hero_frame_url,
     # NO tail_image_url — incompatible with camera_control in v3
     # NO static_mask_url — incompatible with camera_control in v3
-    "prompt": "Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement, no forward creep. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Camera motion eases to stop.",
+    "prompt": "Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Camera motion eases to stop.",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,

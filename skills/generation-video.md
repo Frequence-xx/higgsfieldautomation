@@ -243,6 +243,8 @@ camera drift, sudden zooms, background shifting, unstable details, background mo
 
 ### Ghost Driving (Truck Movement) — HIGHEST PRIORITY
 
+**Kling 3.0 physics-first model architecture (confirmed June 2026):** Prompt adherence is the LAST priority. Model priority order: Physics → Temporal consistency → Motion quality → Visual fidelity → Prompt adherence. "Stationary truck" is a prompt instruction (lowest priority) — the physics engine can override it. Fix: frame stationarity as physics state using physics-framing language ("parking brake engaged, wheels locked, dead weight at rest on flat level ground") — this speaks to the physics engine directly, not just the text prompt. Static mask (pixel-level freeze) remains the only hard override that operates outside the physics engine.
+
 **UPDATED (June 2026):** In Kling v3, `static_mask_url`, `tail_image_url`, and `camera_control` are mutually exclusive — only ONE can be used per call. Previous multi-layer combinations are invalid.
 
 **Strategy A — Maximum stationarity (final delivery shots):**
@@ -314,7 +316,7 @@ negative_prompt="face distortion, morphing faces, identity drift, breathing move
 cfg_scale=0.7, duration="5",
 # NO camera_control — incompatible with static_mask_url in Kling v3
 static_mask_url=truck_freeze_mask_url,  # White over truck body, black for environment
-prompt="Stationary truck, parked, engine off, no vehicle movement. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Foreground leaves drift subtly. Motion eases to stop.",
+prompt="Stationary truck, parked, engine off, no vehicle movement. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Foreground leaves drift subtly. Motion eases to stop.",
 negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering, color shift, jittery, inconsistent lighting"
 ```
 
@@ -322,7 +324,7 @@ negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphin
 ```python
 cfg_scale=0.7, duration="5",
 camera={"tilt": 2},  # ONE non-zero value. NO static_mask_url in this strategy.
-prompt="Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Camera motion eases to stop.",
+prompt="Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. Vehicle remains rigid. Light reflections glide across surface. Branding text stays perfectly sharp. Camera motion eases to stop.",
 negative_prompt="vehicle movement, driving, rolling, ghost driving, text morphing, label warping, geometry distortion, reflection artifacts, blurry, flickering, color shift, jittery, inconsistent lighting"
 ```
 
@@ -357,10 +359,10 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | cfg_scale | float | 0.5 | 0-1, prompt adherence |
 | motion_strength | — | — | **Not a standard I2V parameter.** Motion Control (V2V) variant only. Omit from all I2V calls. |
 | negative_prompt | string | "" | Max 2500 chars |
-| tail_image_url | string | — | End frame for transitions. **Incompatible with multi_prompt.** **Incompatible with static_mask_url, dynamic_masks, and camera_control (Kling v3 mutual exclusivity — pick only ONE of these four per call).** Same image = forces stationarity but allows mid-clip drift. |
+| tail_image_url | string | — | End frame for transitions. **Native Kling API name: `image_tail`; AIMLAPI wrapper: `tail_image_url` (canary required).** **Incompatible with multi_prompt.** **Incompatible with static_mask_url, dynamic_masks, and camera_control (Kling v3 mutual exclusivity — pick only ONE of these four per call).** Same image = forces stationarity but allows mid-clip drift. |
 | camera_control | object | — | Named preset OR simple config (not both). **Incompatible with static_mask_url, dynamic_masks, and tail_image_url (Kling v3 mutual exclusivity).** See camera control section. |
 | elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
-| static_mask_url / static_mask | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. **⚠️ PARAMETER NAME CANARY REQUIRED:** Native Kling API uses `static_mask`; AIMLAPI wrapper may use `static_mask_url` or pass through as `static_mask`. Test both before production truck shot. |
+| static_mask_url / static_mask | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. **⚠️ PARAMETER NAME:** Native Kling API: `static_mask` (confirmed from official Kling Node.js wrapper, June 2026). AIMLAPI wrapper: may use `static_mask_url` or pass through as `static_mask`. Try `static_mask` first; fall back to `static_mask_url`. Canary required before first production use. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
 | multi_prompt | array | — | Multi-shot prompting (up to 6 shots) — **AIMLAPI parameter name**. Base Kling API calls this `guidances`. **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
 
