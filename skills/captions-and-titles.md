@@ -108,7 +108,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
 
-   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. Key difference: keyterms limited to **50 terms, max 20 characters each** (vs batch Scribe: 100 terms, no per-term char limit). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct.
+   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. As of June 2026, accepts `keyterms` (array, max 50 entries × 20 chars each) and `no_verbatim` params — both echoed back in `session_started` event. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
@@ -183,7 +183,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) is the current latest — adds no timestamp changes but is the correct version to pin.
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. **v1.8.7 (June 16, 2026) is the current latest** — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes — all timing behavior identical to v1.8.5+.
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -200,7 +200,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.8.6';        // v1.8.5+ for PR #2279 silence-gap fix; 1.8.6 is latest
+   const WHISPER_VERSION = '1.8.7';        // v1.8.5+ for PR #2279 silence-gap fix; 1.8.7 is current latest (maintenance-only)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -267,7 +267,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const WHISPER_PATH = './whisper-cpp';
    const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
-   const WHISPER_VERSION = '1.8.6';
+   const WHISPER_VERSION = '1.8.7';
 
    await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
 
@@ -634,7 +634,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.477 — confirmed current as of 2026-06-15)
+### Full API (v4.0.478 — confirmed current as of 2026-06-17; no caption API changes in 4.0.478)
 
 | Export | Purpose |
 |--------|---------|
@@ -808,9 +808,12 @@ Use this BEFORE `createTikTokStyleCaptions()` when you have long Dutch phrases t
 
 ### Key Parameter: combineTokensWithinMilliseconds
 
-- `500` — Word-by-word (recommended for business/ad content)
+- `500` — Word-by-word (classic TikTok style, fastest pace)
+- `600`–`800` — **Premium pace for business/service ad content** (2-3 word chunks held 600–900ms — 2026 industry shift: premium short-form video is slowing down from rapid word-by-word toward more deliberate chunk timing; increases comprehension without losing energy)
 - `1200` — Phrase-by-phrase (calmer, educational content)
 - `2000` — Sentence-level (subtitle-style, matches parseSrt() input)
+
+**Snel Verhuizen recommendation:** Use `700` (or `combineTokensWithinMilliseconds: 700`) for voiceover captions. Dutch is spoken at moderate pace; 700ms gives 2-3 word chunks that feel cinematic without rushing. Use `500` only if voiceover is fast-paced (>160 wpm).
 
 ### Critical: whiteSpace: 'pre'
 
