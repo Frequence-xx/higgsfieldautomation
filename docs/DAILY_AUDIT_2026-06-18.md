@@ -598,5 +598,27 @@ TOP 3 ACTIES:
    aan production-checklist.md. Canoniek DB-pad vastleggen (root, niet data/).
    Na 7+ splits: Skills 92.5% → 96.25%.
 
-$0 besteed. 56 dagen geen video. 23 bundelingen. 29e audit zonder BOT_TOKEN.
+$0 besteed. 56 dagen geen video. 23 bundelingen (SC140 post-audit → schoon). 29e audit zonder BOT_TOKEN.
 ```
+
+---
+
+## ADDENDUM — SC140 (arrived during audit, pre-push)
+
+**Commit:** `37e79f4` — Jun 18 06:09 UTC — *Study cycle 140: Post-production (pass 18) — Remotion 4.0.479, CLI binary date, VMAF model note*
+
+**Files changed:** `skills/post-production.md` only — ✓ **Clean single-file commit.**
+
+**Word count:** `post-production.md`: 5,871 → **6,007** (+136 SC140) — **C6 FAIL GROWING** (1,007 over threshold; SC133 and SC140 both grew this file in the same window).
+
+**Key content (SC140):**
+- Remotion updated to v4.0.479 (released June 17, 2026) — v4.0.478 added contourLines effect; v4.0.479 adds Props panel revamp and visual effects (thermalVision, pixelate, shrinkwrap, burlap). No changes to caption/text pipeline.
+- TNTwise rife-ncnn-vulkan CLI confirmed at v20250112 (Jan 12, 2025) binary — supports models through v4.26/v4.26.heavy.
+- VMAF model note: v0.6.2 and v0.6.3 exist but have no material differences vs default v0.6.1 — FFmpeg libvmaf default is correct.
+- TikTok/Instagram safe zones: confirmed unchanged from SC133.
+
+**Impact on scores:**
+- Execution: SC140 is clean (single-file ✓) — no impact on bundling count (23 remains).
+- Operator weighted: unchanged at 2.36/5.0.
+- Skills: **post-production.md now 6,007** (was 5,871; C6 FAIL growing; library total rises to **74,020 words** from 73,884). Score remains 92.5% (same C6 criteria, worse magnitude).
+- SC140 does NOT touch CLAUDE.md — June 20 deadline still absent (now <48h).
