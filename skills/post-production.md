@@ -218,6 +218,7 @@ For scripted pipeline use (no GUI):
 
 ```bash
 # TNTwise fork: https://github.com/TNTwise/rife-ncnn-vulkan/releases
+# Latest binary release: v20250112 (Jan 12, 2025) — supports models through v4.26/v4.26.heavy
 # Download the Linux binary
 unzip rife-ncnn-vulkan-linux.zip
 
@@ -565,6 +566,8 @@ ffmpeg -i assembled_pre_export.mp4 -i delivery_master.mp4 \
   -f null -
 ```
 
+**VMAF model note:** Default model `vmaf_v0.6.1` is the standard. Versions v0.6.2 and v0.6.3 exist in the Netflix/vmaf repo but have "no material differences" compared to v0.6.1 per official docs — no need to override the model. The default FFmpeg libvmaf build uses v0.6.1, which is correct for our 1080p social-media delivery scoring.
+
 VMAF score interpretation:
 
 | Score | Quality |
@@ -747,22 +750,25 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-16, SC133)
+## 11. Tool Version Status (confirmed 2026-06-18, SC140)
 
-All post-production tools confirmed as of study cycle 133 (2026-06-16):
+All post-production tools confirmed as of study cycle 140 (2026-06-18):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
-| FFmpeg stable | 8.1.1 (released 2026-05-04) | No 8.2 release — all pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable |
+| FFmpeg stable | 8.1.1 (released 2026-05-04) | No 8.2 release — 8.2-dev branch exists; all pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable |
 | Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 or newer — v4.25 remains pipeline default for diffusion video |
 | TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | No new stable since v2.4.1 |
-| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released |
+| TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
+| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released (TBD date) |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 — current pipeline commands unchanged |
-| Remotion | v4.0.477 (confirmed 2026-06-14) | No version change since SC129 — all Remotion commands current |
-| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified SC133 |
-| TikTok safe zones | **CORRECTED SC133** | ~184px right (was ~180px — corrected: 164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px (was 900×1466px — arithmetic error fixed) |
+| Remotion | **v4.0.479 (released 2026-06-17)** | Updated from 4.0.477 — v4.0.478 added contourLines effect + remotion.dev/convert audio formats; v4.0.479 added Props panel revamp + visual effects (thermalVision, pixelate, shrinkwrap, burlap). No changes affect our caption/text pipeline. |
+| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified SC140 |
+| TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
 
 **SC133 correction (2026-06-16):** TikTok right dead zone updated to ~184px (from ~180px) — prior estimate of +16px for Add to Playlist was wrong; multiple 2026 sources confirm +20px expansion. Effective safe content area corrected from "~900 × 1466px" to "~836 × 1466px" (1080 − 60 − 184 = 836px). The "900px" figure was a carry-over error from before the right-column expansion — it only held when right margin was 120px (matching Instagram), which TikTok never was.
+
+**SC140 confirmation (2026-06-18):** Remotion updated to v4.0.479 (released June 17, 2026). All other tool versions unchanged. TikTok/Instagram safe zones confirmed unchanged. TNTwise rife-ncnn-vulkan CLI binary confirmed at v20250112 (Jan 2025) supporting models through v4.26.
 
 ---
 
@@ -776,7 +782,7 @@ Before marking video as delivered:
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
-- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise fork — nihui binary tops out at v4.6), check ghost artifacts
+- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise rife-ncnn-vulkan CLI fork v20250112 — supports v4.26; nihui binary tops out at v4.6), check ghost artifacts
 - [ ] Instagram algorithm: our 30–60s ads are well under the 90s sweet spot and far under the 3-min non-follower cutoff — no action needed, but flag if a future brief pushes past 3 minutes
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
 - [ ] TikTok repurpose: re-check right ~184px dead zone (wider than Instagram; Add to Playlist +20px Jan 2026, effective safe area ~836 × 1466px) — see §5g
