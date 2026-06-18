@@ -22,17 +22,15 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
-## ⚠️ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN (9 days away as of 2026-06-16) — JUNE 20 DEADLINE IS 4 DAYS AWAY
+## ✅ JUNE 25, 2026 — PREVIEW MODEL SHUTDOWN — CONFIRMED SAFE FOR AIMLAPI (2026-06-18)
 
-Google is retiring both Gemini image preview models on **June 25, 2026**:
+Google retired both Gemini image preview models on **June 25, 2026**:
 - `gemini-3-pro-image-preview` → GA replacement: `gemini-3-pro-image`
 - `gemini-3.1-flash-image-preview` → GA replacement: `gemini-3.1-flash-image`
 
-**Google recommended migration deadline: June 20, 2026** — that is **4 days from today (June 16)**. After June 25, all calls to `-preview` native model IDs will fail. AIMLAPI's routing aliases should buffer this (see below), but run the canary NOW.
+**2026-06-18 CONFIRMED LOW RISK:** Research across multiple independent sources (laozhang.ai, aifreeapi.com, apiyi.com) confirms AIMLAPI's routing aliases (`google/nano-banana-pro`, `google/nano-banana-pro-edit`, `google/nano-banana-2`) route directly to the GA model IDs — they do NOT pass the `-preview` suffix to Google. The June 25 shutdown of native `-preview` strings does NOT affect AIMLAPI calls. The GA versions are confirmed stable and operational. **No action required.** If calls unexpectedly return 404/model-not-found after June 25, contact AIMLAPI support — do NOT assume the pipeline is broken before checking.
 
-**2026-06-16 GA confirmation:** The Google Cloud blog (May 28, 2026) confirms both NB2 and NBP are fully GA. 1K and 2K output are GA-stable. 4K remains in Preview. The blog does NOT explicitly state whether AIMLAPI has migrated their backend routing — that canary remains mandatory.
-
-**AIMLAPI routing note:** AIMLAPI model strings `google/nano-banana-pro`, `google/nano-banana-pro-edit`, and `google/nano-banana-2` are AIMLAPI's OWN routing aliases — they do NOT pass the `-preview` suffix to Google. This means they should survive the June 25 shutdown IF AIMLAPI has already migrated their backend routing to the GA model IDs. AIMLAPI's doc URLs still reference `-preview` internally, but this is a documentation artifact, not the API string you pass. **Run a canary call on `google/nano-banana-pro-edit` BEFORE JUNE 20 to confirm.** If calls return 404/model-not-found after June 25, contact AIMLAPI support immediately — do NOT assume the pipeline is broken before checking.
+**2026-06-16 GA confirmation (background):** The Google Cloud blog (May 28, 2026) confirms both NB2 and NBP are fully GA. 1K and 2K output are GA-stable. 4K remains in Preview and is unstable — do not use 4K in production.
 
 ## Critical Rules
 
@@ -66,6 +64,7 @@ Google is retiring both Gemini image preview models on **June 25, 2026**:
 | Qwen Image Edit | `alibaba/qwen-image-edit`✦ | Surgical text edits within existing images; background/object removal; fallback when NBP blockReason OTHER fires | 2–3 | ~$0.059 | native |
 | Seedream 4.5 | `bytedance/seedream-4-5`✧ | T2I + I2I with up to 14 refs; portrait/character editing with strong face fidelity; fallback when NBP blockReason OTHER fires | 14 | $0.052 | 9:16 native |
 | Seedream 5.0 Lite | `bytedance/seedream-5-0-lite-preview`✧ | T2I + I2I (image_urls supported); chain-of-thought reasoning; draft-tier, cheaper than NB2 | 14 | ~$0.035 | 9:16 (`"9:16"` in size param) |
+| Recraft V3 | `recraft-v3`✪ | CTA cards, text-heavy brand stills (T2I only); `text_layout` for exact text placement; `rgb_colors` for palette lock | 0 | $0.042 | 9:16 native |
 
 ‖**Gemini 2.5 Flash Image (2026-05-28):** The original "Nano Banana" (Gemini 2.5 Flash Image) is available on AIMLAPI at ~$0.039/img. T2I only, no reference images, no Gemini 3 reasoning. Use ONLY as a sub-NB2 draft tier for rough composition/layout checks before committing NB2 credits. Do NOT use for character or brand-critical shots — quality is significantly below NB2. **AIMLAPI model string `google/gemini-2.5-flash-image` — run canary to confirm before production use.** Native 9:16 output. Pricing: ~42% cheaper than NB2 ($0.039 vs $0.067 at 1K).
 
@@ -120,7 +119,9 @@ Use NB2 ($0.067) for cheap iteration drafts; GPT Image 2 `high` only for finals 
 
 **Both models:** Do NOT use as primary character model until canary confirms face adherence vs. NBP Edit baseline. Parameter names (other than `prompt`, `image_urls`, `size`, `seed`) may differ from NBP/Kontext — verify in canary.
 
-**Ideogram 4.0 (2026-06-03, NOT yet on AIMLAPI — future candidate):** Released June 3, 2026 as an open-weight foundation model (9.3B parameters). Key specs: English OCR accuracy **0.97** (highest confirmed for any image model — surpasses GPT Image 2 for text accuracy), native 2K output, JSON structured prompting (specify bounding boxes, color palettes, layout zones via JSON), multilingual text, transparent background support. Weights are downloadable (self-hostable + fine-tunable). **Not confirmed on AIMLAPI** as of 2026-06-14 — available via Ideogram native API, Runware, and potentially others. If AIMLAPI adds it, expected string: `ideogram/ideogram-4.0`. **CTA card use case:** If confirmed on AIMLAPI, Ideogram 4.0 may displace GPT Image 2 for Dutch text accuracy on CTA cards given its 0.97 OCR score. Monitor AIMLAPI model additions; run canary when/if available.
+✪**Recraft V3 (`recraft-v3`, confirmed on AIMLAPI, 2026-06-18):** T2I only — no reference image input, no character identity anchoring. Key advantage over all other models: `text_layout` parameter places text at exact pixel coordinates (bounding box JSON), and `rgb_colors` constrains generation to an exact color palette (e.g., `[[252,132,52]]` for #FC8434). These two parameters together make it uniquely suited for CTA cards requiring precise text placement AND exact brand color. `style` parameter supports photorealistic, digital illustration, and vector. Pricing: $0.042/img raster, $0.084/img vector — much cheaper than NBP ($0.195) or GPT Image 2 high ($0.21). Leaderboard: Recraft V3 held #1 on Hugging Face text-to-image ELO leaderboard for 5+ consecutive months. **Dutch text accuracy**: strong but unverified at 99% GPT Image 2 level — treat as draft tier, promote to GPT Image 2 for approved finals. NOT suitable for character shots. **CANARY REQUIRED** to verify `text_layout` and `rgb_colors` parameter behavior on AIMLAPI proxy before production use (AIMLAPI confirmed to host it, parameter proxying unverified).
+
+**Ideogram 4.0 (2026-06-03, CONFIRMED NOT on AIMLAPI as of 2026-06-18):** Released June 3, 2026 as an open-weight foundation model (9.3B parameters). Key specs: English OCR accuracy **0.97** (highest confirmed for any image model — surpasses GPT Image 2 for text accuracy), native 2K output, JSON structured prompting (specify bounding boxes, color palettes, layout zones via JSON), multilingual text, transparent background support. Weights are downloadable (self-hostable + fine-tunable). **Confirmed NOT on AIMLAPI as of 2026-06-18** — 15 days post-release, extensive model list research found no AIMLAPI entry. Available via: Ideogram native API (Turbo $0.03, Default $0.06, Quality $0.10/img), Together AI ($0.06/img), Runware. If AIMLAPI adds it, expected string: `ideogram/ideogram-4.0`. **CTA card use case:** 0.97 OCR would displace GPT Image 2 if AIMLAPI adds it. Not actionable under AIMLAPI-only policy. Monitor AIMLAPI model additions monthly.
 
 **⚠️ IMAGEN 4 RETIREMENT — CRITICAL (2026-06-08 update):** All three Imagen 4 variants (`imagen-4.0-ultra-generate-001`, `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001`) retire **June 24, 2026 — 16 days away**. Google's official replacement: `gemini-3-pro-image` = `google/nano-banana-pro` on AIMLAPI. Stop routing new jobs to Imagen 4 immediately. Migrate CTA/money-shot workflow to NBP Pro (`google/nano-banana-pro`, T2I) or NBP Edit (`google/nano-banana-pro-edit`, I2I with refs). Gemini 2.5 Flash Image (`gemini-2.5-flash-image`) shuts down **October 2, 2026**.
 
@@ -141,6 +142,7 @@ Shot needs brand-color still without input? → Flux Kontext Max T2I or Nano Ban
 Shot is the money shot / CTA hero? → Nano Banana Pro Edit (14 refs, T2I) — Imagen 4 Ultra RETIRING 2026-06-24
 Shot needs flawless Dutch text (CTA card)? → GPT Image 2 (99% text accuracy) — run canary first
 Budget CTA card draft (not final)? → GPT Image 1.5 (~$0.04-0.28, 20% cheaper per I/O than GPT Image 1, better instruction following) — CANARY REQUIRED before use
+CTA card needs exact text layout + brand color control (no characters)? → Recraft V3 ($0.042, `text_layout` + `rgb_colors` params) — cheaper than GPT Image 2, promotes to GPT Image 2 `high` for finals — CANARY REQUIRED on AIMLAPI
 Need character chain-editing (4+ iterations)? → Kontext Pro ($0.052/img) over Kontext Max ($0.10) — better face stability, lower cost
 Hero frame passed most QA but has 1 brand failure? → NBP Edit inpainting ($0.20) — fix only the failing element, not full regen
 Need cheap B-roll scenery draft (no characters)? → Grok Imagine Quality ($0.055, `x-ai/grok-imagine-image-quality`) — CANARY REQUIRED (Pro deprecated May 15; Quality string unverified on AIMLAPI)
@@ -460,6 +462,42 @@ NBP Edit supports mask-free localized editing: pass the hero frame as Image 1 an
 - Explicitly state what NOT to change: "do not change the face, lighting, or background"
 - If the fix fails after 2 attempts, regenerate from scratch rather than chaining fixes
 - Log inpainting calls in cost tracking the same as any NBP Edit call ($0.20 each)
+
+### Expression Library Technique (2026-06-18)
+
+Generate controlled expression variants of an approved hero frame without full regeneration. Builds a reusable expression reference library for future productions.
+
+**Why it matters:** Starting Kling I2V from a hero frame with the wrong expression forces an expression-correction retry at $1.46. One $0.20 expression variant prevents that.
+
+**Workflow:**
+```
+Step 1: Start from an APPROVED hero frame (already QA-passed)
+
+Step 2: NBP Edit — change ONLY the expression:
+  prompt: "Image 1: Mourad approved hero frame.
+           Change ONLY the expression to [slight smile / neutral / concerned].
+           Keep IDENTICAL: jawline contour, eye spacing, nose width, skin texture,
+           short black beard, clothing, background, lighting direction.
+           Do not modify anything outside the mouth and eye areas."
+  model: google/nano-banana-pro-edit
+  image_urls: [approved_hero_url]
+  cost: $0.20/variant
+
+Step 3: QA the output — verify face matches ref (InsightFace cosine > 0.6)
+
+Step 4: Save with descriptive filename:
+  mourad_expression_neutral.jpg
+  mourad_expression_smile.jpg
+  mourad_expression_concern.jpg
+
+Step 5: Add variants to assets/library — they become Image 2 options in future
+        calls, giving the model a "seen expression" anchor
+```
+
+**Hard rules:**
+- Chain-edit ceiling still applies — max 3 expression edits from the original before restarting from scratch
+- Always QA expression variants with InsightFace before saving to library
+- Log each call as an NBP Edit ($0.20) in cost tracking
 
 ### Multi-Reference Role Assignment (2026-04-27)
 
