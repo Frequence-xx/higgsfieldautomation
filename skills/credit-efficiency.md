@@ -96,6 +96,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) | Cost (3s) |
 |-------|---------------|-----------|---------------------|----------|
+| Kling v3 Std Turbo I2V (canary) | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec est.) | **$0.44** — ⚠️ First+last frame model. Last frame may be required. CANARY before routing drafts here. |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
@@ -620,6 +621,8 @@ Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-cha
 **Kling O3 (= Kling 3.0 Omni) is a separate, premium model** — released Feb 2026, optimized for multi-shot storytelling (up to 6 shots, 15s total in one pass). Available on fal.ai; **NOT confirmed on AIMLAPI** as of 2026-06-01. Not cost-efficient for our single-clip workflow (pricing higher than v3 Pro).
 
 Note: "Kling v4" does not exist. Our production strings remain `klingai/video-v3-pro-image-to-video` (final) and `klingai/video-v3-standard-image-to-video` (draft).
+
+**Kling v3 Standard Turbo I2V — NEW on AIMLAPI (2026-06-18):** `klingai/video-v3-standard-turbo-image-to-video` confirmed in AIMLAPI docs index. Estimated $0.146/sec = **$0.73/5s** (33% cheaper than Standard $1.09/5s). Resolution: 720p. Designed as a first+last frame model (model fast-interpolates between two defined endpoints). **NOT a drop-in replacement for single-frame I2V — last frame may be required.** If canary confirms last frame is optional: route all Standard draft passes here and save $0.36/draft. If required: use only for A→B transitions and truck first=last ghost-driving lock. **Kling O3/Omni and v3 Motion Control are still NOT on AIMLAPI as of June 2026.** See `generation-video.md` Turbo section for full canary checklist.
 
 ---
 

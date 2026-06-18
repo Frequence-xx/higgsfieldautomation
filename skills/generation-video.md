@@ -35,6 +35,7 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) |
 |-------|---------------|------------|---------------------|
 | Kling O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.56** |
+| Kling v3 Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec est.) — CANARY REQUIRED |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$1.46** |
@@ -593,6 +594,42 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - [ ] Run InsightFace buffalo_l cosine similarity vs v3 Pro baseline on same refs
 - [ ] Confirm 9:16 aspect ratio renders correctly (1080p)
 - [ ] Confirm `generate_audio: false` accepted (no surcharge)
+
+---
+
+## Kling v3 Standard Turbo I2V — NEW on AIMLAPI (June 2026)
+
+**Model string:** `klingai/video-v3-standard-turbo-image-to-video`
+**Confirmed on:** AIMLAPI docs index (June 2026 search, docs page exists)
+**Cost:** ~$0.146/sec = **$0.73/5s** (est. from AIMLAPI pricing search — confirm in canary)
+**Resolution:** 720p (same as Standard non-turbo)
+**Speed:** Faster generation than Standard — optimized for high-volume, quick turnaround
+
+**CRITICAL — THIS IS NOT A DROP-IN FOR STANDARD I2V.** Standard Turbo is designed to animate between a **first frame AND a last frame**. It fast-interpolates between two defined endpoints. It is NOT single-frame I2V.
+
+**When to use Turbo vs Standard:**
+
+| Need | Model |
+|------|-------|
+| Single start frame, model decides how to animate | Standard I2V (`$1.09/5s`) |
+| Both start AND end frame defined (A→B transition) | Turbo I2V (`$0.73/5s`) — 33% cheaper |
+| Character face shot with identity lock | Standard or Pro (Turbo: elements canary required) |
+| Truck static hold (first=last frame trick) | Turbo could work — canary required |
+
+**Turbo truck ghost-driving application:** Pass the same truck hero frame as both first and last frame. Model must interpolate between identical images → truck forced stationary. Lower cost than Kling Pro + static_mask_url at $1.46. Combine with full negative prompt and cfg_scale 0.7. **CANARY REQUIRED before routing any production truck shots here.**
+
+### Turbo CANARY CHECKLIST
+
+- [ ] Confirm AIMLAPI model string is `klingai/video-v3-standard-turbo-image-to-video`
+- [ ] Confirm actual AIMLAPI price from dashboard (expected ~$0.73/5s at $0.146/sec)
+- [ ] Identify exact last-frame parameter name: `tail_image_url`? `image_tail`? `last_image_url`? Try `tail_image_url` first (same as standard v3 naming on AIMLAPI)
+- [ ] Confirm whether last frame is required or optional (if optional, Turbo could draft-replace Standard)
+- [ ] Confirm `generate_audio: false` is accepted and audio is suppressed
+- [ ] Confirm 9:16 aspect_ratio renders at 720p vertical correctly
+- [ ] If last frame is optional: run one character shot and check face identity vs Standard baseline
+
+**If last frame IS optional (identity check passes):** Route all Standard draft passes to Turbo — saves $0.36/draft (33%). Update routing matrix in CLAUDE.md with owner approval.
+**If last frame is REQUIRED:** Use Turbo only for explicit A→B transitions and the truck first=last ghost-driving lock.
 
 ---
 
