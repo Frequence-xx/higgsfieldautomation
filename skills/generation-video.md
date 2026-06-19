@@ -35,7 +35,10 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) |
 |-------|---------------|------------|---------------------|
 | Kling O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.56** |
-| Kling v3 Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec est.) — CANARY REQUIRED |
+| Kling v3 Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — Last frame OPTIONAL. ⚠️ Audio always generated — strip required. CANARY REQUIRED. |
+| Kling v3 Standard Turbo T2V | `klingai/video-v3-standard-turbo-text-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — T2V variant. Same audio behavior. CANARY REQUIRED. |
+| **Kling v3 Turbo Pro I2V** | `klingai/video-v3-turbo-pro-image-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec — AIMLAPI pricing confirmed June 2026) — 37.7% cheaper than v3 Pro. ⚠️ Audio always generated. CANARY REQUIRED. |
+| **Kling v3 Turbo Pro T2V** | `klingai/video-v3-turbo-pro-text-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec) — CANARY REQUIRED. |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$1.46** |
@@ -47,7 +50,7 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 **PRICING RESOLVED (June 2026):** AIMLAPI Kling v3 Standard = **$0.218/sec = $1.09/5s** (confirmed correct). The $0.084/sec figure causing the previous discrepancy is the **official Kling direct API rate** (kling.ai/dev/pricing) and **fal.ai rate** — NOT AIMLAPI pricing. AIMLAPI charges ~2.6× the native Kling rate for all v3 tiers: Standard $0.218/sec vs $0.084/sec native; Pro $0.291/sec vs $0.112/sec on fal.ai. This atypically high AIMLAPI markup (vs the ~1.3× assumed for most models) is confirmed. The $1.09/5s Standard and $1.46/5s Pro figures in the routing matrix are accurate — no changes needed.
 
-**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni (`klingai/video-v3-omni` — confirmed absent from AIMLAPI docs index June 2026; available on fal.ai, Replicate, Runware, Freepik), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself is absent).
+**Confirmed AIMLAPI Kling model roster (June 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, **Kling v3 Standard Turbo I2V, Kling v3 Standard Turbo T2V, Kling v3 Turbo Pro I2V, Kling v3 Turbo Pro T2V** (all launched June 17, 2026 — canary required), Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni (`klingai/video-v3-omni` — confirmed absent from AIMLAPI docs index June 2026; available on fal.ai, Replicate, Runware, Freepik), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself is absent).
 
 **fal.ai naming note:** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. For v3 Pro on fal.ai, use `fal-ai/kling-video/v3/pro/image-to-video`. For O3/Omni on fal.ai, it's a separate model: `fal-ai/kling-video/o3/standard/image-to-video`. **Kling O3 is NOT on AIMLAPI as of June 12, 2026** — confirmed absent from AIMLAPI docs index. AIMLAPI's own blog post listing Kling models only mentions Kling 2.6 Pro and Kling v3 Pro. Also note: fal.ai Kling v3 Standard pricing ($0.084/sec) is ~2.6× cheaper than AIMLAPI ($0.218/sec) — the AIMLAPI-only mandate is a real cost penalty for Kling Standard tier.
 
@@ -597,39 +600,69 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ---
 
-## Kling v3 Standard Turbo I2V — NEW on AIMLAPI (June 2026)
+## Kling v3 Turbo Series — CONFIRMED ON AIMLAPI (launched June 17, 2026)
 
-**Model string:** `klingai/video-v3-standard-turbo-image-to-video`
-**Confirmed on:** AIMLAPI docs index (June 2026 search, docs page exists)
-**Cost:** ~$0.146/sec = **$0.73/5s** (est. from AIMLAPI pricing search — confirm in canary)
-**Resolution:** 720p (same as Standard non-turbo)
-**Speed:** Faster generation than Standard — optimized for high-volume, quick turnaround
+Two tiers confirmed on AIMLAPI:
 
-**CRITICAL — THIS IS NOT A DROP-IN FOR STANDARD I2V.** Standard Turbo is designed to animate between a **first frame AND a last frame**. It fast-interpolates between two defined endpoints. It is NOT single-frame I2V.
+| Tier | Model String | Resolution | Cost/5s | Cost/3s |
+|------|-------------|-----------|---------|---------|
+| Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p | **$0.73** ($0.146/sec) | $0.44 |
+| Standard Turbo T2V | `klingai/video-v3-standard-turbo-text-to-video` | 720p | **$0.73** ($0.146/sec) | $0.44 |
+| **Turbo Pro I2V** | `klingai/video-v3-turbo-pro-image-to-video` | **1080p** | **$0.91** ($0.182/sec) | $0.55 |
+| **Turbo Pro T2V** | `klingai/video-v3-turbo-pro-text-to-video` | **1080p** | **$0.91** ($0.182/sec) | $0.55 |
+
+*Pricing source: AIMLAPI pricing page, confirmed June 2026. Native Kling: ¥0.8/s (720p) + ¥1/s (1080p), audio included at both tiers. AIMLAPI markup ~1.32×.*
+
+**Last frame is OPTIONAL** (confirmed June 2026, multiple API providers — WaveSpeedAI: "end image is optional," Kie.ai: "first and/or last frame images"): Standard Turbo IS a drop-in for single-frame I2V. Last frame CAN be provided for A→B transitions or first=last ghost-driving lock.
+
+**⚠️ AUDIO ALWAYS GENERATED — mandatory strip before any QA playback:**
+Kling 3.0 Turbo "native audio included" is baked into the base pricing. `generate_audio: false` behavior at AIMLAPI is **UNCONFIRMED** — may not suppress audio. Treat exactly like multi-shot mode:
+```bash
+ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4
+```
+Strip immediately on download. DO NOT play audio before stripping — AI-generated music is a Shari'ah violation.
 
 **When to use Turbo vs Standard:**
 
-| Need | Model |
-|------|-------|
-| Single start frame, model decides how to animate | Standard I2V (`$1.09/5s`) |
-| Both start AND end frame defined (A→B transition) | Turbo I2V (`$0.73/5s`) — 33% cheaper |
-| Character face shot with identity lock | Standard or Pro (Turbo: elements canary required) |
-| Truck static hold (first=last frame trick) | Turbo could work — canary required |
+| Need | Model | Cost/5s | Savings vs baseline |
+|------|-------|---------|-------------------|
+| Draft iteration (identity check, motion check) | **Standard Turbo I2V** | $0.73 | 33% vs Standard ($1.09) |
+| Final delivery at 1080p (after canary) | **Turbo Pro I2V** | $0.91 | 37.7% vs v3 Pro ($1.46) |
+| Final delivery guaranteed identity lock | v3 Pro I2V (current production) | $1.46 | — |
+| A→B transition with defined start+end | Standard Turbo I2V | $0.73 | 33% vs Standard |
+| Truck stationary (first=last frame) | Standard Turbo I2V | $0.73 | 50% vs Pro ($1.46) |
 
-**Turbo truck ghost-driving application:** Pass the same truck hero frame as both first and last frame. Model must interpolate between identical images → truck forced stationary. Lower cost than Kling Pro + static_mask_url at $1.46. Combine with full negative prompt and cfg_scale 0.7. **CANARY REQUIRED before routing any production truck shots here.**
+**Turbo Pro final-pass savings (if canary passes):**
+- 1 character final: $1.46 → $0.91 = saves **$0.55**
+- 1 truck final: $1.46 → $0.91 = saves **$0.55**
+- Typical 4-clip video (2 finals): saves **$1.10/video**
+- Monthly 50 videos: saves **~$55/month**
 
-### Turbo CANARY CHECKLIST
+### Turbo CANARY CHECKLIST (updated 2026-06-19)
 
-- [ ] Confirm AIMLAPI model string is `klingai/video-v3-standard-turbo-image-to-video`
-- [ ] Confirm actual AIMLAPI price from dashboard (expected ~$0.73/5s at $0.146/sec)
-- [ ] Identify exact last-frame parameter name: `tail_image_url`? `image_tail`? `last_image_url`? Try `tail_image_url` first (same as standard v3 naming on AIMLAPI)
-- [ ] Confirm whether last frame is required or optional (if optional, Turbo could draft-replace Standard)
-- [ ] Confirm `generate_audio: false` is accepted and audio is suppressed
-- [ ] Confirm 9:16 aspect_ratio renders at 720p vertical correctly
-- [ ] If last frame is optional: run one character shot and check face identity vs Standard baseline
+**Standard Turbo I2V — draft replacement:**
+- [ ] Submit one 5s I2V call with `klingai/video-v3-standard-turbo-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
+- [ ] Strip audio immediately: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
+- [ ] Record actual AIMLAPI cost from dashboard — confirm ~$0.73 ($0.146/sec)
+- [ ] Confirm `image_url` alone (without `tail_image_url`) is accepted
+- [ ] Confirm last-frame parameter name: try `tail_image_url` (same as standard v3 on AIMLAPI)
+- [ ] Run QA: face identity retention vs Kling Standard baseline
+- [ ] Check `generate_audio: false` effect — is audio stripped from response, or still present?
+- [ ] If identity ≥ 80% AND audio either suppressed OR confirmed strippable → route all drafts here
 
-**If last frame IS optional (identity check passes):** Route all Standard draft passes to Turbo — saves $0.36/draft (33%). Update routing matrix in CLAUDE.md with owner approval.
-**If last frame is REQUIRED:** Use Turbo only for explicit A→B transitions and the truck first=last ghost-driving lock.
+**Turbo Pro I2V — final-pass candidate:**
+- [ ] Submit one 5s I2V call with `klingai/video-v3-turbo-pro-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
+- [ ] Strip audio immediately before any playback
+- [ ] Record actual AIMLAPI cost — confirm ~$0.91 ($0.182/sec)
+- [ ] Confirm resolution from response metadata: must be 1080p
+- [ ] Run InsightFace buffalo_l cosine similarity vs Kling v3 Pro baseline on identical prompt
+- [ ] Run brand binary checklist + Shari'ah compliance
+- [ ] If cosine ≥ 0.92 AND 1080p confirmed → Turbo Pro is viable final-pass model; update routing with owner approval
+
+**Truck ghost-driving via first=last frame:**
+- [ ] Pass same truck hero frame as `image_url` AND `tail_image_url`
+- [ ] Run brand binary checklist: box sealed, no ghost driving, logo orange
+- [ ] If passes → use as a cheaper alternative to static_mask_url + Kling Pro ($1.46)
 
 ---
 
