@@ -576,9 +576,30 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-17)
+## Kling 3.0 Turbo — Character Draft Iteration Model (on AIMLAPI as `v3-standard-turbo`)
 
-Kling O3 (Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-14.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-optimized tier. AIMLAPI's `klingai/kling-video-v3-standard-turbo-image-to-video` (documented in cycle 142) is this same model. It is explicitly designed for "rapid creative iteration" / draft use — not final delivery.
+
+**Key facts for character work:**
+- Supports `kling_elements` character binding (confirmed for Kling 3.0 family — verify passthrough on AIMLAPI before production adoption)
+- Cost: ¥0.8/sec (720P) ≈ **$0.11/sec → ~$0.55/5s clip** — 50% cheaper than Kling v3 Standard ($1.09/5s)
+- Output: 720p maximum (vs Standard/Pro up to 1080p, vs Omni up to 4K)
+- **Audio ON by default** — `generate_audio: false` is CRITICAL (same audio-default-on risk as O3)
+- `cfg_scale` still supported (default 0.5)
+- Multi-shot: holds character and setting consistency across up to 6 shots in a sequence
+
+**When to use Turbo for character shots:**
+- Use for ALL draft/prompt-iteration loops on character shots — saves $0.54 per iteration vs Standard
+- Do NOT use for final delivery clips — quality ceiling is lower than Standard/Pro
+- Once prompt is locked on Turbo, regenerate final with Kling v3 Pro I2V at $1.46/5s
+
+**Unverified on AIMLAPI as of 2026-06-19:** `kling_elements` passthrough on v3-standard-turbo. Run one draft before relying on it for character binding. If elements are silently ignored, fall back to Kling O1 reference-to-video for drafts.
+
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-19)
+
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-19.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+
+**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -638,7 +659,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-17, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI.
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-19, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers.
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
@@ -687,7 +708,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 }, headers=headers, timeout=120)
 ```
 
-**Prompt binding syntax (Wan 2.7):** "image1", "image2", "video1" (lowercase, no @ prefix). Each identifier maps to its position in the reference array. "image1 and image2 carry boxes together" for 2 characters.
+**Prompt binding syntax (Wan 2.7):** "image1" / "Image1", "image2" / "Image2", "video1" (no @ prefix). Each identifier maps to its position in the reference array. Official Segmind examples use capital "Image1" — treat binding as case-insensitive but prefer capitalized form ("Image1 walks toward the truck") to match published examples. "Image1 and Image2 carry boxes together" for 2 characters.
 
 **Wan 2.7 R2V improvements over 2.6:**
 - Supports STATIC IMAGE references (not video-only like 2.6) — "image1" binding directly from character photo
