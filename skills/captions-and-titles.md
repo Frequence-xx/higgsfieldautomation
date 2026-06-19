@@ -183,7 +183,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. **v1.8.7 (June 16, 2026) is the current latest** — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes — all timing behavior identical to v1.8.5+.
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. **v1.9.0 (June 17, 2026) is the current latest** — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. **No DTW or timestamp changes** — all timing behavior for whisper models identical to v1.8.5+. Upgrade is safe for our pipeline: Remotion's `installWhisperCpp()` accepts any semantic version string; Parakeet support is purely additive and does not affect whisper model JSON output format. Use `WHISPER_VERSION = '1.9.0'` for new installs; v1.8.7 remains valid if stability is preferred.
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -200,7 +200,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.8.7';        // v1.8.5+ for PR #2279 silence-gap fix; 1.8.7 is current latest (maintenance-only)
+   const WHISPER_VERSION = '1.9.0';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.0 is current latest (Parakeet support, no DTW changes)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -267,7 +267,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const WHISPER_PATH = './whisper-cpp';
    const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
-   const WHISPER_VERSION = '1.8.7';
+   const WHISPER_VERSION = '1.9.0';
 
    await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
 
@@ -634,7 +634,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.478 — confirmed current as of 2026-06-17; no caption API changes in 4.0.478)
+### Full API (v4.0.481 — confirmed current as of 2026-06-19; no caption API changes in 4.0.479–4.0.481)
 
 | Export | Purpose |
 |--------|---------|
