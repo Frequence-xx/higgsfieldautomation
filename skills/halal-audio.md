@@ -46,7 +46,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
-**⚠ Deprecation (July 9, 2026 removal):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected.
+**🚨 IMMINENT — July 9, 2026 removal (3 weeks away as of 2026-06-19):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
 
 ### Voice Parameters (all models)
 
@@ -137,33 +137,16 @@ eleven_v3 has a community-documented library of ~1806 tags across 15 categories 
 
 **Character limit:** eleven_v3 caps at **5,000 characters per request** (versus 40,000 for Flash/Turbo). Scripts longer than ~750 Dutch words must be split.
 
-**`previous_request_ids` — preserves prosody continuity across chunks:**
-When splitting a long script, pass the prior call's request ID in the next call so the model maintains natural flow across the join point. Max 3 IDs. Pass them in chronological order.
+**⚠ Request stitching is NOT supported for eleven_v3** (confirmed in official ElevenLabs docs). Do NOT use `previous_request_ids` or `previous_text`/`next_text` parameters with eleven_v3 — they are ignored or cause errors. WebSockets streaming is also unavailable for eleven_v3.
+
+**For scripts >5,000 characters with eleven_v3:** split at sentence boundaries and generate each chunk as a separate independent call. Join in FFmpeg with a 5–10 ms crossfade to eliminate any click at the join point. No continuity parameter is available; each chunk stands alone.
 
 ```python
 from elevenlabs import VoiceSettings
 
-# Chunk 1 — no previous context
-r1 = client.text_to_speech.convert(
+# Same settings for every chunk — no continuity parameter exists for v3
+VOICE_OPTS = dict(
     voice_id=VOICE_ID,
-    text=chunk_1_text,
-    model_id="eleven_v3",
-    language_code="nl",
-    apply_text_normalization="on",
-    voice_settings=VoiceSettings(
-        stability=0.60,
-        similarity_boost=0.72,
-        style=0.15,
-        use_speaker_boost=True,
-        speed=0.95,  # 5% slowdown for Dutch brand-name clarity
-    ),
-)
-request_id_1 = r1.request_id  # save for next call
-
-# Chunk 2 — references chunk 1 for prosody continuity
-r2 = client.text_to_speech.convert(
-    voice_id=VOICE_ID,
-    text=chunk_2_text,
     model_id="eleven_v3",
     language_code="nl",
     apply_text_normalization="on",
@@ -174,11 +157,14 @@ r2 = client.text_to_speech.convert(
         use_speaker_boost=True,
         speed=0.95,
     ),
-    previous_request_ids=[request_id_1],
 )
+r1 = client.text_to_speech.convert(text=chunk_1_text, **VOICE_OPTS)
+r2 = client.text_to_speech.convert(text=chunk_2_text, **VOICE_OPTS)
 ```
 
-**Split rule:** Break at sentence boundaries (full stop + capital). Never split mid-sentence. Crossfade the joined audio clips by 5–10 ms in FFmpeg to eliminate any click at the join point.
+**Split rule:** Break at sentence boundaries (full stop + capital). Never split mid-sentence. Crossfade joined audio 5–10 ms in FFmpeg to eliminate clicks.
+
+**Snelverhuizen note:** 30–60 s video ad scripts are ~600–1200 characters. The 5,000-char limit is effectively never hit — chunking is not required for any current production brief.
 
 ### SSML for natural Dutch pacing (eleven_multilingual_v2 and Flash v2.5 ONLY — NOT v3)
 
@@ -345,7 +331,9 @@ with open("/opt/pipeline/sfx/street_ambient.mp3", "wb") as f:
 
 ### ⚠ ElevenLabs Music API — DO NOT USE for halal ambient SFX
 
-ElevenLabs Music API (`music_v1` model, SDK v2.49.0+) exposes three `generation_mode` values: `"track"` (full song), `"loop"` (seamless looping section), and `"ambience"` (atmospheric texture). Despite the word "ambience", **all three modes are music generation** — they produce AI-composed output with instrumentation, melody, or rhythmic content. The API also supports `force_instrumental=True` to strip vocals, but this produces purely instrumental music (confirmed: instruments present) — not halal-compatible.
+ElevenLabs Music API (`music_v1` and `music_v2` models) exposes three `generation_mode` values: `"track"` (full song), `"loop"` (seamless looping section), and `"ambience"` (atmospheric texture). Despite the word "ambience", **all three modes are music generation** — they produce AI-composed output with instrumentation, melody, or rhythmic content. The API also supports `force_instrumental=True` to strip vocals, but this produces purely instrumental music (confirmed: instruments present) — not halal-compatible.
+
+**`music_v2` (June 2026):** music_v2 is now the default model in the ElevenLabs UI and introduces chunk-based composition plans (`GenerationChunk` / `AudioRefChunk` segments). It still generates music with instruments — no halal advantage over music_v1. Treat identically: **DO NOT USE either `music_v1` or `music_v2` in this pipeline.**
 
 **Rule: never use ElevenLabs Music API in this pipeline.** The SFX v2 API (`eleven_text_to_sound_v2`) is the correct tool for instrument-free ambient beds. The Music API exists for background music use cases — incompatible with Snelverhuizen halal audio policy. If an ambient SFX v2 generation sounds musical, that is a prompt issue (include "no music, no instruments, no melody" in the text prompt) — it is NOT a reason to switch to the Music API.
 
@@ -793,7 +781,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
 | Draft VO (Flash v2.5) mispronounces "085 3331133" despite `apply_text_normalization="on"` | `apply_text_normalization` is **Enterprise-only for Flash v2.5** — ignored on standard plans | On non-Enterprise plans, Flash v2.5 always outputs unnormalized phone numbers. Do NOT use Flash v2.5 to QA Dutch phone number pronunciation — use eleven_v3 for that verification step only. |
 | VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
-| Prosody break / unnatural join between VO chunks | Script split across multiple API calls without continuity hint | Pass `previous_request_ids=[prior_request_id]` in each subsequent call (see §0, multi-chunk section) |
+| Prosody break / unnatural join between VO chunks | Script split across multiple API calls; no continuity stitching available for eleven_v3 | Request stitching is NOT supported for eleven_v3 (official docs). Split at sentence boundaries. Join chunks with 5–10 ms crossfade in FFmpeg. Snelverhuizen ad scripts (~600–1200 chars) never hit the 5,000-char limit — chunking should not be needed. |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
 | Ambient SFX has click at loop point despite acrossfade | Pre-processing acrossfade not applied, or file too short | Use ElevenLabs SFX v2 with `loop=True` instead — output is natively seamless, no post-processing needed |
 | Audio tags work weakly or inconsistently | Prompt too short (< ~250 chars) | Tags need enough context — test with the full production script (≥250 chars), not an isolated sentence |
@@ -804,8 +792,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | `eleven_monolingual_v1` or `eleven_multilingual_v1` model ID in code throws 404 after July 9, 2026 | Both v1 models are removed July 9, 2026 (same day as scribe_v1) | Audit all scripts and configs for these model IDs. Replace with `eleven_multilingual_v2` (same cost, same Dutch quality). |
 | Want highest-quality TTS master audio (lossless, not PCM 48kHz) | eleven_v3 native rate is 44.1kHz; pcm_48000 involves upsampling for TTS | Use `ultra_lossless` output format (Pro+) for TTS masters — 705.6kbps, 44.1kHz WAV, natively matches eleven_v3 rate. For SFX v2 (native 48kHz), continue to use `pcm_48000`. |
-| Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Music API is banned in this pipeline. |
-| Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.50+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
+| Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API (both `music_v1` and `music_v2`) generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Both `music_v1` and `music_v2` are banned in this pipeline. |
+| Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.53.0+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
 | SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `pcm_48000` for lossless SFX library masters (`wav_44100` is NOT in AllowedOutputFormats). |
 | `wav_44100` format rejected / TypeError in SFX v2 call | `wav_44100` is not in `AllowedOutputFormats` SDK type for the SFX endpoint | Use `pcm_48000` (lossless 48kHz, Pro+) or `mp3_44100_192` (high-quality non-lossless) instead. `pcm_48000` is the confirmed lossless master format for SFX v2. |
