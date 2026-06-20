@@ -750,25 +750,27 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-18, SC140)
+## 11. Tool Version Status (confirmed 2026-06-20, SC147)
 
-All post-production tools confirmed as of study cycle 140 (2026-06-18):
+All post-production tools confirmed as of study cycle 147 (2026-06-20):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
-| FFmpeg stable | 8.1.1 (released 2026-05-04) | No 8.2 release — 8.2-dev branch exists; all pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable |
+| FFmpeg stable | **8.1.2 (released 2026-06-17)** | Maintenance patch over 8.1.1 — fixes swscale/x86 rgb_2_rgb uyvytoyuv422 overwrite on odd width, swscale/aarch64 uyvy/yuyv to yuv420p/yuv422p on odd width, avcodec/snowenc SIGFPE in get_dc(). No pipeline-impacting filter changes. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
 | Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 or newer — v4.25 remains pipeline default for diffusion video |
 | TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | No new stable since v2.4.1 |
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released (TBD date) |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 — current pipeline commands unchanged |
-| Remotion | **v4.0.479 (released 2026-06-17)** | Updated from 4.0.477 — v4.0.478 added contourLines effect + remotion.dev/convert audio formats; v4.0.479 added Props panel revamp + visual effects (thermalVision, pixelate, shrinkwrap, burlap). No changes affect our caption/text pipeline. |
-| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — verified SC140 |
+| Remotion | **v4.0.481 (released 2026-06-18)** | Updated from v4.0.479 — v4.0.480/4.0.481 added new `@remotion/effects` visual effects (checkerboard, emboss, gridlines, zoom blur); Studio effect context menus, sequence property keyboard shortcuts; Lambda custom S3 provider region support; vignette transparency fix. No changes affect our caption/text pipeline. |
+| Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
 
 **SC133 correction (2026-06-16):** TikTok right dead zone updated to ~184px (from ~180px) — prior estimate of +16px for Add to Playlist was wrong; multiple 2026 sources confirm +20px expansion. Effective safe content area corrected from "~900 × 1466px" to "~836 × 1466px" (1080 − 60 − 184 = 836px). The "900px" figure was a carry-over error from before the right-column expansion — it only held when right margin was 120px (matching Instagram), which TikTok never was.
 
 **SC140 confirmation (2026-06-18):** Remotion updated to v4.0.479 (released June 17, 2026). All other tool versions unchanged. TikTok/Instagram safe zones confirmed unchanged. TNTwise rife-ncnn-vulkan CLI binary confirmed at v20250112 (Jan 2025) supporting models through v4.26.
+
+**SC147 update (2026-06-20):** FFmpeg updated to 8.1.2 (released June 17, 2026 — maintenance patch, no pipeline filter changes). Remotion updated to v4.0.481 (released June 18, 2026 — new visual effects, no caption/text pipeline impact). Instagram 320px bottom safe zone re-confirmed by multiple independent 2026 sources (no change). All other tools confirmed unchanged.
 
 ---
 
