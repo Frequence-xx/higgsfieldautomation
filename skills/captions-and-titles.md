@@ -71,6 +71,9 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
      keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
      ```
    - **`no_verbatim: True`** — strips filler words ("uh", "uhm") from transcription output; leave False for voiceovers (TTS never produces fillers).
+   - **`tag_audio_events` (default: `True`) — ⚠️ ALWAYS set `False` for TTS voiceover audio.** Scribe v2 defaults to tagging non-speech events (`[laughter]`, `[music]`, `[footsteps]`, etc.) in the transcript word list. For clean TTS audio these tags never occur naturally, but if present they add spurious tokens with their own timestamps that pollute the word list and cause off-by-one errors when converting to Remotion captions. Explicitly set `tag_audio_events=False` for all voiceover audio. Only set `True` when processing client-recorded field audio where ambient events are meaningful.
+   - **`additional_formats`** — Scribe v2 can emit SRT/TXT/DOCX in the same response. Pass `additional_formats=["srt"]` to receive a ready-made SRT string alongside the JSON transcript. Useful shortcut for the ASS/FFmpeg fallback path (Option B in ASS Karaoke section below) — no need to post-process JSON to SRT manually.
+   - **`seed`** — pass any integer (e.g. `seed=42`) for deterministic output across re-runs. Useful when the pipeline retries transcription after a failure and needs identical timestamps.
    - **Dutch accuracy (Scribe v2 benchmark):** WER ≤5% — Excellent tier on ElevenLabs' internal multilingual benchmark. In practice: brand names and phone numbers may still need keyterm biasing; normal narration transcribes correctly without it.
 
    ```python
@@ -85,8 +88,10 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
            model_id="scribe_v2",         # ⚠️ scribe_v1 DEPRECATED — removed July 9, 2026. Use scribe_v2 only.
            language_code="nl",           # Dutch; omit for auto-detect
            timestamps_granularity="word", # required for word-level timestamps
+           tag_audio_events=False,       # ⚠️ REQUIRED for TTS audio — default True adds spurious event tokens
            keyterms=["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133"],  # optional
            no_verbatim=False,            # keep False for TTS audio
+           seed=42,                      # optional: deterministic output for reproducibility
        )
 
    # Convert to Remotion Caption format:
@@ -183,7 +188,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. **v1.9.0 (June 17, 2026) is the current latest** — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. **No DTW or timestamp changes** — all timing behavior for whisper models identical to v1.8.5+. Upgrade is safe for our pipeline: Remotion's `installWhisperCpp()` accepts any semantic version string; Parakeet support is purely additive and does not affect whisper model JSON output format. Use `WHISPER_VERSION = '1.9.0'` for new installs; v1.8.7 remains valid if stability is preferred.
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. **v1.9.1 (June 19, 2026) is the current latest** — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). **No DTW, timestamp, or Parakeet changes** — all timing behavior identical to v1.8.5+. Upgrade is safe and recommended: Remotion's `installWhisperCpp()` accepts any semantic version string. Use `WHISPER_VERSION = '1.9.1'` for new installs.
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -200,7 +205,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.0';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.0 is current latest (Parakeet support, no DTW changes)
+   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19 — CI build fix only, no DTW changes)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -267,7 +272,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const WHISPER_PATH = './whisper-cpp';
    const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
-   const WHISPER_VERSION = '1.9.0';
+   const WHISPER_VERSION = '1.9.1';
 
    await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
 
@@ -634,7 +639,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.481 — confirmed current as of 2026-06-19; no caption API changes in 4.0.479–4.0.481)
+### Full API (v4.0.481 — confirmed current as of 2026-06-20; no caption API changes in 4.0.479–4.0.481)
 
 | Export | Purpose |
 |--------|---------|
