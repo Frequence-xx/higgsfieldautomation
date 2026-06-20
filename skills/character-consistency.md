@@ -627,7 +627,11 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
         }
     ],
     # max 3 kling_elements per task; each element 2–4 images in element_input_urls
-    # prompt uses @crew_lead (not @Element1) — name must match exactly
+    # ELEMENT REFERENCE SYNTAX (SC149 correction):
+    # Native Kling API: <<<element_1>>>, <<<element_2>>> (triple brackets, positional)
+    # fal.ai wrapper:   @Element1, @Element2 (same as v3 Pro)
+    # Web UI only:      @crew_lead (name-value) — NOT valid at raw API level
+    # AIMLAPI wrapper: canary-test on O3 landing — try <<<element_1>>> first
     "multi_prompt": [                                  # multi-shot control (O3 only, requires multi_shot: true)
         {"prompt": "@crew_lead lifts a box from the truck, golden hour", "duration": 5},
         {"prompt": "@crew_lead carries box to doorway, focus pull", "duration": 5}
@@ -645,7 +649,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — pass 12 correction):**
 - `start_image_url` → renamed to `image_url`
 - `elements` array → replaced by `kling_elements` array (max 3 elements, each with `name`+`description`+`element_input_urls` of 2–4 images) — **NOT `image_reference`**
-- Prompt references elements by `@name` (element name field), not `@Element1`
+- Prompt references elements: **native Kling API** = `<<<element_1>>>` triple-bracket positional; **fal.ai wrapper** = `@Element1` positional; **web UI** = `@name` (name-field value, UI-only). `@name` is NOT valid at the raw API level — was previously incorrectly documented. When O3 lands on AIMLAPI, canary-test `<<<element_1>>>` first.
 - `multi_shot: True` required to activate `multi_prompt` (multi-shot control) — singular, NOT `multi_shots`
 - `negative_prompt` **STILL PRESENT** — default "blur, distort, and low quality" (prior pass incorrectly said REMOVED)
 - `cfg_scale` **STILL PRESENT** — default 0.5 range 0–1 (prior pass incorrectly said REMOVED)

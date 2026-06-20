@@ -65,8 +65,11 @@ MUST include ALL of these phrases in the motion prompt. Use physics-framing lang
 ```
 stationary truck, parked, engine off, no vehicle movement, no forward creep,
 parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground,
-the vehicle remains rigid and solid, metal does not deform
+the vehicle remains rigid and solid, metal does not deform,
+motion intensity 0.1
 ```
+
+**`motion intensity 0.1` is a Prompt Syntax 2.0 text technique (June 2026):** Kling 3.0 responds to numeric intensity values embedded in prompt text on a 0.1–1.0 scale (0.1 = near-static, 0.5 = default, 1.0 = dramatic). This phrase speaks to the physics engine layer — a stronger signal than prose descriptions alone. Use 0.1 for maximum stationarity. Not an API parameter; must appear in the `prompt` string itself. Community-reported; combine with all other layers for maximum protection.
 
 ### Layer 2: Negative Prompt
 
@@ -152,7 +155,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
     "image_url": hero_frame_url,
     # NO tail_image_url — incompatible with static_mask_url in v3
     # NO camera_control — incompatible with static_mask_url in v3
-    "prompt": "Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion eases to stop.",
+    "prompt": "Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Motion intensity 0.1. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Motion eases to stop.",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,
@@ -170,7 +173,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
     "image_url": hero_frame_url,
     # NO tail_image_url — incompatible with camera_control in v3
     # NO static_mask_url — incompatible with camera_control in v3
-    "prompt": "Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Camera motion eases to stop.",
+    "prompt": "Slow camera tilt upward. Stationary truck, parked, engine off, no vehicle movement, no forward creep. Parking brake fully engaged, wheels locked and chocked, vehicle dead weight at rest on flat level ground. The vehicle remains rigid and solid, metal does not deform. Motion intensity 0.1. Light reflections glide gently across truck surface. Foreground leaves drift subtly. Branding text stays perfectly sharp. Camera motion eases to stop.",
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,

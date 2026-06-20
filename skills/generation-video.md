@@ -249,6 +249,8 @@ camera drift, sudden zooms, background shifting, unstable details, background mo
 
 **Kling 3.0 physics-first model architecture (confirmed June 2026):** Prompt adherence is the LAST priority. Model priority order: Physics → Temporal consistency → Motion quality → Visual fidelity → Prompt adherence. "Stationary truck" is a prompt instruction (lowest priority) — the physics engine can override it. Fix: frame stationarity as physics state using physics-framing language ("parking brake engaged, wheels locked, dead weight at rest on flat level ground") — this speaks to the physics engine directly, not just the text prompt. Static mask (pixel-level freeze) remains the only hard override that operates outside the physics engine.
 
+**`motion intensity 0.1` (Prompt Syntax 2.0, June 2026):** Kling 3.0 responds to numeric motion intensity values embedded in prompt text on a 0.1–1.0 scale (0.1 = near-static, 0.5 = model default, 1.0 = dramatic). Add `"motion intensity 0.1"` literally in the `prompt` string for all truck shots — this targets the physics engine layer directly, the same layer driving ghost driving, and is stronger than prose description alone. Community-reported technique from Prompt Syntax 2.0 guide; not an API parameter. Does not replace static_mask — use both.
+
 **UPDATED (June 2026):** In Kling v3, `static_mask_url`, `tail_image_url`, and `camera_control` are mutually exclusive — only ONE can be used per call. Previous multi-layer combinations are invalid.
 
 **Strategy A — Maximum stationarity (final delivery shots):**
@@ -680,13 +682,16 @@ Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro
 
 If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
 
-**O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12):**
+**O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12; element syntax corrected SC149):**
 - `elements` array → replaced by `kling_elements` array (`name` + `description` + `element_input_urls` of 2–4 images)
-- Reference in prompt → use `@name` (element's `name` value), NOT `@Element1` positional syntax
+- **Element reference syntax (corrected SC149):** Native Kling API uses `<<<element_1>>>`, `<<<element_2>>>` triple-bracket syntax in prompt text. Third-party wrappers (fal.ai) use `@Element1` positional syntax. `@name` (name-value based) is web UI only — NOT valid at the raw API level. When O3 lands on AIMLAPI, canary-test which syntax the wrapper accepts before production use.
 - `multi_shot: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored) — NOTE: singular (`multi_shot`), not `multi_shots`
 - `generate_audio` defaults **ON** in O3 — ALWAYS set `False` explicitly
 - `cfg_scale` and `negative_prompt` are **STILL PRESENT** — do NOT remove them when switching to O3
 - `start_image_url` → renamed to `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
+- `end_image_url` for end frame (NOT `tail_image_url` or `image_tail`) — O3-specific naming on fal.ai; confirm on AIMLAPI when O3 lands
+
+**O3 June 17, 2026 upgrade:** Kling extended O3's *editing* pipeline (Omni Edit) to support 3–15s video input/output and 4K resolution. This is a V2V editing capability upgrade — the I2V reference-to-video character parameters are unchanged. O3 is still NOT on AIMLAPI as of June 20, 2026.
 
 See `character-consistency.md` O3 section for the complete `kling_elements` call template.
 
