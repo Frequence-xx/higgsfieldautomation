@@ -40,9 +40,11 @@ No music. No instruments. Ever. Audio is restricted to:
 
 | Model | Model ID | Dutch? | Cost/1K chars | Use case |
 |-------|----------|--------|---------------|----------|
-| **Eleven v3** | `eleven_v3` | ✓ (74 lang) | ~$0.12/1K chars | **Production** — most expressive, audio tag support. GA since March 14, 2026. NOT real-time capable (use `eleven_v3_conversational` for agents only). |
-| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.12/1K chars | Fallback if v3 unavailable (same cost tier) |
-| Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.06/1K chars | **Draft/iteration** — 75ms latency, 50% cheaper |
+| **Eleven v3** | `eleven_v3` | ✓ (74 lang) | ~$0.10/1K chars | **Production** — most expressive, audio tag support. GA since March 14, 2026. NOT real-time capable (use `eleven_v3_conversational` for agents only). |
+| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.10/1K chars | Fallback if v3 unavailable (same cost tier) |
+| Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.05/1K chars | **Draft/iteration** — 75ms latency, ~50% cheaper |
+
+**Pricing note (May 7, 2026 — PAYG rollout):** ElevenLabs reduced TTS prices by up to 55% and introduced pay-as-you-go (PAYG) credit top-ups. Flash v2.5 confirmed at $0.05/1K chars on PAYG/Creator plan (down from $0.06). Eleven v3 and Multilingual v2 are ~$0.10/1K chars (1 character = 1 credit; 0.5 credits/character for Flash/Turbo). Overage rates on subscription plans vary by tier ($0.12–$0.30/1K chars). Always check `elevenlabs.io/pricing/api` for the current live rate before budgeting a production run.
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
@@ -211,6 +213,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 **Nasheed Without Music:** YouTube `youtube.com/@NasheedWithoutMusic.` — channel focused exclusively on nasheeds without instruments. Contact email: nomusicbiz@gmail.com. Commercial terms outside YouTube are unconfirmed — email before using in paid/boosted ads. For YouTube-only distribution, check each video description for the specific permission statement. Run nasheed_check.py (§9) before use — title suggests vocal-only but verify by ear.
 
 **Nasheed Vocals™:** YouTube `youtube.com/@nasheedvocals` — vocals-only nasheeds with English lyrics. License terms not published on the channel page. **Unconfirmed for any commercial use** — check individual video descriptions and contact via YouTube before use. Run nasheed_check.py before use.
+
+**Abdull Vocals:** YouTube `youtube.com/@AbdullVocals` · Audiomack `audiomack.com/abdullvocals` · TikTok `tiktok.com/@abdullvocals` — vocal-only Islamic nasheed channel, label: **Noor Tunes**. Tracks labelled "Halal Islamic Acapella" / "no instruments". Created April 2026. Also distributed on Spotify (formal music distribution — this means IP is owned and licensed). **Commercial use UNCONFIRMED — contact BEFORE any use:** WhatsApp +447441422150. Do NOT assume free use despite "halal acapella" framing — active Spotify distribution means copyright is held. Run nasheed_check.py before use. For YouTube-only distribution, check individual video descriptions for specific permission statement. Audiomack streams for free — verify download rights in track description before downloading.
 
 **Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
 
@@ -921,7 +925,7 @@ for word in result.words:
 ```
 
 **`keyterms` (Scribe v2 batch — confirmed 2026):**
-- Biases the model toward recognising the listed terms. Up to 1000 keyterms per call; each ≤50 characters and ≤5 words.
+- Biases the model toward recognising the listed terms. Up to **1000 keyterms** per call; each ≤50 characters and ≤5 words. (Expanded from 100 to 1,000 in the April 2, 2026 Scribe v2 upgrade — batch only; realtime caps at 50.)
 - **+$0.050/hr flat surcharge** applies when `keyterms` is set (base $0.22/hr → $0.27/hr total, ≈23% increase). Not "+20%" — the surcharge is a flat additive rate per audio hour, not a percentage of base.
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
