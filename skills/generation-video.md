@@ -640,7 +640,7 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 - Typical 4-clip video (2 finals): saves **$1.10/video**
 - Monthly 50 videos: saves **~$55/month**
 
-### Turbo CANARY CHECKLIST (updated 2026-06-19)
+### Turbo CANARY CHECKLIST (updated 2026-06-21)
 
 **Standard Turbo I2V — draft replacement:**
 - [ ] Submit one 5s I2V call with `klingai/video-v3-standard-turbo-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
@@ -648,12 +648,12 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 - [ ] Record actual AIMLAPI cost from dashboard — confirm ~$0.73 ($0.146/sec)
 - [ ] Confirm `image_url` alone (without `tail_image_url`) is accepted
 - [ ] Confirm last-frame parameter name: try `tail_image_url` (same as standard v3 on AIMLAPI)
-- [ ] Run QA: face identity retention vs Kling Standard baseline
+- [ ] Run QA: face identity retention vs Kling Standard baseline. **Note (2026-06-21): Element Binding / Subject Binding IS confirmed available on Turbo models — use same `elements` array as v3 Pro.**
 - [ ] Check `generate_audio: false` effect — is audio stripped from response, or still present?
 - [ ] If identity ≥ 80% AND audio either suppressed OR confirmed strippable → route all drafts here
 
 **Turbo Pro I2V — final-pass candidate:**
-- [ ] Submit one 5s I2V call with `klingai/video-v3-turbo-pro-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
+- [ ] Submit one 5s I2V call with `klingai/video-v3-turbo-pro-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`, Subject Binding `elements` array with face adherence 80-90
 - [ ] Strip audio immediately before any playback
 - [ ] Record actual AIMLAPI cost — confirm ~$0.91 ($0.182/sec)
 - [ ] Confirm resolution from response metadata: must be 1080p
