@@ -513,6 +513,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **TensorRT FP16 (pass 14 finding, 2026-06-04):** Converting buffalo_l ONNX to FP16 via TensorRT gives an additional **1.8× FPS** boost with <0.05% accuracy drop. Practical only if TensorRT is installed in the environment. INT8 quantization is even smaller (4× model size reduction, 0.02% ArcFace embedding error increase) but requires calibration data. Not needed for our current clip volumes.
 
+**Face Consistency Benchmark — model selection validation (pass 22 finding, 2026-06-21):** Benchmark paper arXiv 2505.11425 (TCL Research, May 2025) measured face consistency scores across AI video generation models: **Kling AI 92%**, Luma Dream Machine 74%, Runway Gen-4.5 68%. Kling's lead is attributed to its multi-image reference support anchoring identity across 10-second sequences. Wan 2.x not in benchmark. This independently validates Kling as the correct primary model for character shots requiring identity lock — consistent with our routing matrix.
+
 ## Kling Element Library Auto-View Generation
 
 Upload ONE good front-facing reference; enable "AI-generate additional views" in Kling web UI. Saves ~$0.39 vs 4 separate NBP calls. **Caveat:** web UI feature only — not exposed via AIMLAPI as of 2026-04.
@@ -649,7 +651,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **O3 breaking changes vs O1 (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — pass 12 correction):**
 - `start_image_url` → renamed to `image_url`
 - `elements` array → replaced by `kling_elements` array (max 3 elements, each with `name`+`description`+`element_input_urls` of 2–4 images) — **NOT `image_reference`**
-- Prompt references elements: **native Kling API** = `<<<element_1>>>` triple-bracket positional; **fal.ai wrapper** = `@Element1` positional; **web UI** = `@name` (name-field value, UI-only). `@name` is NOT valid at the raw API level — was previously incorrectly documented. When O3 lands on AIMLAPI, canary-test `<<<element_1>>>` first.
+- Prompt references elements: **native Kling API** = `<<<element_1>>>` triple-bracket positional; **fal.ai wrapper** = `@Element1` positional; **kie.ai and most third-party wrappers** = `@element_name` name-based (matching the `"name"` field in kling_elements — confirmed via kie.ai official docs with example `@element_dog` → `{"name": "element_dog", ...}`). When O3 lands on AIMLAPI, canary-test `@element_name` first (most wrappers use this); fall back to `<<<element_1>>>` if rejected. (pass 22 correction: earlier advice of "try `<<<element_1>>>` first" was incorrect for wrapper APIs)
 - `multi_shot: True` required to activate `multi_prompt` (multi-shot control) — singular, NOT `multi_shots`
 - `negative_prompt` **STILL PRESENT** — default "blur, distort, and low quality" (prior pass incorrectly said REMOVED)
 - `cfg_scale` **STILL PRESENT** — default 0.5 range 0–1 (prior pass incorrectly said REMOVED)
@@ -663,7 +665,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-19, Wan 2.7 R2V is definitively NOT on AIMLAPI.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers.
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-21, Wan 2.7 R2V is marked "Coming Soon" on AIMLAPI docs — NOT yet available.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (confirmed 2026-06-21, pass 22)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
