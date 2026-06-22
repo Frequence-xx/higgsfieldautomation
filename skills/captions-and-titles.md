@@ -639,7 +639,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.481 — confirmed current as of 2026-06-20; no caption API changes in 4.0.479–4.0.481)
+### Full API (v4.0.482 — confirmed current as of 2026-06-22; no caption API changes in 4.0.479–4.0.482)
 
 | Export | Purpose |
 |--------|---------|
@@ -744,6 +744,32 @@ const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilli
   );
 })}
 ```
+
+**New in v4.0.482 — `trimBefore` prop on `<Sequence>`:** Advances the child's internal frame counter by N frames at sequence start, without changing when the sequence appears in the parent timeline. Internal: `effectiveRelativeFrom = from - trimBefore`. Type: `number`, min 0, default 0.
+
+**Caption pre-roll use case:** Instead of subtracting pre-roll from every token's `fromMs`, apply it at the container level:
+
+```tsx
+const PRE_ROLL_MS = 75; // recommended 50–100ms
+const preRollFrames = Math.round(PRE_ROLL_MS / 1000 * fps);
+
+{pages.map((page, i) => (
+  <Sequence
+    key={i}
+    from={Math.round(page.startMs / 1000 * fps)}
+    durationInFrames={Math.round(page.durationMs / 1000 * fps)}
+    trimBefore={preRollFrames}  // shifts all token highlights earlier by preRollFrames
+  >
+    <CaptionPage page={page} fps={fps} />
+  </Sequence>
+))}
+// useCurrentFrame() inside each page starts at preRollFrames, so isActive
+// checks fire preRollFrames early — equivalent to a global pre-roll offset.
+// Use only when all pages need the same pre-roll. For per-word drift correction,
+// adjust token timestamps directly.
+```
+
+Note: `trimBefore` and `freeze` can be combined on the same `<Sequence>`. Both were added to the Sequence props in the v4.0.477–4.0.482 range. `freeze` is still the correct approach for holding the last caption frame.
 
 #### Inline conditional (simpler, same result):
 
