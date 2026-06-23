@@ -59,6 +59,48 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - Recommended Dutch voices (verified 2026-04-16): male warm 30-40 = `hLnc7y4d152WGG2BQlAY` (Jaimie Amsterdam), female warm 30-40 = `DiUBVrSFwkMaPz4XqWvR` (Jolanda)
    - **Recommended model: `eleven_v3`** (launched 2026-02-12, new flagship — 70+ languages, higher emotional range, audio-tag emotion control via `[whispers]`/`[excited]` tags). Replaces `eleven_multilingual_v2` as primary recommendation. `eleven_multilingual_v2` remains valid fallback if `eleven_v3` produces English-accented Dutch on a specific voice.
 
+   **Dutch pronunciation dictionary with `eleven_v3` (IPA, free to create once):**
+   `eleven_v3` is the only ElevenLabs model that supports IPA phoneme rules for non-English languages. Create a pronunciation dictionary once to prevent mispronunciation of Dutch brand terms:
+
+   ```python
+   from elevenlabs import ElevenLabs
+
+   client = ElevenLabs()
+
+   # Create once; store the returned dictionary_id in your .env
+   response = client.pronunciation_dictionary.create_from_rules(
+       rules=[
+           # IPA for "SNELVERHUIZEN": /snɛlvərˈhœy̯zə(n)/ — stress on 2nd syllable
+           {
+               "type": "phoneme",
+               "string_to_replace": "SNELVERHUIZEN",
+               "phoneme": "snɛlvərˈhœy̯zən",
+               "alphabet": "ipa",
+               "case_sensitive": True,
+           },
+           # Alias rule: ensure "VERHUIZEN ZONDER ZORGEN" is read as separate words
+           {
+               "type": "alias",
+               "string_to_replace": "SNELVERHUIZEN.NL",
+               "alias": "snel verhuizen punt nl",
+               "case_sensitive": False,
+           },
+       ],
+       name="snelverhuizen-nl",
+   )
+   DICT_ID = response.id  # save this
+
+   # Pass dict when generating TTS:
+   audio = client.text_to_speech.convert(
+       voice_id="hLnc7y4d152WGG2BQlAY",  # Jaimie Amsterdam
+       model_id="eleven_v3",
+       text="Bel SNELVERHUIZEN nu!",
+       pronunciation_dictionary_locators=[{"pronunciation_dictionary_id": DICT_ID}],
+   )
+   ```
+
+   **IPA achieves 80–90% consistency** on eleven_v3 (not 100% — re-test if a specific phrase still sounds off). Only `eleven_v3` and `eleven_flash_v2` support phoneme rules; `eleven_multilingual_v2` does not. Alias rules (string substitution) work on all models.
+
    **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
    When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
 
@@ -639,7 +681,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.481 — confirmed current as of 2026-06-20; no caption API changes in 4.0.479–4.0.481)
+### Full API (v4.0.482 — confirmed current as of 2026-06-23; no caption API changes in 4.0.479–4.0.482)
 
 | Export | Purpose |
 |--------|---------|
@@ -744,6 +786,23 @@ const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilli
   );
 })}
 ```
+
+**New in v4.0.482 — `trimBefore` prop on `<Sequence>`:** You can now trim the beginning of a `<Sequence>`'s child timeline without affecting its `from`/`durationInFrames` visibility window. Child content starts rendering from frame `trimBefore` onward — frames before that are skipped as if fast-forwarded. Useful for caption pages when a scene cut lands mid-entrance-animation and you want to skip the first N frames of the spring-in so the word appears already visible rather than mid-bounce:
+
+```tsx
+// Scene cut arrives 8 frames into a caption page's spring entrance animation
+// trimBefore={8} makes the caption start from frame 8 of its animation —
+// word is already in final position when it first appears, no half-finished spring
+<Sequence
+  from={Math.round(page.startMs / 1000 * fps)}
+  durationInFrames={Math.round(page.durationMs / 1000 * fps)}
+  trimBefore={8}  // skip first 8 frames of CaptionPage's entrance animation
+>
+  <CaptionPage page={page} fps={fps} />
+</Sequence>
+```
+
+Unlike `trimBefore` on `<Audio>`/`<Video>` (which skips media file playback), `trimBefore` on `<Sequence>` propagates an offset through the child timing context — `useCurrentFrame()` inside the child sees `trimBefore` as frame 0.
 
 #### Inline conditional (simpler, same result):
 
