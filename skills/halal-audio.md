@@ -48,7 +48,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
-**🚨 IMMINENT — July 9, 2026 removal (3 weeks away as of 2026-06-19):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
+**🚨 IMMINENT — July 9, 2026 removal (~16 days away as of 2026-06-23):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
 
 ### Voice Parameters (all models)
 
@@ -194,7 +194,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 | Source | License | Commercial? | Attribution? | Download |
 |--------|---------|-------------|--------------|----------|
-| **NoCopyrightNasheeds (NCN)** — nocopyrightnasheeds.com | NCN Custom | YouTube: free with credit. Outside YouTube: paid license required. Tiers: Forever $99.99 (one-time) · Monthly $19.99/mo · Mujahideen $11.99/mo — all tiers: outside-YouTube commercial use, no attribution. | Yes on free tier (YouTube only) | YouTube DL via yt-dlp |
+| **NoCopyrightNasheeds (NCN)** — nocopyrightnasheeds.com | NCN Custom | YouTube: free with credit. Outside YouTube: paid license required. Tiers: Forever $99.99 (one-time) · Monthly $19.99/mo · Mujahideen $11.99/mo — all tiers: outside-YouTube commercial use, no attribution. | Yes on free tier (YouTube only) | YouTube DL via yt-dlp. **⚠ NCN does NOT guarantee 100% vocal-only even on tracks labelled "acapella" or "vocals only" — their policy is "try but cannot guarantee." Always run nasheed_check.py (§9) AND confirm by ear before production.** |
 | **Internet Archive — Mix Vocal Only Nasheeds** — archive.org/details/mixvocalonlynasheeds | Varies per track | Check per track | Check per track | Direct download |
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
@@ -772,6 +772,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | VO sounds robotic | Stability too high (>70) | Set stability to 55–60 |
 | Dutch phonemes sound off | Wrong model | Must use `eleven_multilingual_v2` |
 | Nasheed copyright claim on YouTube | Not checking each video's description | Always verify specific NCN video description before use |
+| NCN track has instruments despite "acapella" label | NCN policy is "try but cannot guarantee" 100% vocal-only | Always run nasheed_check.py (§9) AND listen by ear — do NOT trust the label alone |
 | Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
 | Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
 | SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
@@ -945,6 +946,8 @@ Actively masks detected entities IN the transcript text. `entity_detection` only
 - `redaction_format` controls the placeholder: `"redacted"` → `{REDACTED}` (default); `"entity_type"` → `{ENTITY_TYPE}` (e.g., `{CREDIT_CARD}`); `"enumerated_entity_type"` → `{ENTITY_TYPE_N}` (e.g., `{CREDIT_CARD_1}`)
 - **+30% cost surcharge** applies (same surcharge as entity_detection; ~$0.29/hr if BOTH active simultaneously)
 - Skip for Snelverhuizen VO QA — brand voiceover scripts contain no PII; entity_detection and entity_redaction are both irrelevant to this pipeline
+
+**`asr_provider` parameter (June 2026 change):** The `asr_provider` enum value `"elevenlabs"` is deprecated in the June 8, 2026 changelog — default now routes to `scribe_realtime`. Do NOT pass `asr_provider` explicitly in batch API calls; omit it entirely and let the API use its current default. The call pattern in §11 already omits `asr_provider` — no code change needed.
 
 **`no_verbatim=True`:** removes filler words, false starts, and disfluencies from the transcript — makes script diff cleaner. Use for VO QA (comparing against intended script). Omit for caption timing use (fillers shift word timestamps).
 
