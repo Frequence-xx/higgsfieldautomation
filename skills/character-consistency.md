@@ -344,6 +344,8 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 **IMPORTANT CODE CONFUSION (pass 20 finding, 2026-06-17):** Search engines return `github.com/chiehwangs/gaussian-head` as a GSwap result — this is **NOT GSwap**. It is GaussianHead (TVCG 2025, "High-fidelity Head Avatars with Learnable Gaussian Derivation"), a completely different project by different authors. GSwap has no confirmed open-source GitHub repo as of 2026-06-17. Do NOT clone GaussianHead expecting GSwap functionality.
 
+**ST-DRC — Future Watch (arXiv 2606.02441, June 1, 2026, research only):** Spatial-Temporal Decoupled Reference Conditioning for identity-preserving T2V generation. Backbone: LTX-2.3 (22B param, open-source). Key mechanisms: (1) **Latent in-context injection** — reference image encoded with video VAE and concatenated to noisy latents (no extra adapters needed); (2) **TASS-RoPE** (Temporal-Adjacent Spatial-Shifted RoPE) — places reference tokens adjacent to video in time but shifted in space, letting identity flow through spatio-temporal attention while blocking pixel-level copy-paste shortcuts (directly addresses our known copy-paste artifact failure mode in multi-ref generation); (3) **Three-stream CFG** — independently controls text adherence vs. reference fidelity at inference time. No public code or production API as of 2026-06-27. When LTX-2.3-based endpoints appear on AIMLAPI, ST-DRC-style models are worth testing for character identity. **Practical implication now:** TASS-RoPE validates our current mitigation — keep characters spatially separated in prompts and use tight face crop as 4th ref — both reduce the copy-paste risk TASS-RoPE solves architecturally.
+
 **MAGREF — Future Watch (ICLR 2026, code released, FP8 available):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1 14B. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves.
 
 **VRAM requirements (pass 17 update, 2026-06-11):**
@@ -597,9 +599,9 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 **Unverified on AIMLAPI as of 2026-06-19:** `kling_elements` passthrough on v3-standard-turbo. Run one draft before relying on it for character binding. If elements are silently ignored, fall back to Kling O1 reference-to-video for drafts.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-19)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-19.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-27.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI.
 
@@ -665,7 +667,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-21, Wan 2.7 R2V is marked "Coming Soon" on AIMLAPI docs — NOT yet available.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (confirmed 2026-06-21, pass 22)
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-27, Wan 2.7 R2V is marked "Coming Soon" on AIMLAPI docs — NOT yet available.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (confirmed 2026-06-21, pass 22)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
@@ -699,7 +701,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **Key parameters (Together AI/fal.ai format; AIMLAPI format expected similar):**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI as of 2026-06-16 — use wan-2-6-r2v
+    "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI as of 2026-06-27 — use wan-2-6-r2v
     "prompt": "image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
     "reference_images": [
         "https://cdn.example.com/crew_lead/front.png",
@@ -731,7 +733,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **When to test Wan 2.7 R2V on AIMLAPI:** Monitor AIMLAPI changelog. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
 
-## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-17)
+## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-27)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
 
