@@ -750,21 +750,23 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-22, SC154)
+## 11. Tool Version Status (confirmed 2026-06-28, SC161)
 
-All post-production tools confirmed as of study cycle 154 (2026-06-22):
+All post-production tools confirmed as of study cycle 161 (2026-06-28):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
-| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-06-22. Maintenance patch over 8.1.1 — fixes swscale/x86 rgb_2_rgb uyvytoyuv422 overwrite on odd width, swscale/aarch64 uyvy/yuyv to yuv420p/yuv422p on odd width, avcodec/snowenc SIGFPE in get_dc(). No pipeline-impacting filter changes. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
-| Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 as of 2026-06-22 — v4.25 remains pipeline default for diffusion video |
-| TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | v2.4.2 still pre-release as of 2026-06-22 — no new stable |
+| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-06-28. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
+| Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 as of 2026-06-28 — v4.25 remains pipeline default for diffusion video |
+| TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | v2.4.2 still pre-release as of 2026-06-28 — no new stable |
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
-| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-22 |
-| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-22 — current pipeline commands unchanged |
-| Remotion | **v4.0.481 (released 2026-06-19)** | Current stable. `@remotion/effects` now includes `colorKey()` (green-screen keying) and `linearProgressiveBlur()` (gradient-controlled blur — see §11a). **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-28 |
+| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-28 — current pipeline commands unchanged |
+| Remotion | **v4.0.483 (released 2026-06-28)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, and `lightTrail()` (see §11c). **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC154 → SC161 updates:** Remotion advanced from v4.0.481 to v4.0.483 across two releases. v4.0.482 (June 22) added `cornerPin()` and `lightTrail()` to `@remotion/effects`. v4.0.483 (June 28, today) added `radialProgressiveBlur()` and spring easing tail support, and fixed an audio-freeze bug during scrubbing. All other tools unchanged.
 
 **SC133 correction (2026-06-16):** TikTok right dead zone updated to ~184px (from ~180px) — prior estimate of +16px for Add to Playlist was wrong; multiple 2026 sources confirm +20px expansion. Effective safe content area corrected from "~900 × 1466px" to "~836 × 1466px" (1080 − 60 − 184 = 836px). The "900px" figure was a carry-over error from before the right-column expansion — it only held when right margin was 120px (matching Instagram), which TikTok never was.
 
@@ -776,16 +778,21 @@ All post-production tools confirmed as of study cycle 154 (2026-06-22):
 
 ---
 
-### 11a. New `@remotion/effects` — `linearProgressiveBlur` and `colorKey` (v4.0.481)
+### 11a. `@remotion/effects` — Progressive Blur Effects (v4.0.481–483)
 
-**`linearProgressiveBlur()`** — gradient-controlled blur. Applies variable blur across a frame, strongest at one edge and tapering to zero. Practical use: blur the bottom of a video frame to improve caption text readability without a solid color bar. This is a popular social-media technique (seen on Reels/TikTok caption styling) — our orange #FC8434 highlight captions typically sit on a dark background, but if background is light, a progressive blur behind the caption row improves contrast.
+Three blur/key effects are now available in `@remotion/effects`. Install once:
+```bash
+npm install @remotion/effects
+```
 
-**Remotion usage:**
+---
+
+**`linearProgressiveBlur()`** (since v4.0.481) — gradient-controlled linear blur. Applies variable blur in one direction, strongest at one edge, tapering to zero. Practical use: blur the bottom of a frame behind the caption row to improve text readability on light backgrounds. Our orange #FC8434 highlight captions usually sit on dark backgrounds, but a progressive blur underneath is a clean fallback.
+
 ```tsx
 import { linearProgressiveBlur } from "@remotion/effects";
 
-// In a Remotion composition — apply progressive blur behind caption overlay area
-// blur increases from 0 at y=1400 (above captions) to 8px at y=1920 (bottom edge)
+// blur increases from 0 at y=1400 (above captions) to 8px at bottom edge
 <AbsoluteFill style={{
   filter: linearProgressiveBlur({
     direction: "to bottom",
@@ -796,12 +803,52 @@ import { linearProgressiveBlur } from "@remotion/effects";
 }} />
 ```
 
-**`colorKey()`** — removes a chroma key color (green screen). Not applicable to our current pipeline (no green screen shoots). Document only for future reference if client ever provides keyed footage.
+---
 
-**Install (both already bundled if using `@remotion/effects`):**
-```bash
-npm install @remotion/effects
+**`radialProgressiveBlur()`** (added v4.0.483, 2026-06-28) — ellipse-controlled blur. Applies blur radially outward from a center point, sharpest at center and softest at the ellipse boundary. Backend: WebGL2.
+
+Parameters:
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `center` | `[number, number]` | `[0.5, 0.5]` | UV coordinate (0–1 range); `[0.5, 0.5]` = frame center |
+| `width` | `number` | `1` | Ellipse width (UV scale) |
+| `height` | `number` | `1` | Ellipse height (UV scale) |
+| `rotation` | `number` | `0` | Degrees |
+| `start` | `number` | `0` | Where sharp zone ends (0 = starts at center) |
+| `startBlur` | `number` | `0` | Blur amount at `start` edge (px) |
+| `endBlur` | `number` | `50` | Blur amount at ellipse boundary (px) |
+
+**Practical uses for Snelverhuizen:**
+- **Cinematic DOF vignette on character close-ups:** center on face, endBlur=20–30px. Draws eye to subject while softening background edges.
+- **Spotlight/focus pull:** combine with a character shot where background is white/neutral wall — looks like professional rack-focus.
+- **Caption background softening:** center=[0.5, 0.8], height=0.4, endBlur=15 blurs the lower-third behind captions without visible hard line.
+
+```tsx
+import { radialProgressiveBlur } from "@remotion/effects";
+
+// Cinematic vignette — face sharp, edges blur to 25px
+<AbsoluteFill style={{
+  filter: radialProgressiveBlur({
+    center: [0.5, 0.4],  // slightly above center where face appears
+    width: 0.7,
+    height: 0.9,
+    startBlur: 0,
+    endBlur: 25,
+  }),
+}} />
 ```
+
+**Note:** Requires WebGL2 in the render environment. The Remotion renderer supports WebGL2 — no extra config needed.
+
+---
+
+**`colorKey()`** (since v4.0.481) — removes a chroma key color (green screen). Not applicable to our current pipeline (no green screen shoots). Document only for future reference if client ever provides keyed footage.
+
+---
+
+**When to use linear vs radial progressive blur:**
+- `linearProgressiveBlur`: directional (top→bottom, left→right) — best for caption bars and edge vignettes
+- `radialProgressiveBlur`: elliptical spotlight — best for subject focus and character close-ups
 
 ---
 
@@ -822,6 +869,41 @@ Remotion v5.0 migration docs are live at `remotion.dev/docs/5-0-migration` but v
 3. Confirm server runs Node.js ≥ 18.0.0
 
 **No action needed now** — v5 is not released. Monitor `remotion.dev/changelog` for release announcement.
+
+---
+
+### 11c. `@remotion/effects` — `cornerPin` and `lightTrail` (v4.0.482)
+
+**`cornerPin()`** (added v4.0.482, 2026-06-22) — WebGL2 perspective transform. Remaps the four corners of a composition to new UV coordinates, enabling perspective-correct overlays on non-flat surfaces.
+
+Parameters — all UV coordinates in 0–1 range (0 = left/top edge, 1 = right/bottom edge):
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| `topLeft` | `[0, 0]` | Top-left corner destination |
+| `topRight` | `[1, 0]` | Top-right corner destination |
+| `bottomRight` | `[1, 1]` | Bottom-right corner destination |
+| `bottomLeft` | `[0, 1]` | Bottom-left corner destination |
+
+**Snelverhuizen pipeline use case:** Overlay the SNELVERHUIZEN.NL URL or phone number onto the truck side in perspective, tracking the surface across frames. Advanced use — requires manually measuring the four corner UV positions per shot. For standard flat-plane overlays (caption bars, bottom-of-frame badges), `drawvg` + `drawtext` (§10) is simpler and does not require Remotion.
+
+```tsx
+import { cornerPin } from "@remotion/effects";
+
+// Example: pin a logo layer to a truck side panel in perspective
+// UV coords measured from the clip frame for each corner of the panel
+<AbsoluteFill style={{
+  filter: cornerPin({
+    topLeft:     [0.12, 0.30],
+    topRight:    [0.85, 0.25],
+    bottomRight: [0.88, 0.72],
+    bottomLeft:  [0.10, 0.75],
+  }),
+}}>
+  <Img src={logoAsset} style={{ width: "100%", height: "100%" }} />
+</AbsoluteFill>
+```
+
+**`lightTrail()`** (added v4.0.482) — motion-based light streak animation. Decorative effect for transitions or logo reveals. Not part of the standard ad pipeline — document for future branded motion-graphics use only.
 
 ---
 
@@ -847,6 +929,7 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
+- [ ] Remotion v4.0.483 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar readability on light backgrounds; use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range) — see §11a and §11c
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"` (§11b, forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
