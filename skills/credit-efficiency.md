@@ -43,7 +43,8 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 |-----------|------------|------------|-----------|-------|
 | Character close-up | NBP Edit ($0.195) | Kling v3 Pro I2V ($1.46) | **~$1.66** | Subject Binding 80-90, I2V from hero frame |
 | Character — draft/iteration | NBP Edit ($0.195) | Kling v3 Standard I2V ($1.09) | **~$1.29** | Use Standard until prompt is dialed in, Pro for final only |
-| Wide establishing (no character, draft) | NBP (T2I, $0.13) | Veo 3.1 Lite T2V 720p ($0.26/4s) | **~$0.39** | Draft at 720p 4s — cheapest B-roll |
+| Wide establishing (no character, T2V — cheapest canary) | NBP (T2I, $0.13) | Krea WAN 14B T2V ($0.033/sec, ~$0.165/5s) | **~$0.295** | CANARY REQUIRED — cheapest T2V on AIMLAPI if quality passes |
+| Wide establishing (no character, draft) | NBP (T2I, $0.13) | Veo 3.1 Lite T2V 720p ($0.26/4s) | **~$0.39** | Draft at 720p 4s — cheapest confirmed B-roll |
 | Wide establishing (no character, final) | NBP (T2I, $0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | CANARY REQUIRED — 1080p, no char, 9:16 confirmed |
 | B-roll / texture (no character) | NBP ($0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | No audio param needed — no surcharge risk |
 | Truck/product (no char, draft) | NBP Edit ($0.195) | Veo 3.1 Fast I2V (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-i2v-fast`, camelCase params |
@@ -844,6 +845,64 @@ Confirmed on AIMLAPI docs page: `docs.aimlapi.com/api-references/video-models/go
 
 ---
 
+### Wan 2.2 14B Animate Move + Replace — CONFIRMED ON AIMLAPI, CANARY REQUIRED (2026-06-28)
+
+Docs pages confirmed:
+- `docs.aimlapi.com/api-references/video-models/alibaba-cloud/wan-2.2-14b-animate-move-image-to-video`
+- `docs.aimlapi.com/api-references/video-models/alibaba-cloud/wan-2.2-14b-animate-replace-image-to-video`
+
+**Model strings:**
+- Animate Move: `alibaba/wan2.2-14b-animate-move` — API endpoint `/v2/video/generations`
+- Animate Replace: `alibaba/wan2.2-14b-animate-replace` — API endpoint `/v2/video/generations`
+
+**Animate Move — Character Animation from Reference Video:**
+Input: a static character image (`image_url`) + a reference drive video (`video_url`). The model extracts poses, body skeleton, and facial expressions from the drive video, then applies them to the character image. The character in the output mimics the motions of the drive video exactly.
+
+**Pipeline use case:** Given an approved NBP Edit hero frame, find or generate a drive video of a person performing the desired motion (e.g., picking up a box, walking, waving). Pass both to Animate Move → get the Snelverhuizen character performing that same motion, with face preserved from hero frame. Eliminates complex Kling motion prompting for well-defined actions. No Subject Binding needed — identity preservation is structural (motion transfer, not generation).
+
+**Animate Replace — Character Swap in Existing Video:**
+Input: existing video (`video_url`) + character reference photo (`image_url`). Replaces the person in the video with the character from the photo while preserving background, camera angles, timing, and scene. Enables use of stock B-roll footage of movers working, with our approved character swapped in.
+
+**Pipeline use case for Animate Replace:** Source stock or self-shot footage of moving activity → replace person with our character → get realistic movers footage WITHOUT needing Kling character generation. Potential to bypass $1.46 Kling Pro shots entirely for non-close-up character shots.
+
+**Pricing:** NOT confirmed on AIMLAPI. Estimate based on Wan 2.2 family pricing on other platforms: ~$0.30-$0.50/5s expected (similar to Wan 2.7 I2V $0.50/5s). Verify actual AIMLAPI cost in canary.
+
+**Canary checklist — Animate Move (highest priority):**
+1. Submit one call: `alibaba/wan2.2-14b-animate-move`, image_url = NBP Edit hero frame, video_url = 5s reference drive video of a person walking, `aspect_ratio: "9:16"`
+2. Record actual cost from AIMLAPI dashboard
+3. QA: does character face match hero frame? Shari'ah compliance (modest dress preserved)? Brand binary (uniform correct?)
+4. If face retention ≥ 80% Kling Standard baseline → unlock for non-close-up character action shots
+
+**Canary checklist — Animate Replace:**
+1. Submit one call: `alibaba/wan2.2-14b-animate-replace`, video_url = 5s stock footage of person moving boxes, image_url = NBP Edit hero frame
+2. Record actual cost from AIMLAPI dashboard
+3. QA: background/scene intact? Face matches character? Shari'ah compliance?
+4. If passes → potential replacement for Kling Pro on non-face-close-up character shots
+
+**CRITICAL:** Neither model does character generation — they animate/swap existing characters. Do NOT use for establishing shots without people or for truck-only shots. Only relevant when a character must appear in motion or performing an action.
+
+---
+
+### Krea WAN 14B T2V — PRICING CONFIRMED, QUALITY CANARY REQUIRED (2026-06-28)
+
+**Pricing CONFIRMED:** T2V = $0.033/sec (~$0.165/5s) on AIMLAPI. V2V = $0.026/sec (~$0.13/5s).
+
+This makes Krea WAN 14B the **cheapest T2V model on AIMLAPI** — 50% cheaper than Veo 3.1 Lite 720p ($0.065/sec). It replaces Veo 3.1 Lite as the cheapest B-roll/establishing T2V option IF quality is sufficient.
+
+**Architecture note:** Distilled from Wan 2.1 14B (older than Wan 2.7). Real-time generation speed (11fps on B200). Quality unknown vs Veo 3.1 Lite for the same B-roll prompts.
+
+**Canary test:**
+1. Submit 5s T2V call: `krea/krea-wan-14b/text-to-video`, wide establishing shot prompt (NO characters), `aspect_ratio: "9:16"`
+2. Record actual cost from AIMLAPI dashboard (expect ~$0.165)
+3. Compare output quality vs Veo 3.1 Lite 720p output from the same prompt
+4. Run brand binary checklist (no characters in frame — so: no distortion, no text artifacts)
+5. If quality ≥ 80% of Veo 3.1 Lite → route B-roll T2V shots to Krea WAN 14B (saves ~$0.165/5s clip)
+6. Test V2V (`krea/krea-wan-14b/video-to-video`): restyle an approved Veo 3.1 Lite clip with a prompt change — verify output coherence and actual $0.026/sec billing
+
+**Savings if canary passes (per 2 T2V establishing shots at 6s):** $0.033 × 12 = $0.396 vs Veo Lite $0.065 × 12 = $0.78 → saves $0.384/video on establishing shots alone.
+
+---
+
 ### Happy Horse 1.0 — NOT ON AIMLAPI (2026-06-16)
 
 fal.ai is the exclusive official API partner. No `docs.aimlapi.com` page found despite AIMLAPI blog post about the model. The AIMLAPI blog coverage was editorial content, NOT an API launch. Happy Horse 1.0 is **NOT available via AIMLAPI**. Since our pipeline is AIMLAPI-only (Farouq directive 2026-04-16), this model is **not actionable**. Do not canary.
@@ -881,7 +940,7 @@ fal.ai is the exclusive official API partner. No `docs.aimlapi.com` page found d
 25. **Kling v3 = Kling 3.0 confirmed (2026-06-01).** Our `klingai/video-v3-pro-image-to-video` and `klingai/video-v3-standard-image-to-video` strings are correct and up-to-date — no action needed. Kling O3 (Omni) is a separate premium multi-shot model, NOT on AIMLAPI yet.
 26. **Luma Ray Flash 2 confirmed on AIMLAPI (`luma/ray-flash-2`) — NEW 2026-06-05.** ~$0.048/sec (~$0.24/5s). Supports 9:16, I2V, first+last frame keyframes. **No audio generation** — no `generate_audio` param needed, no surcharge risk. Max 9s at 720p. CANARY REQUIRED. Use case: non-character I2V 5s clips where composition anchoring from a hero frame matters (e.g., truck exterior). Hailuo 2.3 Fast ($0.208/5s T2V) remains cheapest for 5s; Ray Flash 2 is the I2V alternative at ~$0.24.
 27. **Wan 2.7 T2V confirmed live on AIMLAPI (`alibaba/wan-2-7-t2v`) — 2026-06-05.** AIMLAPI docs page confirmed. Cost: ~$0.50/5s ($0.10/sec). Use for T2V establishing shots without characters when Veo 3.1 Lite is unavailable. Veo 3.1 Lite 720p (~$0.33/5s) is cheaper — prefer Veo. Wan 2.7 T2V is a Veo fallback at higher cost. CANARY REQUIRED before production.
-28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-21.** Listed as "Coming Soon" in AIMLAPI model database. `site:docs.aimlapi.com` search on June 21, 2026 returns only Wan 2.6 R2V page — NO Wan 2.7 R2V page. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
+28. **Wan 2.7 R2V (`alibaba/wan-2-7-r2v`) is NOT confirmed on AIMLAPI as of 2026-06-28 (status rechecked).** Listed as "Coming Soon" in AIMLAPI model database — still no dedicated docs page on `docs.aimlapi.com`. Use `alibaba/wan-2-6-r2v` for multi-ref character work requiring R2V. Note: Wan 2.2 Animate Move (`alibaba/wan2.2-14b-animate-move`) IS confirmed and provides a different character consistency technique (motion transfer from drive video — see Rule 41). When Wan 2.7 R2V lands: parameters accept up to 5 mixed refs (images + video clips); characters referenced in prompt as `Image1`, `Image2`, `Video1` slot names.
 29. **Grok Imagine Video 1.5 NOW IN WIDE RELEASE (June 17, 2026). PRICING CORRECTED (2026-06-18).** AIMLAPI page: `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video`. **Correct xAI GA pricing: $0.08/sec (480p), $0.14/sec (720p)** — prior entry had $0.05/$0.07 which were v1.0 rates. AIMLAPI estimated: ~$0.104/sec (480p) = ~$0.52/5s; ~$0.182/sec (720p) = ~$0.91/5s. Audio is always generated — no disable parameter. **AUDIO STRIP REQUIRED** (`ffmpeg -i input.mp4 -an -c:v copy output.mp4`) immediately on every download — before QA playback. At corrected GA pricing, Grok 1.5 is NOT competitive for non-char I2V (Hailuo 2.3 Fast at $0.208 wins). Use only for R2V character drafts when Wan 2.7 R2V is unavailable. Not T2V — I2V and R2V only. CANARY REQUIRED.
 30. **Wan 2.7 Image Pro and Standard now on AIMLAPI (2026-06-09).** `alibaba/wan-2-7-image-pro` at ~$0.06/image (69% cheaper than NBP Edit $0.195). Multi-ref via `image_urls` array (up to 9 refs). Character Locking feature for cross-generation identity consistency. Use for draft hero frame iterations only — NOT for finals (no Subject Binding strength dial; identity lock is less precise than NBP Edit). `alibaba/wan-2-7-image` (standard) at ~$0.04/image — even cheaper but weaker character locking. CANARY REQUIRED for both variants.
 31. **NB2 pricing corrected (2026-06-12): $0.067/image at 1K** (Google direct API, verified March 2026). Prior entry had $0.08 — corrected. With AIMLAPI ~1.3× markup → ~$0.087/image at 1K estimated. Batch API (Google direct) offers $0.034/image at 1K — but AIMLAPI does not expose Google Batch discount. Savings vs NBP Edit on AIMLAPI: $0.195 − $0.087 = $0.108/draft image (55% savings). CANARY REQUIRED on AIMLAPI to confirm exact price.
@@ -892,5 +951,6 @@ fal.ai is the exclusive official API partner. No `docs.aimlapi.com` page found d
 36. **VEED Fabric-1.0 Fast on AIMLAPI (`veed/fabric-1.0-fast`) — CANARY REQUIRED.** A2V talking-head model. Takes face image + audio URL → lip-synced video. Pricing: $0.08/sec (480p), $0.15/sec (720p). 9:16 supported. Max 30s/clip. Use case: character delivers speech directly to camera, synced with ElevenLabs voiceover. NOT a replacement for cinematic motion shots — separate shot type only. `veed/fabric-1.0` (Standard) also confirmed.
 37. **Happy Horse 1.0 is NOT on AIMLAPI (2026-06-16).** fal.ai is the exclusive API partner. AIMLAPI blog post was editorial content, not an API launch. Confirms AIMLAPI-only pipeline is unaffected. Do not canary. Wan 2.7 R2V also still NOT live on AIMLAPI (same date) — Wan 2.6 R2V remains the live R2V option.
 38. **Kling v3 Turbo AUDIO CORRECTED (2026-06-21): SILENT VIDEO in single-clip mode.** Prior entry stated "audio always generated" — this was WRONG (based on multi-shot mode docs). Confirmed via multiple independent sources (Evolink, WaveSpeedAI): Kling 3.0 Turbo generates **silent video by default in single-clip mode**. Audio is only forced-on in multi-shot mode. For our AIMLAPI single-clip I2V/T2V workflow: no `generate_audio` parameter needed, no audio strip required, no Shari'ah compliance risk from Turbo audio. Turbo Pro ($0.182/sec = $0.91/5s, 1080p) and Standard Turbo ($0.146/sec = $0.73/5s, 720p) are both silent by default. Updated canary checklist: verify (1) actual AIMLAPI cost, (2) 1080p output, (3) InsightFace cosine ≥ 95% vs v3 Pro, (4) `ffprobe` confirms no audio track. Remove mandatory audio strip from Turbo workflow. Turbo Pro T2V also confirmed at $0.182/sec. Kling O3/Omni still NOT on AIMLAPI.
-39. **Krea WAN 14B on AIMLAPI — NOT a routing priority (2026-06-21).** Two model strings confirmed: `krea/krea-wan-14b/text-to-video` (T2V) and `krea/krea-wan-14b/video-to-video` (V2V). Distilled from Wan 2.1 14B (older architecture than Wan 2.7). Optimized for real-time generation (11fps on B200, first frame within 1s). Supports prompt modification mid-generation. V2V capability (video-to-video restyling). **Pricing unknown** — no AIMLAPI rate confirmed. Based on Wan 2.1 architecture, character quality likely below Wan 2.7 or Kling v3. No Subject Binding equivalent. Do NOT route to this model until pricing confirmed and quality canary run. Log as V2V option for future restyling workflow if needed.
-40. **LTX 2.3 (22B) released March 5, 2026 — NOT confirmed on AIMLAPI (2026-06-21).** Lightricks released LTX-2.3 (22B DiT), supporting 4K at 50fps, synchronized audio+video in single pass, clips up to 20s. API pricing: $0.04/sec Fast 1080p, $0.06/sec Pro 1080p (same as LTX 2.0). NOT YET CONFIRMED on AIMLAPI — only older LTXV docs page found on `docs.aimlapi.com`. Monitor for AIMLAPI availability. If added, expected model strings: `ltxv/ltxv-2-3-fast` and `ltxv/ltxv-2-3`. LTX 2.3 generates native audio (stereo 24kHz) — audio strip would be required for Shari'ah compliance. Cost position would be same as LTX 2 Fast ($0.052/sec est. on AIMLAPI).
+39. **Krea WAN 14B pricing CONFIRMED on AIMLAPI (2026-06-28).** Two model strings confirmed: `krea/krea-wan-14b/text-to-video` (T2V) and `krea/krea-wan-14b/video-to-video` (V2V). **Pricing: T2V = $0.033/sec (~$0.165/5s), V2V = $0.026/sec (~$0.13/5s)** — confirmed from AIMLAPI pricing page (fal.ai base is $0.025/sec; AIMLAPI markup ~1.3×). At $0.033/sec, Krea WAN 14B T2V is the **cheapest T2V option on AIMLAPI** — 50% cheaper than Veo 3.1 Lite 720p ($0.065/sec), 20% cheaper than Hailuo 2.3 Fast I2V ($0.0416/sec) for equivalent duration. Distilled from Wan 2.1 14B (older architecture than Wan 2.7); optimized for real-time generation (11fps on B200). Supports prompt modification mid-generation. V2V ($0.026/sec) = cheapest video restyling option. No Subject Binding, no character identity lock. **Do NOT route character face shots here.** CANARY REQUIRED before routing production B-roll shots — quality may be below Veo 3.1 Lite due to Wan 2.1 base.
+40. **LTX 2.3 (22B) — NOT confirmed on AIMLAPI (2026-06-28 status check).** Lightricks released LTX-2.3 (22B DiT), supporting 4K at 50fps, synchronized audio+video in single pass, clips up to 20s. API pricing on LTX native API: $0.04/sec Fast 1080p, $0.06/sec Pro 1080p. NOT YET CONFIRMED on AIMLAPI — no dedicated docs page found on `docs.aimlapi.com` as of 2026-06-28. Monitor for AIMLAPI availability. If added, expected model strings: `ltxv/ltxv-2-3-fast` and `ltxv/ltxv-2-3`. LTX 2.3 generates native audio (stereo 24kHz) — audio strip required for Shari'ah compliance. Cost position would be same as LTX 2 Fast (~$0.052/sec est. on AIMLAPI).
+41. **Wan 2.2 Animate Move and Animate Replace now CONFIRMED on AIMLAPI (2026-06-28).** Two specialized character animation models with dedicated docs pages: (1) **Wan 2.2 14B Animate Move** (`alibaba/wan2.2-14b-animate-move`): I2V model that animates a static character image to mimic movements from a reference drive video. Input: character still image + drive video. Output: character performing those motions. Use case for this pipeline: given an approved NBP Edit hero frame, pass a drive video of a person moving naturally → character animates identically. Consistent motion technique without complex motion prompting. (2) **Wan 2.2 14B Animate Replace** (`alibaba/wan2.2-14b-animate-replace`): Video-to-video character swap — takes existing video + reference photo, replaces character with new one while preserving scene/background/timing. Use case: stock or B-roll footage of a mover working → swap the face/body with our approved Snelverhuizen character. Pricing TBD on AIMLAPI — not confirmed. Wan 2.2 Plus T2V (`alibaba/wan-2-2-plus-t2v`) and I2V also confirmed as separate entries. CANARY REQUIRED for all Wan 2.2 variants. Animate Replace is highest-priority canary: could eliminate the "blank slate" B-roll problem and reduce character shot dependency on Kling Pro for non-face-close-up shots.
