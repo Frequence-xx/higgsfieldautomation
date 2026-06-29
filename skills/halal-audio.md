@@ -48,7 +48,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
-**🚨 IMMINENT — July 9, 2026 removal (~16 days away as of 2026-06-23):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
+**🚨 CRITICAL — July 9, 2026 removal (~10 days away as of 2026-06-29):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
 
 ### Voice Parameters (all models)
 
@@ -287,15 +287,18 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `opus_48000_128` | Good — Opus at 48kHz | Free+ | More space-efficient than `mp3_44100_128` at equal perceived quality; use for SFX library when storage matters |
 | `opus_48000_192` | Better — Opus at 48kHz | Free+ | High-fidelity Opus; smaller file than `mp3_44100_192` |
 | `pcm_48000` | Lossless | Pro+ | **Preferred lossless master** — uncompressed PCM at 48kHz (SFX v2 native rate). Replaces `wav_44100` — see note below. |
-| `ultra_lossless` | Lossless (WAV, 705.6kbps, 44.1kHz) | Pro+ | **Prefer `pcm_48000` for SFX v2** — `ultra_lossless` resamples down from the native 48kHz. Use `ultra_lossless` for TTS outputs where 44.1kHz is the native model rate (eleven_v3). Added to AllowedOutputFormats in the June 2026 API update alongside TTS, Text-to-Dialogue, and Music endpoints. |
 | `opus_48000_32` | Low — Opus at 48kHz | Free+ | Low-bandwidth streaming only — not for SFX library |
 | `opus_48000_64` | Moderate — Opus at 48kHz | Free+ | Acceptable for previews; use `opus_48000_128` or higher for production |
 | `opus_48000_96` | Good — Opus at 48kHz | Free+ | Viable fallback if `opus_48000_128` unavailable on plan |
 | `mp3_22050_32` | Low | Free | Not suitable for mixing — leave as fallback only |
+| `mp3_24000_48` | Low–moderate | Free+ | 24kHz/48kbps — better than default 22kHz/32kbps; useful for quick preview renders where 44kHz is unnecessary overhead |
+| `alaw_8000` | Telephony | Free+ | A-law 8kHz codec — telephony only; not suitable for video mixing |
+
+**⚠ `ultra_lossless` is NOT an `output_format` for TTS or SFX v2.** It is a `quality_preset` value used exclusively by the ElevenLabs Studio Podcasts API (`create_podcast`, `quality_preset="ultra_lossless"`). Do NOT pass it as `output_format` in any `text_to_speech.convert()` or `text_to_sound_effects.convert()` call — it will fail. For lossless TTS master (eleven_v3 native rate is 44.1kHz): use `pcm_44100`. For lossless SFX v2 (native 48kHz): use `pcm_48000`.
 
 **⚠ `wav_44100` is NOT in `AllowedOutputFormats` for the SFX v2 endpoint** (verified against SDK source `src/elevenlabs/types/allowed_output_formats.py`). Using it may raise a type error or be silently rejected. Use `pcm_48000` instead for lossless masters. Raw PCM can be read by FFmpeg with `-f s16le -ar 48000 -ac 2` flags if needed, or use `mp3_44100_192` for a high-quality non-lossless alternative.
 
-**SFX v2 native sample rate is 48kHz.** Requesting `pcm_48000` avoids any resampling from 44.1 kHz and gives the highest fidelity master. The `aresample=48000` step in §4e becomes a no-op (already at native rate).
+**SFX v2 native sample rate is 48kHz.** Requesting `pcm_48000` avoids any resampling and gives the highest fidelity master. The `aresample=48000` step in §4e becomes a no-op (already at native rate). Eleven_v3 TTS native rate is 44.1kHz — for lossless TTS master use `pcm_44100` (not `pcm_48000`, which would upsample; not `ultra_lossless`, which is Studio-only).
 
 **Always request `mp3_44100_128` or better for pipeline SFX.** The default 22kHz/32kbps output introduces noticeable artifacts at the top of the frequency range, which are amplified after the highpass filter (§4g) and loudnorm stages.
 
@@ -796,12 +799,13 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | ElevenLabs default voice expiry Dec 31, 2026 | ElevenLabs retiring original 38 pre-made defaults | Willem is a Voice Library voice (NOT a default) — not affected. If you switch to a new ElevenLabs default voice, check expiry at elevenlabs.io/docs |
 | FFmpeg 8.x whisper filter — NOT a speech enhancer | whisper filter does ASR transcription only (outputs SRT/JSON) | Do not use as audio enhancement. For voiceover post-processing, continue with arnndn/afwtdn/dynaudnorm/loudnorm/deesser as documented. No new speech enhancement filters added in FFmpeg 8.0 or 8.1. |
 | `eleven_monolingual_v1` or `eleven_multilingual_v1` model ID in code throws 404 after July 9, 2026 | Both v1 models are removed July 9, 2026 (same day as scribe_v1) | Audit all scripts and configs for these model IDs. Replace with `eleven_multilingual_v2` (same cost, same Dutch quality). |
-| Want highest-quality TTS master audio (lossless, not PCM 48kHz) | eleven_v3 native rate is 44.1kHz; pcm_48000 involves upsampling for TTS | Use `ultra_lossless` output format (Pro+) for TTS masters — 705.6kbps, 44.1kHz WAV, natively matches eleven_v3 rate. For SFX v2 (native 48kHz), continue to use `pcm_48000`. |
+| Want highest-quality TTS master audio (lossless) | eleven_v3 native rate is 44.1kHz; pcm_48000 upsamples TTS; ultra_lossless is Studio-only and not a TTS output_format | Use `pcm_44100` for lossless TTS masters — natively matches eleven_v3's 44.1kHz rate. Use `pcm_48000` for lossless SFX v2 masters (native 48kHz). Never use `ultra_lossless` as output_format — it is a Studio Podcasts quality_preset, not available on TTS endpoint. |
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API (both `music_v1` and `music_v2`) generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Both `music_v1` and `music_v2` are banned in this pipeline. |
 | Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.53.0+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
 | SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `pcm_48000` for lossless SFX library masters (`wav_44100` is NOT in AllowedOutputFormats). |
 | `wav_44100` format rejected / TypeError in SFX v2 call | `wav_44100` is not in `AllowedOutputFormats` SDK type for the SFX endpoint | Use `pcm_48000` (lossless 48kHz, Pro+) or `mp3_44100_192` (high-quality non-lossless) instead. `pcm_48000` is the confirmed lossless master format for SFX v2. |
+| `ultra_lossless` format rejected in TTS or SFX convert() call | `ultra_lossless` is NOT an output_format — it is a Studio Podcasts quality_preset (used only with create_podcast). AllowedOutputFormats does not include it. | For lossless TTS (eleven_v3 at 44.1kHz): use `pcm_44100`. For lossless SFX v2 (48kHz): use `pcm_48000`. |
 | TikTok video sounds quieter than expected or louder than other platforms | TikTok does not apply in-feed loudness normalization | Content plays at delivered level. Master to -14 to -16 LUFS for clean phone playback. Do not over-compress to get louder — will sound distorted on mobile. |
 | PVC audio tags weak or ignored in eleven_v3 | PVCs not fully optimized for v3 as of April 2026 | Switch to a Voice Library voice (e.g. Willem) or an IVC. Do not use PVCs for eleven_v3 tag-dependent scripts until ElevenLabs confirms full PVC compatibility. |
 | Need to verify Willem voice quality before production | No UI check in pipeline | Call GET /v1/voices?search=Willem — check `recording_quality` field. Proceed only if "studio" or "good". If "in_review" labelling_status, hold and re-check next session. |
@@ -1045,7 +1049,13 @@ with open("sfx_clean.mp3", "wb") as f:
 
 ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA (March 2026). Generates a single audio file containing multiple speakers in natural conversation. Not needed for current Snelverhuizen single-VO format, but relevant if a future brief calls for two characters (e.g., customer + crew dialogue scene).
 
-**Endpoint:** `client.text_to_speech.text_to_dialogue.convert()` (Python SDK v2.42+)
+**Two variants available (confirmed via SDK types):**
+- **REST batch**: `client.text_to_speech.text_to_dialogue.convert()` — one audio file per call. Up to 10 voice IDs, up to 2,000 chars total. Full VoiceSettings supported.
+- **WebSocket streaming**: `TextToDialogueWebsocketClientMessage` — real-time streaming variant for eleven_v3 dialogue. Up to 10 voices for `eleven_v3`, exactly 1 for `eleven_v3_conversational`. **Limitation:** only `stability` is supported in `TextToDialogueWebsocketVoiceSettings` (other VoiceSettings fields like similarity_boost, style, speed are unavailable). Has 20-second inactivity timer; send `keep_alive` messages for long pauses. Use `flush=True` to force output without closing the socket.
+
+For batch (non-real-time) multi-speaker dialogue, use the REST endpoint — it supports the full VoiceSettings. Use WebSocket only if you need real-time streaming output.
+
+**Endpoint (REST batch):** `client.text_to_speech.text_to_dialogue.convert()` (Python SDK v2.42+)
 
 **Key parameters:**
 - `inputs` — array of `{text, voice_id}` objects; each object is one dialogue turn
