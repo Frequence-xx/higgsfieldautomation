@@ -90,6 +90,26 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Important:** Elements extract face + posture + clothing together. **No face_weight API parameter exists on AIMLAPI.** "Subject Binding 80-90" in CLAUDE.md is a quality target, not a parameter.
 
+### Step 3a: Differential Prompt Rule — Action + Camera Only When Refs Are Provided (pass 24 finding, 2026-06-29)
+
+When `elements` or `image_url` reference images are provided, describe **only what changes** from those references — NOT the character's static attributes. References already carry face, build, skin tone, and clothing; redundant description competes with the reference signal and can cause identity drift.
+
+**DO (differential — action + camera only):**
+```
+@Element1 lifts a moving box from the truck, pivots left 30 degrees, eases to stop at the doorway
+```
+
+**DON'T (redundant character description competing with refs):**
+```
+The man with short dark brown hair and olive skin wearing a navy polo shirt and cargo trousers lifts a box and walks toward the door
+```
+
+**Seven elements framework (AnyID, arXiv 2603.25188):** shot type, hairstyle, clothes, accessory, expression, action, background. Only describe what **differs** from the reference. Action and camera move are almost always the only things that change — those are what the prompt should specify.
+
+Independently confirmed by Atlas Cloud Kling 3.0 prompt guide: *"With image-to-video, the model already sees your starting frame, so repeating descriptions wastes characters… drop the Subject and Scene description that the image already supplies, and lead with Subject Movement plus Camera Language."*
+
+**Exception:** If the scene places the character in a context NOT visible in any reference (new background, new lighting), briefly describe the new context. Do NOT re-describe attributes already shown in refs.
+
 ### Step 3b: Multi-Character Scene
 
 ```python
@@ -369,6 +389,8 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 **Gloria — Future Watch (arXiv 2603.29931, March 2026):** Consistent character video generation via "content anchors" — a compact set of anchor frames covering multiple viewpoints AND expression variants. Key mechanisms: (1) **Superset Content Anchoring** — includes both intra-clip and extra-clip cues in the anchor set to prevent view-dependent copy-paste artifacts; (2) **RoPE as Weak Condition** — distinct positional encodings assigned to video vs. conditioning tokens, preventing multi-reference identity collapse. Research model; no public production code as of 2026-06-09.
 
 **Practical implication for our pipeline:** Gloria validates the multi-view anchor strategy (front + 3/4 + profile + face-crop). It also suggests that adding one mild expression variant (e.g., a slight smile) alongside angle refs could further reduce identity collapse in clips that require the character to smile. However, Mv²ID (arXiv 2603.21299) established angular diversity > expression diversity in our current 4-ref cap. **Current policy unchanged.** If a clip drifts specifically on expression-heavy action (character smiling or laughing), test substituting the full-body ref with a smiling expression ref to see if it improves anchoring.
+
+**AnyID — Future Watch (arXiv 2603.25188, March 26, 2026):** Ultra-fidelity identity-preserving video generation from any visual references (faces, portraits, videos). Key innovations: (1) **Omni-referenced architecture** — uses original VAE (not visual experts) to inject identity; unifies heterogeneous reference types (image + video) into one representation; (2) **Primary-referenced generation** — designates one reference as the canonical anchor for all static attributes; (3) **Differential prompt** — describes ONLY what changes from the primary reference (action, expression change, new background), while anything not mentioned stays consistent. No public code as of 2026-06-29; no AIMLAPI endpoint. **Practical implication now (already applied above in Step 3a):** The differential prompt principle is applicable to our Kling O1/O3 prompts today — describe only action + camera, let reference images carry identity.
 
 **lip_syncer processor (pass 9 finding, 2026-05-23): sync mouth to voiceover**
 
