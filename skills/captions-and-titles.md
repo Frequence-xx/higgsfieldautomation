@@ -158,7 +158,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. As of June 2026, accepts `keyterms` (array, max 50 entries × 20 chars each) and `no_verbatim` params — both echoed back in `session_started` event. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
-   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
+   Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.7rc1 released June 26, 2026 is a pre-release (Windows CUDA fix + huggingface-hub pin relax only — no timestamp changes). **Stay on stable 3.8.6** for production. — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
 
    **Dependency requirement (v3.8.6+):** `faster-whisper>=1.2.0` is required. Install both:
    ```bash
@@ -612,7 +612,23 @@ const progress = interpolate(
 // → scale value that springs to 1.05 when active, springs back to 1.0 when not active
 ```
 
-`Easing.spring` config: `{ damping?, mass?, stiffness?, overshootClamping? }` — same fields as `spring()` config. Internal simulation runs at 30fps. If `overshootClamping: true`, value never exceeds 1 (good for opacity animations).
+`Easing.spring` config (v4.0.483+ full signature):
+```typescript
+type EasingSpringConfig = Partial<{
+  damping: number;        // default 10
+  mass: number;           // default 1
+  stiffness: number;      // default 100
+  overshootClamping: boolean; // default false — clamps OUTPUT value at 1
+}> & {
+  allowTail?: boolean;            // default false (new v4.0.483)
+  durationRestThreshold?: number; // default undefined (new v4.0.483)
+};
+```
+- `overshootClamping: true` — output value never exceeds 1 (good for opacity animations)
+- `allowTail: true` — allows the spring to continue past `t=1` and oscillate naturally past the end point. **Do NOT use for caption word-highlight scale** — it causes each word to over-bounce, which distracts from readability. USE for title/name card spring entrances where a natural overshoot "pop" is desired.
+- `durationRestThreshold` — controls when the spring is considered "settled" (rest threshold). Lower value = spring must settle more completely before stopping; affects how the easing duration is measured internally.
+
+Internal simulation runs at 30fps.
 
 **Performance data:** +15% engagement lift for business/educational content. 70% of top creators use a variation.
 
@@ -681,7 +697,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.482 — confirmed current as of 2026-06-23; no caption API changes in 4.0.479–4.0.482)
+### Full API (v4.0.484 — confirmed current as of 2026-06-29; no caption API changes in 4.0.479–4.0.484)
 
 | Export | Purpose |
 |--------|---------|
