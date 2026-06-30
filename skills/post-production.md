@@ -750,21 +750,23 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-28, SC161)
+## 11. Tool Version Status (confirmed 2026-06-30, SC168)
 
-All post-production tools confirmed as of study cycle 161 (2026-06-28):
+All post-production tools confirmed as of study cycle 168 (2026-06-30):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
-| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-06-28. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
-| Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 as of 2026-06-28 — v4.25 remains pipeline default for diffusion video |
-| TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | v2.4.2 still pre-release as of 2026-06-28 — no new stable |
+| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-06-30. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
+| Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 as of 2026-06-30 — v4.25 remains pipeline default for diffusion video |
+| TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | v2.4.2 still pre-release as of 2026-06-30 — no new stable |
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
-| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-28 |
-| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-28 — current pipeline commands unchanged |
-| Remotion | **v4.0.483 (released 2026-06-28)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, and `lightTrail()` (see §11c). **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
+| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
+| Remotion | **v4.0.484 (released ~2026-06-29)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), and **`linearGradient()`** (SC168 — see §11d). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC168 update (2026-06-30):** Remotion advanced to v4.0.484. New `linearGradient()` added to `@remotion/effects` (WebGL2 linear color gradient overlay — see §11d). NVENC H.264/H.265 hardware encoding confirmed for Linux/Windows via `hardwareAcceleration` option in `renderMedia()` — use `videoBitrate` instead of CRF when enabling. All other tools unchanged: no FFmpeg 8.1.3, no Practical-RIFE v4.27, no RVE v2.4.2 stable, no PySceneDetect v0.7.1, no SVT-AV1 v4.2.
 
 **SC154 → SC161 updates:** Remotion advanced from v4.0.481 to v4.0.483 across two releases. v4.0.482 (June 22) added `cornerPin()` and `lightTrail()` to `@remotion/effects`. v4.0.483 (June 28, today) added `radialProgressiveBlur()` and spring easing tail support, and fixed an audio-freeze bug during scrubbing. All other tools unchanged.
 
@@ -907,6 +909,95 @@ import { cornerPin } from "@remotion/effects";
 
 ---
 
+### 11d. `@remotion/effects` — `linearGradient()` (v4.0.484)
+
+**`linearGradient()`** (added v4.0.484, ~2026-06-29) — WebGL2-rendered linear color gradient overlay. Covers the entire frame with a smooth gradient from `startColor` to `endColor` between two UV points. Different from `linearProgressiveBlur()` (which blurs pixels) — this draws a color gradient layer.
+
+Parameters:
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `start` | `[number, number]` | `[0, 0.5]` | UV coordinate where `startColor` is full-strength (0–1 range) |
+| `end` | `[number, number]` | `[1, 0.5]` | UV coordinate where `endColor` is full-strength (0–1 range) |
+| `startColor` | `string` | `'#000000'` | Hex color at `start` position |
+| `endColor` | `string` | `'#ffffff'` | Hex color at `end` position |
+
+UV coordinates: `[0, 0]` = top-left, `[1, 1]` = bottom-right, `[0.5, 0]` = top-center, `[0.5, 1]` = bottom-center.
+
+**Practical uses for Snelverhuizen:**
+
+**1. Dark scrim behind captions (most common use):** Overlay a transparent-to-black gradient in the lower third so caption text reads on any background without a hard box.
+```tsx
+import { linearGradient } from "@remotion/effects";
+
+// transparent at y=0.6 (60% down frame), fades to semi-black at bottom
+<AbsoluteFill style={{
+  filter: linearGradient({
+    start: [0.5, 0.65],
+    end:   [0.5, 1.0],
+    startColor: '#00000000',  // transparent black
+    endColor:   '#000000CC',  // ~80% black
+  }),
+}} />
+```
+
+**2. Brand orange gradient accent (bottom corner):**
+```tsx
+// Subtle #FC8434 sweep from bottom-left to transparent — brand touch on reveal frame
+<AbsoluteFill style={{
+  filter: linearGradient({
+    start: [0, 1],
+    end:   [0.5, 0.7],
+    startColor: '#FC843488',  // #FC8434 at 53% alpha
+    endColor:   '#FC843400',  // fully transparent
+  }),
+}} />
+```
+
+**Note:** Requires WebGL2. The Remotion renderer supports WebGL2 — no extra config needed.
+
+**When to use `linearGradient` vs alternatives:**
+- `linearGradient()` — full-frame color gradient overlay (WebGL2). Best for dark scrims and brand color washes.
+- `linearProgressiveBlur()` — directional blur (no color change). Best for blurring background behind text.
+- CSS `background: linear-gradient(...)` on a `<div>` — simpler, no WebGL2, but cannot be used as a `filter`. Use for background fills within a div.
+
+---
+
+### 11e. Remotion NVENC Hardware Encoding (v4.0.484, Linux/Windows)
+
+Remotion v4.0.484 confirmed NVENC H.264/H.265 hardware encoding support on Linux/Windows via the `hardwareAcceleration` parameter in `renderMedia()`.
+
+**Key constraints (different from FFmpeg NVENC):**
+- **CRF is NOT available** when `hardwareAcceleration` is enabled — Remotion removes this option automatically.
+- Use `videoBitrate` to control file size: `--video-bitrate=8M` produces similar output size to software encode at CRF 18.
+- Speed improvement: approximately 3–5× faster render than software encode.
+
+**When to use Remotion NVENC vs FFmpeg NVENC (§8a):**
+- Use **FFmpeg NVENC** (§8a) when encoding pre-assembled video files (post-production encode step).
+- Use **Remotion NVENC** when rendering Remotion compositions directly (caption overlays, branded sequences) — avoids the FFmpeg post-step.
+- Both target NVIDIA GPU; VAAPI (§8b) remains the Linux AMD/Intel alternative.
+
+**CLI usage:**
+```bash
+npx remotion render MyComp out.mp4 --hardware-acceleration=if-possible --video-bitrate=8M
+```
+
+**`renderMedia()` API:**
+```typescript
+await renderMedia({
+  composition,
+  serveUrl,
+  codec: 'h264',
+  outputLocation: 'out.mp4',
+  hardwareAcceleration: 'if-possible',  // 'disable' | 'if-possible' | 'required'
+  videoBitrate: '8M',
+  // Do NOT set crf when hardwareAcceleration is enabled
+});
+```
+
+`hardwareAcceleration: 'if-possible'` falls back to software encode gracefully if no NVIDIA GPU is detected — safe default for our pipeline environment.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -929,7 +1020,7 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.483 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar readability on light backgrounds; use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range) — see §11a and §11c
+- [ ] Remotion v4.0.484 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range) — see §11a, §11c, §11d
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"` (§11b, forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
