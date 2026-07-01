@@ -263,8 +263,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/generate/video/kling/generation", 
     "duration": "5",
     "aspect_ratio": "9:16",
     "generate_audio": False,
-    "cfg_scale": 0.5,           # 0.5 confirmed optimal for characters; do NOT raise to 0.8
-    "motion_strength": 0.3,     # 0.3 for face close-up; 0.5 for walking
+    "cfg_scale": 0.5,           # 0.5 confirmed optimal for characters; 0.8 only for multi-shot sequences
+    # NOTE: motion_strength is NOT a valid standard I2V parameter — omit entirely (Motion Control V2V only)
     "face_consistency": True,   # forces face reconstruction from Element Binding refs
     "negative_prompt": "morphing, shifting jawline, extra fingers, text morphing, garbled text, blurry, flickering, jittery, vehicle movement, ghost driving, breathing motion, expression change",
 }, headers=headers, timeout=60)
@@ -476,10 +476,11 @@ No single model excels at everything. Each failure mode maps to a specific model
 
 | Shot type | Primary model | Why | Fallback |
 |-----------|---------------|-----|----------|
-| Character close-up/dialogue | Kling v3 Pro I2V (Subject Binding 80-90) | Identity drift <10%, native 4K, reliable on AIMLAPI | — |
+| Character close-up/dialogue (FINAL) | Kling v3 Pro I2V (Subject Binding 80-90) | Identity drift <10%, native 4K, reliable on AIMLAPI | — |
+| Character close-up (DRAFT) | Kling O1 Reference-to-Video (`klingai/video-o1-reference-to-video`) — CANARY REQUIRED | $0.56/5s vs $1.46/5s Pro — 51% cheaper; multi-image lock via `image_list` (1-7 refs) | Kling v3 Std Turbo I2V ($0.73) |
 | Truck/vehicle shots | Kling v3 Pro I2V | Physics, I2V from static, camera_fixed, anti-ghost-driving | Kling Standard |
-| Wide establishing | **Veo 3.1 Lite** (`google/veo-3-1-lite-generate-preview`) | Native 9:16, first+last frame control, cheap | Kling v3 Standard |
-| B-roll/transitions | **Veo 3.1 Lite** or Wan 2.5 Preview (`wan-2-5-image-to-video`) | Wan 2.5 Preview cheaper + better than Wan 2.2 ($0.065/480p, $0.13/720p, $0.195/1080p, 10s @ 24fps) | Kling Standard |
+| Wide establishing | **Veo 3.1 Lite** (`google/veo-3-1-lite-generate-preview`) | Native 9:16, first+last frame control, cheap | Wan 2.7 T2V (`alibaba/wan-2-7-t2v`) |
+| B-roll/transitions | **Veo 3.1 Lite** (T2V, no char) or Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, I2V with anchor) | Hailuo 2.3 Fast cheapest I2V at $0.208/5s — requires anchor frame. CANARY REQUIRED. | Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) |
 | Hero frames (still) — draft | NB2 (`google/nano-banana-2`) | ~50% cost, 95% quality — CANARY FIRST | NBP Edit |
 | Hero frames (still) — final | NBP Edit ($0.195/img) or Soul Cinema | Cinematic-grade keyframes | Flux Kontext Max |
 | Brand color #FC8434 stills | **FLUX.2 Pro** (`blackforestlabs/flux-2-pro`) | Native HEX matching, ~33% cheaper at 9:16 vs Kontext | Kontext Max |
@@ -550,7 +551,7 @@ When new model drops, do NOT immediately switch:
 
 ## Summary — Highest-Impact Changes
 
-1. **Route character shots to Kling v3 Pro I2V** with Subject Binding 80-90, 3-4 reference photos in Element Library, cfg_scale 0.5 (A/B test 0.8 next character clip — Atlas Cloud uses 0.8 for face-locked work). Seedance 2.0 is PERMANENTLY BLOCKED for human faces — policy block, not technical, will not be resolved.
+1. **Route character shots to Kling v3 Pro I2V** with Subject Binding 80-90, 3-4 reference photos in Element Library, cfg_scale 0.5 (use 0.8 ONLY for multi-shot sequences; never for single character shots — over-constrains motion). Seedance 2.0 is PERMANENTLY BLOCKED for human faces — policy block, not technical, will not be resolved.
 
 2. **Route truck shots to Kling v3 Pro I2V** with I2V from high-quality static hero (Flux Kontext / NBP source), camera_fixed/stationary language, identical start/end frame. Directly addresses ghost driving.
 

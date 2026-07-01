@@ -35,10 +35,10 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 | Model | AIMLAPI String | Resolution | Cost (5s, audio OFF) |
 |-------|---------------|------------|---------------------|
 | Kling O1 Reference-to-Video | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.56** |
-| Kling v3 Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — Last frame OPTIONAL. ⚠️ Audio always generated — strip required. CANARY REQUIRED. |
-| Kling v3 Standard Turbo T2V | `klingai/video-v3-standard-turbo-text-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — T2V variant. Same audio behavior. CANARY REQUIRED. |
-| **Kling v3 Turbo Pro I2V** | `klingai/video-v3-turbo-pro-image-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec — AIMLAPI pricing confirmed June 2026) — 37.7% cheaper than v3 Pro. ⚠️ Audio always generated. CANARY REQUIRED. |
-| **Kling v3 Turbo Pro T2V** | `klingai/video-v3-turbo-pro-text-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec) — CANARY REQUIRED. |
+| Kling v3 Standard Turbo I2V | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — Last frame OPTIONAL. ✓ CORRECTED 2026-06-21: Silent video by default in single-clip mode (AIMLAPI docs list `generate_audio` with default=true — ALWAYS pass `false` as safety; strip audio immediately as precaution). CANARY REQUIRED. |
+| Kling v3 Standard Turbo T2V | `klingai/video-v3-standard-turbo-text-to-video` | 720p (9:16) | **$0.73** ($0.146/sec) — T2V variant. Same corrected audio behavior. ALWAYS pass `generate_audio: false`. CANARY REQUIRED. |
+| **Kling v3 Turbo Pro I2V** | `klingai/video-v3-turbo-pro-image-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec — AIMLAPI pricing confirmed June 2026) — 37.7% cheaper than v3 Pro. ✓ CORRECTED 2026-06-21: Silent video by default in single-clip mode. ALWAYS pass `generate_audio: false`. Strip audio as safety precaution. CANARY REQUIRED. |
+| **Kling v3 Turbo Pro T2V** | `klingai/video-v3-turbo-pro-text-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec) — ALWAYS pass `generate_audio: false`. CANARY REQUIRED. |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$1.09** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$1.46** |
