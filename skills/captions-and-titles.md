@@ -24,7 +24,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 1. **Extract word-level timestamps** — three options in priority order:
 
    **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE is verified for word-level timestamps:
-   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports Dutch natively (150+ languages, introduced 2025-04). Works with both `eleven_multilingual_v2` and `eleven_v3`.
+   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports **29 languages including Dutch** (introduced 2025-04; built on multilingual v2 technology — not the full 70+ language set of eleven_v3). Works with both `eleven_multilingual_v2` and `eleven_v3`.
 
      **Response schema (confirmed from Python SDK `ForcedAlignmentResponseModel` — 2026-05-23):**
      ```python
@@ -102,6 +102,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **IPA achieves 80–90% consistency** on eleven_v3 (not 100% — re-test if a specific phrase still sounds off). Only `eleven_v3` and `eleven_flash_v2` support phoneme rules; `eleven_multilingual_v2` does not. Alias rules (string substitution) work on all models.
 
    **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
+   **⚠️ DEADLINE: `scribe_v1` is removed July 9, 2026 — use `scribe_v2` only.** Any code referencing `scribe_v1` will throw 404 after that date.
    When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
 
    - **Dutch supported** (`language: "nl"` or leave null for auto-detect)
@@ -697,7 +698,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.484 — confirmed current as of 2026-06-29; no caption API changes in 4.0.479–4.0.484)
+### Full API (v4.0.484 — confirmed current as of 2026-07-01; no caption API changes in 4.0.479–4.0.484)
 
 | Export | Purpose |
 |--------|---------|
@@ -708,6 +709,11 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null }` |
 | `TikTokPage` | Type: `{ text, startMs, durationMs, tokens: TikTokToken[] }` — `durationMs` added v4.0.261 |
 | `TikTokToken` | Type: `{ text, fromMs, toMs }` — named export for TypeScript typing |
+| `EnsureMaxCharactersPerLineInput` | Direct named type export (TypeScript only) — input type for `CaptionsInternals.ensureMaxCharactersPerLine` |
+| `EnsureMaxCharactersPerLineOutput` | Direct named type export (TypeScript only) — output type for `CaptionsInternals.ensureMaxCharactersPerLine` |
+| `ParseSrtInput`, `ParseSrtOutput` | Direct named type exports for `parseSrt()` |
+| `SerializeSrtInput` | Direct named type export for `serializeSrt()` |
+| `CreateTikTokStyleCaptionsInput`, `CreateTikTokStyleCaptionsOutput` | Direct named type exports for `createTikTokStyleCaptions()` |
 
 No `parseWebVtt()` exists in this package. No `convertToCaptions()` either — that was deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
