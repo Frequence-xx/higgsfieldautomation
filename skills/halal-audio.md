@@ -48,7 +48,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
-**🚨 CRITICAL — July 9, 2026 removal (~10 days away as of 2026-06-29):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Any pipeline script, config, or legacy code referencing these model IDs will fail after that date. Migrate to `eleven_multilingual_v2` (same cost tier, same Dutch quality). `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` now to verify no legacy references remain.
+**🚨 CRITICAL — July 9, 2026 removal (8 days away as of 2026-07-01):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Scripts audited 2026-07-01: no legacy v1 model IDs found in `scripts/`. `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` before every production run until July 9 to catch any newly introduced references.
 
 ### Voice Parameters (all models)
 
@@ -198,8 +198,9 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Internet Archive — Mix Vocal Only Nasheeds** — archive.org/details/mixvocalonlynasheeds | Varies per track | Check per track | Check per track | Direct download |
 | **Internet Archive — Background Nasheed Collection** — archive.org/details/background-nasheed-collection | Varies per track | Check per track | Check per track | Direct download |
 | **Halal Tones** — halaltones.com | Pro Plan | Yes, up to 100k views/platform | No | WAV download |
-| **Halal Beats** — halalbeats.com | Custom | Check plan | Check plan | WAV download — **REJECT for Snelverhuizen**: platform explicitly uses daf (frame drum) on tracks. Daf is percussion; Snelverhuizen policy prohibits all instruments. Do not use. |
+| **Halal Beats** — halalbeats.com / halalbeats.io | Custom (commercial via halalbeats.io/commercial/) | Yes, commercial license available | Check per track | WAV download — **TWO variants per track: "Vocals Only" (zero instruments — potentially usable with owner approval) AND "Vocals + Daf" (frame drum present — REJECT per Snelverhuizen policy).** Always confirm you are downloading the "Vocals Only" variant. Run nasheed_check.py (§9) before use. The "Vocals + Daf" variant is percussion and must never be used. |
 | **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
+| **Halalmusic** — halal-music.com (also halalmusic.de) | Tiered: Content Creator License (commercial video ads / social media OK, not for creating music videos) / Artist License (streaming releases) | Yes — Content Creator License permits commercial use in videos and social media. **Caveat: content uses beatboxers (vocal percussion simulating drums) — this is a grey area under Snelverhuizen's "no instruments" policy. Obtain owner confirmation before use.** | Check per track | WAV download — instrument-free (singers + beatboxers only). |
 | **Internet Archive — The Ultimate Nasheed Collection** — archive.org/details/nasheedplaylist | Varies per track | Check per track (CC0 tracks safe; verify others) | Check per track | Direct download — uploaded by TheNasheedMaster; "NO MUSIC" in title; Arabic, Urdu, Bangla nasheeds. Run nasheed_check.py before use — not all tracks in the collection are confirmed instruments-free by ear. |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 | **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
@@ -776,6 +777,8 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Dutch phonemes sound off | Wrong model | Must use `eleven_multilingual_v2` |
 | Nasheed copyright claim on YouTube | Not checking each video's description | Always verify specific NCN video description before use |
 | NCN track has instruments despite "acapella" label | NCN policy is "try but cannot guarantee" 100% vocal-only | Always run nasheed_check.py (§9) AND listen by ear — do NOT trust the label alone |
+| Halal Beats track has daf percussion | Halal Beats releases two variants per track: "Vocals Only" (zero instruments) and "Vocals + Daf" (frame drum) | Download only the "Vocals Only" variant from halalbeats.com. Confirm file name says "Vocals Only". Run nasheed_check.py. Reject any track with beat_strength > 2.5 at 60-130 BPM. |
+| Halalmusic / halal-music.com track sounds like beatbox/mouth percussion | Platform uses beatboxers (vocal percussion) alongside singers | Beatboxing is a grey area under Snelverhuizen policy ("no instruments"). Get owner confirmation before using any halal-music.com track in production. |
 | Audio out of sync with video | Different sample rates | Resample all inputs to 48000 Hz before mixing |
 | Mobile speakers sound muddy | Stereo ambient on mono speaker | Downmix ambient: `aformat=channel_layouts=mono` |
 | SFX cuts off before video ends | `duration=first` uses shortest input | Use `aloop=loop=-1:size=2e+09` on all SFX inputs |
