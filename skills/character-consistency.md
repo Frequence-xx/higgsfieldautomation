@@ -287,25 +287,33 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.6.1** is the current stable release (April 19, 2026). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). No new face-swapper or expression-restorer features since v3.6.0.
+FaceFusion **v3.7.0** is the current stable release (June 30, 2026). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). v3.7.0 is an architecture release — no new processors, but three changes affect production use:
+
+**3.7.0 changes (pass 25 finding, 2026-07-02):**
+1. **Multi-frame aware processors:** Processors now consider neighboring frames simultaneously rather than processing each frame in isolation. This directly improves temporal consistency in video output — less flickering, morphing, and facial geometry shifts between frames. Benefit for our clips: expression_restorer and face_enhancer should produce smoother cross-frame results on 5s clips.
+2. **Auto face selector mode:** New `--face-selector-mode auto` automatically matches the source face to the most similar target face. Useful for clips where the character's face may shift slightly across frames — removes need to manually set `--reference-face-position`. Use `reference` mode when target has multiple people; use `auto` for single-character clips.
+3. **Breaking changes (install and args):** `--onnxruntime` is now a positional argument (not a named flag — update install scripts). `--system-memory-limit` argument **removed** (if set in any scripts, delete it).
 
 FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `headless-run`. The old `python facefusion.py run --headless` syntax is broken in v3.
 
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
-git clone https://github.com/facefusion/facefusion && cd facefusion && python install.py
+git clone https://github.com/facefusion/facefusion && cd facefusion
+# v3.7.0: --onnxruntime is now positional (no flag name needed)
+python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
-# v3.6.0+ syntax (headless-run, NOT run)
+# v3.7.0 syntax (headless-run, NOT run)
 python facefusion.py headless-run \
   --source-paths /path/to/approved_character_front.png \
   --target-path /path/to/failed_clip.mp4 \
   --output-path /path/to/fixed_clip.mp4 \
   --processors face_swapper face_enhancer \
   --face-swapper-model inswapper_128_fp16 \
-  --face-selector-mode reference \
-  --reference-face-position 0 \
+  --face-selector-mode reference \  # use "auto" for single-character clips (v3.7.0+)
+  --reference-face-position 0 \     # only needed with "reference" mode
   --face-enhancer-model gfpgan_1.4 \
   --face-enhancer-blend 80
+# NOTE: --system-memory-limit is REMOVED in v3.7.0 — delete from any existing scripts
 ```
 
 **v3 model change:** `hyperswap_1a_256` is the new default face swapper. Use `inswapper_128_fp16` explicitly for highest quality (especially for non-white skin fidelity).
@@ -625,7 +633,7 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-27.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
-**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI.
+**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-02.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -689,7 +697,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-06-27, Wan 2.7 R2V is marked "Coming Soon" on AIMLAPI docs — NOT yet available.** AIMLAPI has Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no R2V endpoint — skip the canary; it will 404. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (confirmed 2026-06-21, pass 22)
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-02, Wan 2.7 R2V is NOT yet confirmed on AIMLAPI** — `docs.aimlapi.com` indexes Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no Wan 2.7 R2V page. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (re-confirmed 2026-07-02, pass 25)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
