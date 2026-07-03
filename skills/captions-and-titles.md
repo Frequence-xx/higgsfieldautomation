@@ -102,7 +102,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **IPA achieves 80–90% consistency** on eleven_v3 (not 100% — re-test if a specific phrase still sounds off). Only `eleven_v3` and `eleven_flash_v2` support phoneme rules; `eleven_multilingual_v2` does not. Alias rules (string substitution) work on all models.
 
    **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
-   **⚠️ DEADLINE: `scribe_v1` is removed July 9, 2026 — use `scribe_v2` only.** Any code referencing `scribe_v1` will throw 404 after that date.
+   **🚨 CRITICAL — 6 DAYS: `scribe_v1` is removed July 9, 2026 (TODAY IS JULY 3). Any code using `scribe_v1` WILL break on July 9 — replace with `scribe_v2` NOW.** Any code referencing `scribe_v1` will throw 404 after that date.
    When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
 
    - **Dutch supported** (`language: "nl"` or leave null for auto-detect)
@@ -128,7 +128,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    with open("voiceover.wav", "rb") as f:
        result = client.speech_to_text.convert(
            file=f,
-           model_id="scribe_v2",         # ⚠️ scribe_v1 DEPRECATED — removed July 9, 2026. Use scribe_v2 only.
+           model_id="scribe_v2",         # 🚨 scribe_v1 REMOVED July 9, 2026 (6 days away). Use scribe_v2 only.
            language_code="nl",           # Dutch; omit for auto-detect
            timestamps_granularity="word", # required for word-level timestamps
            tag_audio_events=False,       # ⚠️ REQUIRED for TTS audio — default True adds spurious event tokens
@@ -360,7 +360,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    }
    ```
 
-   Version: 4.0.448 (May 2026). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+   Version: 4.0.484 (confirmed July 3, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
    **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
    Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
@@ -698,7 +698,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.484 — confirmed current as of 2026-07-01; no caption API changes in 4.0.479–4.0.484)
+### Full API (v4.0.484 — confirmed current as of 2026-07-03; no caption API changes in 4.0.479–4.0.484)
 
 | Export | Purpose |
 |--------|---------|
