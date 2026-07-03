@@ -661,11 +661,13 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
         }
     ],
     # max 3 kling_elements per task; each element 2–4 images in element_input_urls
-    # ELEMENT REFERENCE SYNTAX (SC149 correction):
+    # element_input_video_urls: optional video URL (3–8s clip) for motion-DNA identity lock
+    # element_input_audio_urls: optional audio URL (5–30s) for voice binding — DO NOT USE (Shari'ah)
+    # ELEMENT REFERENCE SYNTAX (SC149+SC177 correction):
     # Native Kling API: <<<element_1>>>, <<<element_2>>> (triple brackets, positional)
     # fal.ai wrapper:   @Element1, @Element2 (same as v3 Pro)
-    # Web UI only:      @crew_lead (name-value) — NOT valid at raw API level
-    # AIMLAPI wrapper: canary-test on O3 landing — try <<<element_1>>> first
+    # Most wrappers:    @crew_lead (name-value matching "name" field) — SC177: try this first on AIMLAPI
+    # AIMLAPI wrapper: canary-test on O3 landing — try @element_name first, fall back to <<<element_1>>>
     "multi_prompt": [                                  # multi-shot control (O3 only, requires multi_shot: true)
         {"prompt": "@crew_lead lifts a box from the truck, golden hour", "duration": 5},
         {"prompt": "@crew_lead carries box to doorway, focus pull", "duration": 5}
