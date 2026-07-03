@@ -750,7 +750,7 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-06-30, SC168)
+## 11. Tool Version Status (confirmed 2026-07-03, SC175)
 
 All post-production tools confirmed as of study cycle 168 (2026-06-30):
 
@@ -762,9 +762,11 @@ All post-production tools confirmed as of study cycle 168 (2026-06-30):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.484 (released ~2026-06-29)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), and **`linearGradient()`** (SC168 — see §11d). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.484 (released 2026-06-26)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), and **`linearGradient()`** (SC168 — see §11d). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC175 update (2026-07-03):** All tool versions unchanged from SC168. No FFmpeg 8.1.3, no Remotion v4.0.485+, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable, no PySceneDetect v0.7.1. Remotion v5.0 confirmed NOT yet released — migration docs live at `remotion.dev/docs/5-0-migration` but no release date announced. Minor date correction: Remotion v4.0.484 was released 2026-06-26 (not ~2026-06-29 as previously noted). FFmpeg 6.1.6 and 7.0.3 received maintenance patches on older branches — not relevant to our 8.1.x pipeline.
 
 **SC168 update (2026-06-30):** Remotion advanced to v4.0.484. New `linearGradient()` added to `@remotion/effects` (WebGL2 linear color gradient overlay — see §11d). NVENC H.264/H.265 hardware encoding confirmed for Linux/Windows via `hardwareAcceleration` option in `renderMedia()` — use `videoBitrate` instead of CRF when enabling. All other tools unchanged: no FFmpeg 8.1.3, no Practical-RIFE v4.27, no RVE v2.4.2 stable, no PySceneDetect v0.7.1, no SVT-AV1 v4.2.
 
