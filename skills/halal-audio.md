@@ -48,7 +48,7 @@ No music. No instruments. Ever. Audio is restricted to:
 
 **Upgrade path:** Use `eleven_flash_v2_5` for script testing/iteration, then `eleven_v3` for the final production take. Never use `eleven_monolingual_v1` for Dutch.
 
-**🚨 CRITICAL — July 9, 2026 removal (8 days away as of 2026-07-01):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Scripts audited 2026-07-01: no legacy v1 model IDs found in `scripts/`. `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` before every production run until July 9 to catch any newly introduced references.
+**🚨 CRITICAL — July 9, 2026 removal (5 days away as of 2026-07-04):** `eleven_monolingual_v1` and `eleven_multilingual_v1` are deprecated and will be removed on July 9, 2026 — same day as `scribe_v1`. Confirmed in official ElevenLabs changelog (June 8, 2026). Scripts audited 2026-07-01: no legacy v1 model IDs found in `scripts/`. `eleven_v3` and `eleven_flash_v2_5` are unaffected. Run `grep -r "monolingual_v1\|multilingual_v1\|scribe_v1" scripts/` before every production run until July 9 to catch any newly introduced references.
 
 ### Voice Parameters (all models)
 
@@ -63,6 +63,41 @@ No music. No instruments. Ever. Audio is restricted to:
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
 **`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.50+; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
+
+**eleven_v3 IPA inline pronunciation for Dutch brand names (confirmed, June 2026):** eleven_v3 natively understands IPA symbols wrapped in forward slashes directly in the text string. Use this when `apply_text_normalization="on"` still mispronounces a Dutch proper noun. Pronunciation dictionaries (`client.pronunciation_dictionaries.create_from_rules()`) also work with eleven_v3 for persistent project-wide rules. Consistency: 80–90% (not 100% — always QA with Scribe v2).
+
+Snelverhuizen IPA reference (Dutch standard pronunciation):
+- `SNELVERHUIZEN` → `/snɛl.vɛr.ˈhœy.zən/` — insert inline: `SNELVERHUIZEN /snɛl.vɛr.ˈhœy.zən/`
+- `VERHUIZEN` → `/vɛr.ˈhœy.zən/`
+
+Pronunciation dictionary rule (one-time setup, reuse per project):
+```python
+from elevenlabs import ElevenLabs
+from elevenlabs.types import PronunciationDictionaryRule_Phoneme
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
+snelverhuizen_rule = PronunciationDictionaryRule_Phoneme(
+    string_to_replace="SNELVERHUIZEN",
+    phoneme="snɛl.vɛr.ˈhœy.zən",
+    alphabet="ipa",
+    type="phoneme",
+)
+
+dictionary = client.pronunciation_dictionaries.create_from_rules(
+    rules=[snelverhuizen_rule],
+    name="snelverhuizen-nl",
+)
+PRONUNCIATION_DICT_ID = dictionary.id
+PRONUNCIATION_DICT_VERSION = dictionary.version_id
+
+# Use in TTS call:
+# pronunciation_dictionary_locators=[{"pronunciation_dictionary_id": PRONUNCIATION_DICT_ID, "version_id": PRONUNCIATION_DICT_VERSION}]
+```
+
+**Note:** Pronunciation dictionary phoneme rules work with `eleven_v3` and `eleven_flash_v2` only — not with `eleven_multilingual_v2`. For standard production (eleven_v3), create the dictionary once and attach it per call. For draft passes (Flash v2.5), `apply_text_normalization="on"` may be Enterprise-only (see Known Issues) — use the pronunciation dictionary as a fallback.
+
+**`enable_phoneme_tags` (June 15, 2026 — Agents Platform only):** Agent TTS settings now expose `enable_phoneme_tags: bool` for opt-in SSML phoneme handling in eleven_v3 within the Conversational AI Agents Platform. This does NOT affect standard `text_to_speech.convert()` calls — irrelevant to the current production pipeline (which uses REST TTS, not Agents Platform). No action needed.
 
 **Willem voice_id**: The `voice_id` string for Willem is not published in any SDK reference or public list — it is a Voice Library community voice. Retrieve it once and store in project config. As of the April 7, 2026 API update, the voice response also includes `recording_quality` and `labelling_status` — check these when first retrieving:
 ```python
@@ -202,6 +237,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Halal Soundtracks** — halalsoundtracks.com | Royalty-free library | Yes, commercial | Check terms | WAV download — **MUST select "Vocals Only" version** (each track is released in two variants: "Vocals Only" and "Vocals + Daf" — always confirm you have the vocals-only file) |
 | **Halalmusic** — halal-music.com (also halalmusic.de) | Tiered: Content Creator License (commercial video ads / social media OK, not for creating music videos) / Artist License (streaming releases) | Yes — Content Creator License permits commercial use in videos and social media. **Caveat: content uses beatboxers (vocal percussion simulating drums) — this is a grey area under Snelverhuizen's "no instruments" policy. Obtain owner confirmation before use.** | Check per track | WAV download — instrument-free (singers + beatboxers only). |
 | **Internet Archive — The Ultimate Nasheed Collection** — archive.org/details/nasheedplaylist | Varies per track | Check per track (CC0 tracks safe; verify others) | Check per track | Direct download — uploaded by TheNasheedMaster; "NO MUSIC" in title; Arabic, Urdu, Bangla nasheeds. Run nasheed_check.py before use — not all tracks in the collection are confirmed instruments-free by ear. |
+| **TuneHub Vocals™** — youtube.com/c/tunehub | Unknown / per-video | Self-described "free to use" for halal nasheed / Islamic vocals content; no explicit commercial license published. Check individual video descriptions. **Commercial terms unconfirmed** — do not use in paid/boosted ads without verifying per video. | Check per video | yt-dlp |
 | **Nasheed Station** — nasheedstation.com | Unknown | **Unconfirmed** — verify before commercial use | Check per track | Stream/download |
 | **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
 | **Nasheed Without Music** — youtube.com/@NasheedWithoutMusic. (channel: UChHmS2ziIi1bIeHjtvmQfJw) | Unknown / per-video | YouTube: check individual video description (channel name implies free use; terms not published). Outside YouTube: unconfirmed — email nomusicbiz@gmail.com before commercial use. | Check per video | yt-dlp |
@@ -806,6 +842,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API (both `music_v1` and `music_v2`) generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Both `music_v1` and `music_v2` are banned in this pipeline. |
 | Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.53.0+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
+| "SNELVERHUIZEN" still mispronounced despite `apply_text_normalization="on"` and `speed=0.95` | Dutch compound brand name too opaque for eleven_v3 text normalisation; proper noun not in model vocabulary | Use IPA inline: write `SNELVERHUIZEN /snɛl.vɛr.ˈhœy.zən/` in the text, OR create a pronunciation dictionary rule (see IPA section in §0). QA result with Scribe v2. Consistency: 80–90%. |
 | SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `pcm_48000` for lossless SFX library masters (`wav_44100` is NOT in AllowedOutputFormats). |
 | `wav_44100` format rejected / TypeError in SFX v2 call | `wav_44100` is not in `AllowedOutputFormats` SDK type for the SFX endpoint | Use `pcm_48000` (lossless 48kHz, Pro+) or `mp3_44100_192` (high-quality non-lossless) instead. `pcm_48000` is the confirmed lossless master format for SFX v2. |
 | `ultra_lossless` format rejected in TTS or SFX convert() call | `ultra_lossless` is NOT an output_format — it is a Studio Podcasts quality_preset (used only with create_podcast). AllowedOutputFormats does not include it. | For lossless TTS (eleven_v3 at 44.1kHz): use `pcm_44100`. For lossless SFX v2 (48kHz): use `pcm_48000`. |
@@ -937,7 +974,7 @@ for word in result.words:
 - **+$0.050/hr flat surcharge** applies when `keyterms` is set (base $0.22/hr → $0.27/hr total, ≈23% increase). Not "+20%" — the surcharge is a flat additive rate per audio hour, not a percentage of base.
 - Characters not supported in keyterms: `< > { } [ ] \`
 - Realtime (WebSocket) variant supports max 50 keyterms at ≤20 chars each — different limits from batch.
-- **May 2026 realtime update:** Scribe v2 realtime WebSocket now also accepts `no_verbatim` (removes filler words) and native mute/unmute. These are realtime-only additions; the batch API (used for VO QA) is unchanged.
+- **May 2026 realtime update:** Scribe v2 realtime WebSocket gained `no_verbatim` (removes filler words) and native mute/unmute. **July 2026 realtime update:** Realtime WebSocket also now accepts `keyterms` (max 50 entries, ≤20 chars each; echoed in `session_started` event; adds 20% premium to realtime rate → $0.468/hr). These are realtime-only additions; the batch API (used for VO QA) is unchanged.
 
 **`entity_detection` (Scribe v2 — new in 2026):**
 Detects PII, PHI, PCI, and offensive language with timestamps. Not needed for VO QA, but useful for compliance screening of user-submitted audio.
