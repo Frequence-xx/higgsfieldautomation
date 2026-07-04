@@ -374,6 +374,8 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 **ST-DRC — Future Watch (arXiv 2606.02441, June 1, 2026, research only):** Spatial-Temporal Decoupled Reference Conditioning for identity-preserving T2V generation. Backbone: LTX-2.3 (22B param, open-source). Key mechanisms: (1) **Latent in-context injection** — reference image encoded with video VAE and concatenated to noisy latents (no extra adapters needed); (2) **TASS-RoPE** (Temporal-Adjacent Spatial-Shifted RoPE) — places reference tokens adjacent to video in time but shifted in space, letting identity flow through spatio-temporal attention while blocking pixel-level copy-paste shortcuts (directly addresses our known copy-paste artifact failure mode in multi-ref generation); (3) **Three-stream CFG** — independently controls text adherence vs. reference fidelity at inference time. No public code or production API as of 2026-06-27. When LTX-2.3-based endpoints appear on AIMLAPI, ST-DRC-style models are worth testing for character identity. **Practical implication now:** TASS-RoPE validates our current mitigation — keep characters spatially separated in prompts and use tight face crop as 4th ref — both reduce the copy-paste risk TASS-RoPE solves architecturally.
 
+**ARGUS — Future Watch (arXiv 2606.11670, June 10, 2026, no public code):** Stacked Multi-View Identity Mosaic Injection (SMII) for subject-preserving video generation. Backbone: Wan-based. Key mechanism: converts MLLM-selected image/video identity evidence into a 3×3 stacked mosaic, synchronizes the mosaic with the diffusion timestep, and injects it as negative-time read-only memory in Wan's native token space — bypassing external adapters entirely. Addresses the same problem our Kling element binding partially solves: identity lock under large viewpoint changes, occlusion, and expression shifts. No public code or AIMLAPI endpoint as of 2026-07-04. **Practical implication now:** The 3×3 mosaic maps naturally to our existing 3–4 multi-view ref set (front + 3/4 + profile + face crop) — ARGUS validates this coverage strategy. When SMII-based Wan endpoints appear on AIMLAPI, test for Karel/Mourad identity stability vs Kling O1.
+
 **MAGREF — Future Watch (ICLR 2026, code released, FP8 available):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1 14B. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves.
 
 **VRAM requirements (pass 17 update, 2026-06-11):**
@@ -631,9 +633,9 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 ## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-06-27.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-04.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
-**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-02.
+**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -699,7 +701,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 ## Wan 2.7 R2V — Character Shots at 3× Lower Cost (NOT on AIMLAPI — use Wan 2.6 R2V)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-02, Wan 2.7 R2V is NOT yet confirmed on AIMLAPI** — `docs.aimlapi.com` indexes Wan 2.7 I2V (`alibaba/wan-2-7-i2v`) but no Wan 2.7 R2V page. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (re-confirmed 2026-07-02, pass 25)
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-04, Wan 2.7 R2V is NOT yet available on AIMLAPI** — listed as "Coming Soon" in the AIMLAPI model database. `docs.aimlapi.com` has a full page only for Wan 2.7 I2V (`alibaba/wan-2-7-i2v`); no R2V page yet. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains the only confirmed R2V on AIMLAPI. Wan 2.7 R2V is available on Segmind, Replicate, WaveSpeed, Together AI — all non-AIMLAPI providers. (re-confirmed 2026-07-02, pass 25)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
@@ -734,7 +736,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "alibaba/wan-2-7-r2v",   # NOT on AIMLAPI as of 2026-06-27 — use wan-2-6-r2v
-    "prompt": "image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
+    "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
     "reference_images": [
         "https://cdn.example.com/crew_lead/front.png",
         "https://cdn.example.com/crew_lead/three_quarter.png",
@@ -763,7 +765,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**When to test Wan 2.7 R2V on AIMLAPI:** Monitor AIMLAPI changelog. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
+**When to test Wan 2.7 R2V on AIMLAPI:** Monitor AIMLAPI changelog. Wan 2.7 R2V is listed as "Coming Soon" in AIMLAPI model database as of 2026-07-04. When it lands: start with one Karel/Mourad draft at 720p ($0.50), score with InsightFace (PASS threshold 0.62), and only adopt for production if score ≥ 0.62 across 3 draft runs.
+
+**CRITICAL — Wan 2.7 R2V audio defaults ON (pass 26 finding, 2026-07-04):** Unlike Kling (which defaults audio OFF), Wan 2.7 generates background music and sound effects automatically if no audio reference is provided. Together AI's API uses a `media.audio_inputs` structure rather than a `generate_audio` boolean. **Before any production use of Wan 2.7 R2V on AIMLAPI, explicitly test how to disable audio on the AIMLAPI adapter** — the param name may differ. Generating haram music is a Shari'ah production gate failure. Do NOT ship a Wan 2.7 R2V clip without confirming audio is muted or stripped in post via FFmpeg (`ffmpeg -i input.mp4 -an output.mp4`).
 
 ## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-27)
 
