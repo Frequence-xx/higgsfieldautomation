@@ -200,11 +200,12 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
-**Model currency check (2026-06-05):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). **v4.22 is no longer the recommended model.** Practical-RIFE README recommends v4.25 as the default for most scenes and explicitly states v4.24+ is best for diffusion-generated video — use v4.25 as pipeline default.
+**Model currency check (2026-07-04):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). **v4.22 is no longer the recommended model.** Practical-RIFE README recommends v4.25 as the default for most scenes and explicitly states v4.24+ is best for diffusion-generated video — use v4.25 as pipeline default. **SC182 (2026-07-04):** `rife-v4.25.heavy` confirmed supported by TNTwise binary v20250112 (bundled since v20241030 release) — documented below as high-quality middle tier.
 
 Model selection for live-action / AI-generated video:
 - **rife-v4.25** — **best for diffusion-generated video (Kling, Veo output) and general default.** Practical-RIFE project explicitly states v4.24+ is suitable for diffusion model video post-processing; v4.25 is the maintainer's recommended default for most scenes. Use this as our pipeline default.
 - **rife-v4.25.lite** — lower-cost variant of v4.25 (2024-10-20). Use on server/headless environments with limited VRAM where full v4.25 OOMs. CLI: `-m rife-v4.25.lite` with the TNTwise binary. Quality is slightly below v4.25 full.
+- **rife-v4.25.heavy** — higher-quality variant of v4.25 (2024-10-30). Supported by TNTwise rife-ncnn-vulkan v20250112. Use as a middle tier between v4.25 default and v4.26.heavy when a clip needs extra polish without the full GPU cost of v4.26.heavy. CLI: `-m rife-v4.25.heavy`. Not in RVE GUI — CLI only.
 - **rife-v4.26.heavy** — highest quality variant of v4.26, significantly more GPU-intensive. Reserve for final delivery polish on important clips only (character close-ups, hero moments). Not in RVE GUI — CLI only via rife-ncnn-vulkan binary.
 - **rife-v4.26** — latest standard model (2024-09-21). Similar quality to v4.25 on most content; use if v4.25 produces artifacts on a specific clip.
 - **rife-v4.22** — prior recommendation (superseded). v4.24+ is the current guidance for diffusion video; retain only as legacy fallback.
@@ -218,7 +219,7 @@ For scripted pipeline use (no GUI):
 
 ```bash
 # TNTwise fork: https://github.com/TNTwise/rife-ncnn-vulkan/releases
-# Latest binary release: v20250112 (Jan 12, 2025) — supports models through v4.26/v4.26.heavy
+# Latest binary release: v20250112 (Jan 12, 2025) — supports models through v4.26/v4.26.heavy and v4.25.heavy
 # Download the Linux binary
 unzip rife-ncnn-vulkan-linux.zip
 
@@ -228,6 +229,7 @@ ffmpeg -i clip.mp4 -r 24 frames/%08d.png
 # Interpolate with v4.25 (best for diffusion/AI-generated video — see §3a)
 # No -x TTA flag — deprecated in v4.22+
 ./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.25 -j 1:2:2
+# Middle-tier quality: ./rife-ncnn-vulkan -i frames/ -o interp_frames/ -m rife-v4.25.heavy -j 1:2:2
 
 # Reassemble at target fps
 ffmpeg -r 48 -i interp_frames/%08d.png -i clip.mp4 \
@@ -750,13 +752,13 @@ ffmpeg -i graded.mp4 \
 
 ---
 
-## 11. Tool Version Status (confirmed 2026-07-03, SC175)
+## 11. Tool Version Status (confirmed 2026-07-04, SC182)
 
-All post-production tools confirmed as of study cycle 168 (2026-06-30):
+All post-production tools confirmed as of study cycle 182 (2026-07-04):
 
 | Tool | Confirmed current version | Status |
 |------|--------------------------|--------|
-| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-06-30. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. |
+| FFmpeg stable | **8.1.2 (released 2026-06-17)** | No 8.1.3 as of 2026-07-04. All pipeline filters (drawvg, normalize, zscale, hqdn3d, loudnorm, whisper) stable and unchanged. **CVE-2026-8461 (PixelSmash) patched in 8.1.2** — heap OOB write in MagicYUV decoder (CVSS 8.8), fixed in 8.1.2; our pipeline already on patched version. AI-generated clips (H.264 MP4 from AIMLAPI) do not use MagicYUV so not directly at risk, but confirm FFmpeg ≥ 8.1.2 on all pipeline machines. |
 | Practical-RIFE | v4.26 / v4.26.heavy (2024-09-21) | No v4.27 as of 2026-06-30 — v4.25 remains pipeline default for diffusion video |
 | TNTwise REAL Video Enhancer | v2.4.1 stable (2026-01-02), v2.4.2 pre-release | v2.4.2 still pre-release as of 2026-06-30 — no new stable |
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
@@ -765,6 +767,8 @@ All post-production tools confirmed as of study cycle 168 (2026-06-30):
 | Remotion | **v4.0.484 (released 2026-06-26)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), and **`linearGradient()`** (SC168 — see §11d). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC182 update (2026-07-04):** All tool versions unchanged from SC175. No FFmpeg 8.1.3, no Remotion v4.0.485+, no PySceneDetect v0.7.1, no RVE v2.4.2 stable, no SVT-AV1 v4.2. Remotion v5.0 still not released. New additions this cycle: (1) `rife-v4.25.heavy` documented in §3a as a supported middle-tier model (TNTwise binary v20250112 bundles it since Oct 2024 release — was omitted from prior docs); (2) CVE-2026-8461 (PixelSmash) security note added to FFmpeg row — fixed in 8.1.2, our pipeline already patched.
 
 **SC175 update (2026-07-03):** All tool versions unchanged from SC168. No FFmpeg 8.1.3, no Remotion v4.0.485+, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable, no PySceneDetect v0.7.1. Remotion v5.0 confirmed NOT yet released — migration docs live at `remotion.dev/docs/5-0-migration` but no release date announced. Minor date correction: Remotion v4.0.484 was released 2026-06-26 (not ~2026-06-29 as previously noted). FFmpeg 6.1.6 and 7.0.3 received maintenance patches on older branches — not relevant to our 8.1.x pipeline.
 
@@ -1010,7 +1014,7 @@ Before marking video as delivered:
 - [ ] All clips have identical resolution (1080×1920) and frame rate (30fps) before assembly
 - [ ] LUT applied matching the scene mood (warm/neutral/cool — see table above)
 - [ ] Dither applied (zscale dither=error_diffusion) on clips with gradient skies/walls
-- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (best for diffusion video; use TNTwise rife-ncnn-vulkan CLI fork v20250112 — supports v4.26; nihui binary tops out at v4.6), check ghost artifacts
+- [ ] Frame interpolation: run scene detection (§3d) first with PySceneDetect 0.7 (handles VFR AI clips correctly; install as `scenedetect-headless` on server), interpolate per-segment with rife-v4.25 (pipeline default for diffusion video) or rife-v4.25.heavy (middle-tier quality, same TNTwise binary) or rife-v4.26.heavy (highest quality, CLI only); use TNTwise rife-ncnn-vulkan CLI fork v20250112 — supports v4.25/v4.25.heavy/v4.26/v4.26.heavy; nihui binary tops out at v4.6. Check ghost artifacts.
 - [ ] Instagram algorithm: our 30–60s ads are well under the 90s sweet spot and far under the 3-min non-follower cutoff — no action needed, but flag if a future brief pushes past 3 minutes
 - [ ] Text overlays respect Instagram safe zone: bottom 320px, right 120px clear — see §5f
 - [ ] TikTok repurpose: re-check right ~184px dead zone (wider than Instagram; Add to Playlist +20px Jan 2026, effective safe area ~836 × 1466px) — see §5g
