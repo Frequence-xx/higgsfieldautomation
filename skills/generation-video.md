@@ -50,7 +50,7 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 **PRICING RESOLVED (June 2026):** AIMLAPI Kling v3 Standard = **$0.218/sec = $1.09/5s** (confirmed correct). The $0.084/sec figure causing the previous discrepancy is the **official Kling direct API rate** (kling.ai/dev/pricing) and **fal.ai rate** — NOT AIMLAPI pricing. AIMLAPI charges ~2.6× the native Kling rate for all v3 tiers: Standard $0.218/sec vs $0.084/sec native; Pro $0.291/sec vs $0.112/sec on fal.ai. This atypically high AIMLAPI markup (vs the ~1.3× assumed for most models) is confirmed. The $1.09/5s Standard and $1.46/5s Pro figures in the routing matrix are accurate — no changes needed.
 
-**Confirmed AIMLAPI Kling model roster (July 3, 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, **Kling v3 Standard Turbo I2V, Kling v3 Standard Turbo T2V, Kling v3 Turbo Pro I2V, Kling v3 Turbo Pro T2V** (all launched June 17, 2026 — canary required), Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni (`klingai/video-v3-omni` — confirmed absent as of July 3, 2026; the June 17 Turbo launch did NOT bring O3 to AIMLAPI; available on fal.ai, Replicate, Runware, Freepik, Wiro AI, Picsart), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI; v3 Motion Control is live on WaveSpeedAI, Eachlabs, Replicate, MindStudio — but not AIMLAPI as of July 3, 2026), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself is absent).
+**Confirmed AIMLAPI Kling model roster (July 5, 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, **Kling v3 Standard Turbo I2V, Kling v3 Standard Turbo T2V, Kling v3 Turbo Pro I2V, Kling v3 Turbo Pro T2V** (all launched June 17, 2026 — canary required), Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **NOT on AIMLAPI:** Kling O3/Omni (`klingai/video-v3-omni` — confirmed absent as of July 3, 2026; the June 17 Turbo launch did NOT bring O3 to AIMLAPI; available on fal.ai, Replicate, Runware, Freepik, Wiro AI, Picsart), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI; v3 Motion Control is live on WaveSpeedAI, Eachlabs, Replicate, MindStudio — but not AIMLAPI as of July 3, 2026), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself is absent).
 
 **fal.ai naming note:** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. For v3 Pro on fal.ai, use `fal-ai/kling-video/v3/pro/image-to-video`. For O3/Omni on fal.ai, it's a separate model: `fal-ai/kling-video/o3/standard/image-to-video`. **Kling O3 is NOT on AIMLAPI as of July 3, 2026** — confirmed absent from AIMLAPI docs index. The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI — only the Turbo tier (Standard Turbo + Turbo Pro) was added. AIMLAPI's own blog post listing Kling models only mentions Kling 2.6 Pro and Kling v3 Pro. Also note: fal.ai Kling v3 Standard pricing ($0.084/sec) is ~2.6× cheaper than AIMLAPI ($0.218/sec) — the AIMLAPI-only mandate is a real cost penalty for Kling Standard tier.
 
@@ -251,7 +251,9 @@ camera drift, sudden zooms, background shifting, unstable details, background mo
 
 **Kling 3.0 physics-first model architecture (confirmed June 2026):** Prompt adherence is the LAST priority. Model priority order: Physics → Temporal consistency → Motion quality → Visual fidelity → Prompt adherence. "Stationary truck" is a prompt instruction (lowest priority) — the physics engine can override it. Fix: frame stationarity as physics state using physics-framing language ("parking brake engaged, wheels locked, dead weight at rest on flat level ground") — this speaks to the physics engine directly, not just the text prompt. Static mask (pixel-level freeze) remains the only hard override that operates outside the physics engine.
 
-**`motion intensity 0.1` (Prompt Syntax 2.0, June 2026):** Kling 3.0 responds to numeric motion intensity values embedded in prompt text on a 0.1–1.0 scale (0.1 = near-static, 0.5 = model default, 1.0 = dramatic). Add `"motion intensity 0.1"` literally in the `prompt` string for all truck shots — this targets the physics engine layer directly, the same layer driving ghost driving, and is stronger than prose description alone. Confirmed by multiple independent community prompt guides (July 2026). **Scale disambiguation:** This 0.1–1.0 is the prompt-embedded text scale only. `camera_control` config values use a separate −10 to +10 range. Do NOT confuse them. Not an API parameter — must appear in the `prompt` string. Does not replace static_mask — use both.
+**`motion intensity 0.1` (Prompt Syntax 2.0, June 2026):** Kling 3.0 responds to numeric motion intensity values embedded in prompt text. Add `"motion intensity 0.1"` literally in the `prompt` string for all truck shots — this targets the physics engine layer directly, the same layer driving ghost driving, and is stronger than prose description alone. Not an API parameter — must appear in the `prompt` string. Does not replace static_mask — use both.
+
+**⚠️ Scale ambiguity (July 5, 2026):** Community guides split on the range. Earlier guides describe a 0.1–1.0 scale (0.1 = near-static, 0.5 = model default, 1.0 = dramatic). More recent July 2026 guides describe a 0–3 scale (0.3–0.5 = subtle head turn, 2.0–3.0 = running/dancing). Both sets describe prompt-embedded text, not an API parameter. **Practical implication for our pipeline:** `"motion intensity 0.1"` is the minimum extreme on either scale — use it as-is for truck/near-static shots. Do NOT use values above 1.0 for any Snelverhuizen shot until scale is canary-confirmed. `camera_control` config values use a separate −10 to +10 range and must NOT be confused with this.
 
 **UPDATED (June 2026):** In Kling v3, `static_mask_url`, `tail_image_url`, and `camera_control` are mutually exclusive — only ONE can be used per call. Previous multi-layer combinations are invalid.
 
@@ -714,6 +716,20 @@ Kling 3.0 supports native 4K output (3840×2160, up to 60fps, 16-bit HDR). **4K 
 **Third-party model strings:** Runware uses `klingai:kling-video@3-4k` (v3 base) and `klingai:kling-video@o3-4k` (O3 4K). fal.ai uses dedicated path `fal-ai/kling-video/v3/4k/image-to-video`.
 
 **AIMLAPI status:** UNCONFIRMED. No 4K-specific model page appears in AIMLAPI docs index. Neither `klingai/video-v3-pro-4k` nor a `mode: "4k"` mention appears in AIMLAPI's indexed model pages. Since O3 itself (`klingai/video-v3-omni`) is also absent from AIMLAPI, access to the O3-based 4K variant is doubly blocked. The most likely AIMLAPI access path when it lands: `mode: "4k"` on existing v3 Pro string (canonical approach from native API) — try this first; dedicated model string as fallback. Fall back to 1080p Pro if neither works. Use only for final-delivery hero clips; 4K costs ~44% more than Pro 1080p.
+
+## Hailuo 2.3 Fast — B-roll I2V (CANARY REQUIRED)
+
+Available on AIMLAPI. AIMLAPI model string: **`minimax/hailuo-2.3-fast`** (confirmed July 2026).
+
+**Key parameters on AIMLAPI:**
+- `image_url` — first frame (same parameter name as Kling on AIMLAPI; native MiniMax API uses `first_frame_image` — do NOT copy native docs)
+- `prompt`, `duration`, `generate_audio: false`
+
+**Cost:** ~$0.208/5s (routing matrix value). External sources cite ~$0.19/generation at Fast tier, suggesting pricing may be slightly under $0.208 — canary will confirm exact AIMLAPI rate.
+
+**Use case:** B-roll and transition clips where a static first-frame anchor is available and no characters appear. 24–36% cheaper per clip than Veo 3.1 Lite ($0.52/5s) depending on confirmed rate. CANARY REQUIRED before production use — run one 5s call, check audio (always strip: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`), confirm cost in AIMLAPI dashboard.
+
+---
 
 ## Error Handling
 
