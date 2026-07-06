@@ -283,7 +283,7 @@ ffmpeg -i clip.mp4 -c copy \
 
 **For Kling/Veo clips that are a single continuous shot (no cuts):** scene detection step can be skipped — single-shot AI clips typically have no internal cuts.
 
-**PySceneDetect v0.7.1 (in development, not yet released as of 2026-06-14, date TBD):** Will add:
+**PySceneDetect v0.7.1 (in development — `scenedetect_core-0.7.1.dev0` uploaded to PyPI 2026-07-06, stable not yet released):** Will add:
 - `--expand` flag to `split-video` (extends first/last clip to video boundaries — no footage lost)
 - `expand_scenes_to_bounds()` API helper in scene manager module
 - `backend` keyword argument for `scenedetect.detect()` — accepts `"opencv"` (default), `"pyav"`, or `"moviepy"` to select the video backend programmatically (useful in headless/server pipelines)
@@ -764,9 +764,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.484 (released 2026-06-26)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), and **`linearGradient()`** (SC168 — see §11d). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.485 (released 2026-07-06)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), and **`venetianBlinds()`** (SC189 — see §11f). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC189 update (2026-07-06):** Remotion advanced to v4.0.485 (released today). New `venetianBlinds()` effect added to `@remotion/effects` — see §11f. Bug fixes: media playbackRate duration in loops corrected; preview frame accuracy improved; `@remotion/web-renderer` gains dotted/dashed/double text-decoration styles. PySceneDetect 0.7.1.dev0 uploaded to PyPI today — still not a stable release (noted in §3d). All other tools unchanged: no FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable.
 
 **SC182 update (2026-07-04):** All tool versions unchanged from SC175. No FFmpeg 8.1.3, no Remotion v4.0.485+, no PySceneDetect v0.7.1, no RVE v2.4.2 stable, no SVT-AV1 v4.2. Remotion v5.0 still not released. New additions this cycle: (1) `rife-v4.25.heavy` documented in §3a as a supported middle-tier model (TNTwise binary v20250112 bundles it since Oct 2024 release — was omitted from prior docs); (2) CVE-2026-8461 (PixelSmash) security note added to FFmpeg row — fixed in 8.1.2, our pipeline already patched.
 
@@ -1004,6 +1006,49 @@ await renderMedia({
 
 ---
 
+### 11f. `@remotion/effects` — `venetianBlinds()` (v4.0.485)
+
+**`venetianBlinds()`** (added v4.0.485, 2026-07-06) — WebGL2 venetian-blinds reveal animation. Divides the frame into horizontal or vertical slats and reveals them progressively, like opening window blinds.
+
+**API:**
+```typescript
+import { venetianBlinds } from "@remotion/effects";
+
+type VenetianBlindsParams = {
+  progress?: number;               // 0–1, how far the reveal has progressed; default 0.5
+  direction?: 'vertical' | 'horizontal';  // slat orientation; default 'vertical'
+  slats?: number;                  // number of divisions, 1–100; default 12
+};
+```
+
+**Practical uses for Snelverhuizen:**
+- **Truck reveal transition:** Horizontal blinds (direction `'horizontal'`) opening to reveal the truck side panel — matches a "curtain lifts" cinematic feel.
+- **Scene transition between shots:** Drive `progress` from 0→1 over ~12 frames (0.4s at 30fps) for a snappy reveal cut.
+- **Hero frame intro:** Reveal a family arrival shot with vertical slats at `slats: 8` for a bold, stylized look.
+
+**Example — truck reveal opening (horizontal, 8 slats, 12-frame reveal):**
+```tsx
+import { venetianBlinds } from "@remotion/effects";
+import { useCurrentFrame, interpolate, AbsoluteFill } from "remotion";
+
+// Truck reveal: blinds open from frame 0 to frame 12
+const frame = useCurrentFrame();
+const progress = interpolate(frame, [0, 12], [0, 1], {
+  extrapolateLeft: "clamp",
+  extrapolateRight: "clamp",
+});
+
+<AbsoluteFill style={{
+  filter: venetianBlinds({ progress, direction: 'horizontal', slats: 8 }),
+}}>
+  {/* truck shot here */}
+</AbsoluteFill>
+```
+
+**Note:** Uses WebGL2 — same requirement as `radialProgressiveBlur()`, `cornerPin()`, and `linearGradient()`. Remotion renderer supports WebGL2 — no extra config needed. Pair with a `linearGradient()` dark scrim underneath for legible captions on a bright truck reveal.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1026,7 +1071,7 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.484 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range) — see §11a, §11c, §11d
+- [ ] Remotion v4.0.485 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames) — see §11a, §11c, §11d, §11f
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"` (§11b, forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
