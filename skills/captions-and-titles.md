@@ -102,7 +102,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    **IPA achieves 80–90% consistency** on eleven_v3 (not 100% — re-test if a specific phrase still sounds off). Only `eleven_v3` and `eleven_flash_v2` support phoneme rules; `eleven_multilingual_v2` does not. Alias rules (string substitution) work on all models.
 
    **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
-   **🚨 CRITICAL — 4 DAYS: `scribe_v1` is removed July 9, 2026 (TODAY IS JULY 5). Any code using `scribe_v1` WILL break on July 9 — replace with `scribe_v2` NOW.** Any code referencing `scribe_v1` will throw 404 after that date.
+   **🚨 CRITICAL — 2 DAYS: `scribe_v1` is removed July 9, 2026 (TODAY IS JULY 7). Any code using `scribe_v1` WILL break on July 9 — replace with `scribe_v2` NOW.** Any code referencing `scribe_v1` will throw 404 after that date.
 
    **🚨 Also removed July 9, 2026: `eleven_monolingual_v1` and `eleven_multilingual_v1` (legacy v1 TTS models).** Our pipeline uses `eleven_v3` (primary) and `eleven_multilingual_v2` (fallback) — no migration needed. Any code still referencing v1 TTS model IDs will break on July 9.
    When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
@@ -365,7 +365,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    }
    ```
 
-   Version: 4.0.484 (confirmed July 5, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+   Version: 4.0.486 (confirmed July 7, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
    **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
    Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
@@ -703,7 +703,16 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-### Full API (v4.0.484 — confirmed current as of 2026-07-05; no caption API changes in 4.0.479–4.0.484)
+**Remotion v4.0.486 (July 7, 2026) — upgrade recommended:**
+- **Fixed WebM tail frame extraction following the last keyframe.** If you load a rendered caption WebM inside a Remotion composition via `<OffthreadVideo>`, frames past the last keyframe previously returned garbage/black. Affects pipelines that composite captions inside Remotion (not FFmpeg-only pipelines). Upgrade: `npm install remotion@4.0.486`.
+- Delayed CanvasImage rendering until canvas presentation — affects `<OffthreadVideo>` with canvas-based rendering.
+- New docs: official Sequence freeze recommendations published (the `freeze` prop pattern documented below is now officially documented).
+
+**Remotion v4.0.485 (July 6, 2026):**
+- **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
+- Preview frame accuracy improved (Studio only).
+
+### Full API (v4.0.486 — confirmed current as of 2026-07-07; no caption API changes in 4.0.485–4.0.486)
 
 | Export | Purpose |
 |--------|---------|
