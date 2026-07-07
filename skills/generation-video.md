@@ -454,6 +454,8 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 
 **CRITICAL: `multi_shot: True` is REQUIRED to activate multi-shot mode for ALL Kling v3 variants (Standard and Pro, T2V and I2V).** Without this flag, `multi_prompt` is silently ignored and the model falls back to single-shot generation using the main `prompt` field. Confirmed across multiple Kling v3 platform implementations (June 2026). Previously documented as O3-only — this was incorrect; it applies to all v3 tiers.
 
+**⚠️ Cross-platform naming trap (July 2026):** The native Kling API uses `multi_shots` (plural, boolean) and `sound` (boolean) for audio. AIMLAPI uses `multi_shot` (singular) and `generate_audio` (boolean). Do NOT copy-paste JSON from native Kling docs, KIE AI docs, or Griptape README into AIMLAPI calls — the parameter names diverge silently (wrong names are ignored, not rejected). AIMLAPI naming is what our pipeline uses throughout this document.
+
 **HALAL RISK: Audio is always enabled in multi-shot mode.** `generate_audio: false` is ignored when `multi_shot: True` is set — the model generates audio for every multi-shot sequence. **Strip audio immediately post-generation:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4` — do NOT play audio before stripping.
 
 **Constraints:**
@@ -544,11 +546,24 @@ Separate from I2V. Kling v3 Motion Control animates a character image to match t
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
 - `"image"` — output character keeps orientation from source image (better for camera-led shots, max 10s)
 
-**Element limit:** Max 1 element per Motion Control call. Element binding requires `character_orientation: "video"` — image orientation mode does not support elements.
+**Element limit (v2.6 / AIMLAPI current):** Max 1 element per Motion Control call. Element binding requires `character_orientation: "video"` — image orientation mode does not support elements.
 
 **Framing rule:** Half-body image → pair with half-body motion reference. Full-body image → pair with full-body reference. Mismatch degrades motion transfer quality.
 
 **When to use:** Walking shots where motion prompting alone produces robotic or sliding feet artifacts. Requires a royalty-free motion reference clip (3-30s, clear body movement, moderate speed).
+
+### Kling v3 Motion Control — New Sub-Features (NOT on AIMLAPI yet; confirmed on fal.ai, Replicate, WaveSpeedAI, Kie AI, EachLabs, ComfyUI as of July 7, 2026)
+
+Three new capabilities added in the v3 Motion Control tier that do not exist in v2.6:
+
+**1. Multi-Elements (up to 4 subjects):** v2.6 limit was 1 element. v3 Motion Control allows 2–4 subject references, each with its own independent motion path. Each subject can have its own trajectory — solves multi-character scenes where v2.6 would merge or freeze secondary subjects. When O3/v3 Motion Control arrives on AIMLAPI, expect `elements` array with 4-entry limit (vs the 1-entry limit for v2.6 on AIMLAPI).
+
+**2. Curve Dolly (camera path control):** More precise than simple `camera_control` config values. Curve Dolly sets keyframes at specific timestamps and interpolates between them, allowing compound camera movements (e.g., push-in that pivots into a tilt) without the single-non-zero-value constraint of standard `simple` camera_control. Standard I2V camera_control is unaffected — Curve Dolly is Motion Control-only.
+
+**3. Camera Shake:** Two independent parameters control handheld-feel:
+- **Intensity**: amplitude of the shake movement
+- **Frequency**: how rapidly the shake oscillates  
+Combine low intensity + low frequency for subtle handheld; high intensity + high frequency for action/impact. Can be combined with Curve Dolly. Not available in standard I2V.
 
 ## Kling O1 Series — Available on AIMLAPI (Confirmed May 2026)
 
