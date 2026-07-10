@@ -100,6 +100,18 @@ for i in range(30):
 
 **Formula:** `[What moves] + [How it moves] + [Speed modifier] + [What stays still] + [Camera instruction] + [Motion endpoint]`
 
+**5-part spine (2026 community standard — alternative structure):**
+
+| # | Part | What to specify | Example |
+|---|------|-----------------|---------|
+| 1 | **Camera** | How the lens behaves (set 3D space first) | "Slow dolly push forward" |
+| 2 | **Scene** | Environment + current subject state (reference only) | "through the doorway, crew member standing" |
+| 3 | **Action** | Motion arc: start → middle → settled end | "lifts box, pivots right, places it firmly, eases to rest" |
+| 4 | **Vibe** | Light quality changes — NOT static description | "golden hour light plays across face" |
+| 5 | **Time** | Temporal endpoint + stabilizer | "motion settles, eases to stop" |
+
+Use as a pre-write checklist. Final prompt is still 15-40 words — CSAT is a planning tool, not a template to copy verbatim.
+
 **Optimal length:** 15-40 words. Beyond ~80 words the model averages conflicting instructions.
 
 **Kling v3 I2V motion improvement (confirmed June 2026):** v3 significantly reduces "Ken Burns effect" — the model now produces genuine character/environment animation rather than defaulting to camera panning over a still image. Practical implication: on v3, if you include a character in the hero frame, it WILL attempt to animate them. Use explicit "no body sway, no breathing movement" in negative prompts if you want near-static characters. v1/v2 templates that relied on Ken Burns drift as a fallback will look different on v3.
@@ -372,7 +384,7 @@ negative_prompt="sliding feet, floating limbs, identity drift, jittery, morphing
 | tail_image_url | string | — | End frame for transitions. **Native Kling API name: `image_tail`; AIMLAPI wrapper: `tail_image_url` (canary required).** **Incompatible with multi_prompt.** **Incompatible with static_mask_url, dynamic_masks, and camera_control (Kling v3 mutual exclusivity — pick only ONE of these four per call).** Same image = forces stationarity but allows mid-clip drift. |
 | camera_control | object | — | Named preset OR simple config (not both). **Incompatible with static_mask_url, dynamic_masks, and tail_image_url (Kling v3 mutual exclusivity).** See camera control section. |
 | elements | array | — | Character reference images for Subject Binding. Max 3 elements per I2V call. **Must be referenced as `@Element1` etc. in prompt.** |
-| static_mask_url / static_mask | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. **⚠️ PARAMETER NAME:** Native Kling API: `static_mask` (confirmed from official Kling Node.js wrapper, June 2026). AIMLAPI wrapper: may use `static_mask_url` or pass through as `static_mask`. Try `static_mask` first; fall back to `static_mask_url`. Canary required before first production use. |
+| static_mask_url | string | — | White=freeze, black=allow motion. **Must match source image aspect ratio exactly.** PNG/JPG/WEBP, max 10MB. **⚠️ PARAMETER NAME:** AIMLAPI uses `static_mask_url` (confirmed from AIMLAPI docs: "URL of the image for Static Brush Application Area"). Native Kling API uses `static_mask`. Use `static_mask_url` on all AIMLAPI calls. |
 | dynamic_masks | array | — | Motion brush paths. Up to 6 groups. See dynamic_masks section below. |
 | multi_prompt | array | — | Multi-shot prompting (up to 6 shots) — **AIMLAPI parameter name**. Base Kling API calls this `guidances`. **Incompatible with tail_image_url.** Main `prompt` must be empty when used. See Multi-Shot section. |
 
@@ -652,6 +664,8 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 | Final delivery guaranteed identity lock | v3 Pro I2V (current production) | $1.46 | — |
 | A→B transition with defined start+end | Standard Turbo I2V | $0.73 | 33% vs Standard |
 | Truck stationary (first=last frame) | Standard Turbo I2V | $0.73 | 50% vs Pro ($1.46) |
+
+**Turbo Pro character consistency (community confirmed July 2026):** Multiple independent reviews confirm Turbo Pro delivers "enhanced subject consistency — particularly important for faces, products, and brand assets" and "improved inter-frame stability and motion accuracy" vs Standard Turbo. This makes Turbo Pro a credible final-pass candidate for character shots (after canary).
 
 **Turbo Pro final-pass savings (if canary passes):**
 - 1 character final: $1.46 → $0.91 = saves **$0.55**

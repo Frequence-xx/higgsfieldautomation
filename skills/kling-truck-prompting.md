@@ -115,7 +115,7 @@ Paint the ENTIRE vehicle body WHITE (frozen). Leave the environment (sky, trees,
 - **Aspect ratio MUST exactly match the hero frame** (e.g., 9:16 → mask must also be 9:16). Mismatch = task failure.
 - Supported formats: PNG, JPG, JPEG, WEBP. Max 10MB.
 - Background must be solid black (not transparent).
-- **⚠️ PARAMETER NAME:** Native Kling API: `static_mask`. AIMLAPI wrapper may use `static_mask_url` or `static_mask` — **canary test required** before first production use. Try `static_mask` first (native name); fall back to `static_mask_url` if rejected.
+- **⚠️ PARAMETER NAME:** AIMLAPI uses `static_mask_url` (confirmed from AIMLAPI docs: "URL of the image for Static Brush Application Area"). Native Kling API uses `static_mask`. Use `static_mask_url` in all AIMLAPI calls.
 
 ```python
 # Include in API call — OMIT camera_control and tail_image_url entirely:
