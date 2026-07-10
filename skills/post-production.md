@@ -198,6 +198,8 @@ Store downloaded LUTs at `/opt/pipeline/luts/`. File format: `.cube` preferred (
 
 **v2.4.2 pre-release note (2026-01-09, still pre-release as of June 2026):** Fixes a conflict between PySceneDetect and restoration models (upscaling/denoising) when both are enabled simultaneously — if your pipeline uses RVE's built-in scene detection alongside a restoration model, upgrading to 2.4.2 once stable resolves random crashes. Also adds decimal frame timestep support, input folder structure for output files, and fixes FFmpeg reading stopping randomly. **Current stable: 2.4.1.** Monitor releases at https://github.com/TNTwise/REAL-Video-Enhancer/releases.
 
+**⚠️ SC195 (2026-07-10) — RVE "massive refactor" notice:** The TNTwise REAL Video Enhancer project is currently "under a massive refactor" (v2-main branch is the active development target). The README states the current v2.4.1 stable will not be updated for a while. For production use, v2.4.1 remains the correct stable version. The rife-ncnn-vulkan CLI binary (v20250112) is a **separate tool** and is unaffected by this refactor — use the CLI for headless/scripted pipeline use. Monitor the v2-main branch for when v3.x (or whatever the next major version is called) releases.
+
 Download: https://github.com/TNTwise/REAL-Video-Enhancer/releases
 
 **Model currency check (2026-07-04):** No new Practical-RIFE models since v4.26 / v4.26.heavy (2024-09-21). **v4.22 is no longer the recommended model.** Practical-RIFE README recommends v4.25 as the default for most scenes and explicitly states v4.24+ is best for diffusion-generated video — use v4.25 as pipeline default. **SC182 (2026-07-04):** `rife-v4.25.heavy` confirmed supported by TNTwise binary v20250112 (bundled since v20241030 release) — documented below as high-quality middle tier.
@@ -764,9 +766,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.485 (released 2026-07-06)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), and **`venetianBlinds()`** (SC189 — see §11f). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.487 (released 2026-07-09)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), `venetianBlinds()` (SC189 — see §11f), **`paper()`** (SC195 — see §11g), and **`roughenEdges()`** (SC195 — see §11g). ProRes support added in `@remotion/media` (Mediabunny 1.50.7). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC195 update (2026-07-10):** Remotion advanced to v4.0.487 (released July 9). Two new `@remotion/effects` additions: `paper()` (v4.0.486, July 7 — WebGL2 procedural paper texture, `seed` parameter for randomization; see §11g) and `roughenEdges()` (v4.0.487 — WebGL2 noise-driven edge roughening, params: `border` default 26.5, `scale` default 0.07, `seed` default 231.2; see §11g). Also in v4.0.486: `@remotion/paths` adds `centerPath()` utility. ProRes support added to `@remotion/media` (Mediabunny 1.50.7). `@remotion/web-renderer` gains page responsiveness option. **TNTwise REAL Video Enhancer v2-main branch is "under a massive refactor" — current stable (v2.4.1) will not be updated for a while; see §3a note.** All other tools unchanged: no FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable, PySceneDetect v0.7.1 still in dev.
 
 **SC189 update (2026-07-06):** Remotion advanced to v4.0.485 (released today). New `venetianBlinds()` effect added to `@remotion/effects` — see §11f. Bug fixes: media playbackRate duration in loops corrected; preview frame accuracy improved; `@remotion/web-renderer` gains dotted/dashed/double text-decoration styles. PySceneDetect 0.7.1.dev0 uploaded to PyPI today — still not a stable release (noted in §3d). All other tools unchanged: no FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable.
 
@@ -1006,6 +1010,54 @@ await renderMedia({
 
 ---
 
+### 11g. `@remotion/effects` — `paper()` and `roughenEdges()` (v4.0.486–487)
+
+**`paper()`** (added v4.0.486, 2026-07-07) — WebGL2 procedural paper texture overlay. Renders a realistic fiber-paper grain on the frame using a shader adapted from Paper Shaders (open-source). Gives compositions an organic, handcrafted look.
+
+```typescript
+import { paper } from "@remotion/effects";
+
+// Paper texture overlay on a title card
+<AbsoluteFill style={{
+  filter: paper({ seed: 42 }),
+}} />
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `seed` | `number` | — | Randomization seed for reproducible texture. Different values = different paper grain patterns. |
+
+**Snelverhuizen use case:** Subtle paper texture on the SNELVERHUIZEN.NL title card or end frame — adds artisanal, hand-crafted warmth without music. Useful at low opacity (wrap in a `<div>` with `opacity: 0.15–0.3`). Do NOT apply to character close-ups or truck shots — leave video frames clean.
+
+---
+
+**`roughenEdges()`** (added v4.0.487, 2026-07-09) — WebGL2 noise-driven edge roughening. Creates torn/ragged edges on a composition layer, like a hand-torn paper or worn graphic. Built on the same Paper Shaders noise helpers as `paper()`.
+
+```typescript
+import { roughenEdges } from "@remotion/effects";
+
+// Roughen the edge of a brand badge overlay
+<AbsoluteFill style={{
+  filter: roughenEdges({ border: 20, scale: 0.08, seed: 100 }),
+}} />
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `border` | `number` | 26.5 | Width of the roughened edge region (px). Lower = finer tear; higher = more dramatic. |
+| `scale` | `number` | 0.07 | Noise frequency. Higher = tighter/smaller tears; lower = broader, rounder edge variation. |
+| `seed` | `number` | 231.2 | Randomization seed for reproducible edge patterns. |
+
+**Snelverhuizen use case:** Roughen edges of the orange #FC8434 pill badge for an organic look on a hero-frame title card. Also works as a stylized frame border for the arrival reveal shot. Use `border: 15–25` for subtle effect; `border: 40+` for dramatic torn look. Do NOT apply to character faces or any shot requiring clean edges.
+
+**Note:** Both `paper()` and `roughenEdges()` require WebGL2 — same requirement as the other `@remotion/effects` effects. No extra config needed in Remotion renderer.
+
+**When to use which texture effect:**
+- `paper()` — flat texture across the whole layer (grain / film-stock feel)
+- `roughenEdges()` — only affects the layer boundary (torn/worn edge look)
+
+---
+
 ### 11f. `@remotion/effects` — `venetianBlinds()` (v4.0.485)
 
 **`venetianBlinds()`** (added v4.0.485, 2026-07-06) — WebGL2 venetian-blinds reveal animation. Divides the frame into horizontal or vertical slats and reveals them progressively, like opening window blinds.
@@ -1071,7 +1123,7 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.485 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames) — see §11a, §11c, §11d, §11f
+- [ ] Remotion v4.0.487 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic) — see §11a, §11c, §11d, §11f, §11g
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"` (§11b, forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
