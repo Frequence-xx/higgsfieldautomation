@@ -766,9 +766,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | Latest binary release; supports models through v4.26/v4.26.heavy |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.487 (released 2026-07-09)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), `venetianBlinds()` (SC189 — see §11f), **`paper()`** (SC195 — see §11g), and **`roughenEdges()`** (SC195 — see §11g). ProRes support added in `@remotion/media` (Mediabunny 1.50.7). NVENC H.264/H.265 encoding on Linux/Windows added. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.488 (released 2026-07-11)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (all v4.0.481 — see §11h), `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), `venetianBlinds()` (SC189 — see §11f), `paper()` (SC195 — see §11g), and `roughenEdges()` (SC195 — see §11g). ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows added. v4.0.488 fixes looped audio dropout after multiple iterations. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC200 update (2026-07-11):** Remotion advanced to **v4.0.488** (released today). No new `@remotion/effects` additions. Key changes: (1) `@remotion/media` — looped audio dropout after multiple iterations now fixed — relevant if any Remotion composition loops ambient SFX; (2) Mediabunny upgraded to 1.50.8; (3) `@remotion/lambda` gains S3 output provider CLI option; (4) Studio: security hardening — origin-less requests now rejected. Four previously-undocumented `@remotion/effects` from v4.0.481 now documented in §11h: `checkerboard()`, `emboss()`, `gridlines()`, `zoomBlur()` plus a vignette fix. **v5.0 license change noted:** Automators-tier v5 will require mandatory telemetry via `licenseKey`; Creators tier keeps it optional. No release date for v5.0 announced — see §11b. All other tools unchanged: no FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable, PySceneDetect v0.7.1 still in dev.
 
 **SC195 update (2026-07-10):** Remotion advanced to v4.0.487 (released July 9). Two new `@remotion/effects` additions: `paper()` (v4.0.486, July 7 — WebGL2 procedural paper texture, `seed` parameter for randomization; see §11g) and `roughenEdges()` (v4.0.487 — WebGL2 noise-driven edge roughening, params: `border` default 26.5, `scale` default 0.07, `seed` default 231.2; see §11g). Also in v4.0.486: `@remotion/paths` adds `centerPath()` utility. ProRes support added to `@remotion/media` (Mediabunny 1.50.7). `@remotion/web-renderer` gains page responsiveness option. **TNTwise REAL Video Enhancer v2-main branch is "under a massive refactor" — current stable (v2.4.1) will not be updated for a while; see §3a note.** All other tools unchanged: no FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no RVE v2.4.2 stable, PySceneDetect v0.7.1 still in dev.
 
@@ -882,7 +884,9 @@ Remotion v5.0 migration docs are live at `remotion.dev/docs/5-0-migration` but v
 2. Audit scripts calling `selectComposition()` / `getCompositions()` — add `inputProps: {}` argument
 3. Confirm server runs Node.js ≥ 18.0.0
 
-**No action needed now** — v5 is not released. Monitor `remotion.dev/changelog` for release announcement.
+**v5.0 license change (SC200 — confirmed 2026-07-11):** v5.0 will require mandatory telemetry via a `licenseKey` for the **Automators tier** (programmatic/server-side rendering). The **Creators tier** (GUI/template use) keeps telemetry optional. An Enterprise License will allow opting out of telemetry in exchange for monthly usage reports. Our pipeline uses Remotion programmatically (server-side caption/overlay rendering) — when v5.0 ships, obtain a licenseKey before upgrading. No action needed now.
+
+**No action needed now** — v5 is not released and no date announced. Monitor `remotion.dev/changelog` for release announcement.
 
 ---
 
@@ -1101,6 +1105,37 @@ const progress = interpolate(frame, [0, 12], [0, 1], {
 
 ---
 
+### 11h. `@remotion/effects` — Previously Undocumented Effects (v4.0.481)
+
+Four effects were added in v4.0.481 alongside `linearProgressiveBlur()` and `colorKey()` but were not previously documented in this skill file. Documented SC200 (2026-07-11).
+
+**`zoomBlur()`** — radial motion blur simulating a rapid zoom or push-in. Most relevant to our pipeline: can be used for impact transitions or a quick truck-reveal punch-in.
+
+```tsx
+import { zoomBlur } from "@remotion/effects";
+
+// Impact zoom blur on a truck reveal — drives from 0 to 1 over ~6 frames
+<AbsoluteFill style={{
+  filter: zoomBlur({ strength: 0.8 }),
+}} />
+```
+
+**Snelverhuizen use case:** Apply at the cut point of a truck reveal — drive `strength` from ~0.8 to 0 over 6 frames (eases in, then sharpens) for a cinematic "camera slam" feel. Alternative: use in reverse as a scene exit (strength 0→0.6, then hard cut). Keep `strength` below 1.0; above that, too much subject detail is lost.
+
+---
+
+**`emboss()`** — applies an embossed relief texture appearance. Low relevance to our ad pipeline — stylistic only.
+
+**`gridlines()`** — adds a grid overlay. Not applicable to ad production.
+
+**`checkerboard()`** — checkerboard pattern overlay. Not applicable to ad production.
+
+**Vignette fix (v4.0.481):** The existing `vignette()` effect (previously available) was fixed for transparent source layers — no parameter changes required.
+
+**When to use from this set:** Only `zoomBlur()` has practical ad use. Emboss/gridlines/checkerboard are decorative — skip unless a future brief specifically calls for graphic-art styling.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1123,7 +1158,8 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.487 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic) — see §11a, §11c, §11d, §11f, §11g
-- [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"` (§11b, forward-compat guard, low priority until v5 releases)
+- [ ] Remotion v4.0.488 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames) — see §11a, §11c, §11d, §11f, §11g, §11h
+- [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to v4.0.488 if affected
+- [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
