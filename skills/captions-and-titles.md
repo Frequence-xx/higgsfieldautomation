@@ -119,6 +119,9 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - **`tag_audio_events` (default: `True`) — ⚠️ ALWAYS set `False` for TTS voiceover audio.** Scribe v2 defaults to tagging non-speech events (`[laughter]`, `[music]`, `[footsteps]`, etc.) in the transcript word list. For clean TTS audio these tags never occur naturally, but if present they add spurious tokens with their own timestamps that pollute the word list and cause off-by-one errors when converting to Remotion captions. Explicitly set `tag_audio_events=False` for all voiceover audio. Only set `True` when processing client-recorded field audio where ambient events are meaningful.
    - **`additional_formats`** — Scribe v2 can emit SRT/TXT/DOCX in the same response. Pass `additional_formats=["srt"]` to receive a ready-made SRT string alongside the JSON transcript. Useful shortcut for the ASS/FFmpeg fallback path (Option B in ASS Karaoke section below) — no need to post-process JSON to SRT manually.
    - **`seed`** — pass any integer (e.g. `seed=42`) for deterministic output across re-runs. Useful when the pipeline retries transcription after a failure and needs identical timestamps.
+   - **`entity_detection` (default: `False`) — detects and tags up to 56 entity categories** (names, dates, locations, credit card numbers, SSNs, etc.) with their timestamps. Adds cost. **ALWAYS leave `False` for TTS brand-ad voiceovers** — there is no PII in "Bel SNELVERHUIZEN nu!" and the extra tags pollute the word list. Only relevant for client-provided testimonial recordings where PII might appear.
+   - **`redact_pii` (default: `False`) — automatically removes PII from the returned transcript.** Three output modes: complete → `[REDACTED]`; categorized → `[CREDIT_CARD]`; enumerated → `[CREDIT_CARD_1]`. **ALWAYS leave `False` for TTS voiceover** — brand ad scripts contain no PII. Setting this on a clean voiceover transcript achieves nothing and risks mangling brand names. Only use for client-provided recordings with real personal data.
+   - **Mixed language support (automatic, no config needed):** Scribe v2 auto-transcribes English words embedded in Dutch audio correctly — e.g. "call us" spoken in English within a Dutch voiceover stays as "call us" rather than being force-normalized to Dutch. This requires no parameter; it is on by default. Relevant for ads that mix Dutch narration with English brand phrases.
    - **Dutch accuracy (Scribe v2 benchmark):** WER ≤5% — Excellent tier on ElevenLabs' internal multilingual benchmark. In practice: brand names and phone numbers may still need keyterm biasing; normal narration transcribes correctly without it.
 
    ```python
@@ -136,6 +139,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
            tag_audio_events=False,       # ⚠️ REQUIRED for TTS audio — default True adds spurious event tokens
            keyterms=["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133"],  # optional
            no_verbatim=False,            # keep False for TTS audio
+           entity_detection=False,       # keep False for TTS voiceover — adds cost, no PII in brand ads
+           redact_pii=False,             # keep False for TTS voiceover — no PII to redact in brand ads
            seed=42,                      # optional: deterministic output for reproducibility
        )
 
@@ -365,7 +370,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    }
    ```
 
-   Version: 4.0.487 (confirmed July 10, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+   Version: 4.0.488 (confirmed July 12, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
    **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
    Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
@@ -703,9 +708,14 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.488 (July 11, 2026):**
+- **Fixed looped audio dropping out after multiple iterations.** If your caption composition includes a looped ambient audio layer (e.g., background ambience looped for the full video duration), it previously cut out silently after repeating several times. Now fixed. Safe to upgrade.
+- ProRes decoder support added to `@remotion/media`. Mediabunny upgraded to 1.50.8.
+- **No changes to `@remotion/captions` API** — caption pipeline is unaffected. `npm install remotion@4.0.488`.
+
 **Remotion v4.0.487 (July 9, 2026):**
 - ProRes support added to `@remotion/media`. Easing.cubic support in interactivity.
-- **No changes to `@remotion/captions` API** — caption pipeline is unaffected. Safe to upgrade. `npm install remotion@4.0.487`.
+- **No changes to `@remotion/captions` API** — caption pipeline is unaffected.
 
 **Remotion v4.0.486 (July 7, 2026):**
 - **Fixed WebM tail frame extraction following the last keyframe.** If you load a rendered caption WebM inside a Remotion composition via `<OffthreadVideo>`, frames past the last keyframe previously returned garbage/black. Affects pipelines that composite captions inside Remotion (not FFmpeg-only pipelines).
@@ -716,7 +726,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.487 — confirmed current as of 2026-07-10; no caption API changes in 4.0.485–4.0.487)
+### Full API (v4.0.488 — confirmed current as of 2026-07-12; no caption API changes in 4.0.485–4.0.488)
 
 | Export | Purpose |
 |--------|---------|
