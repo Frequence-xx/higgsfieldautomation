@@ -140,6 +140,12 @@ A production-tested mnemonic for building complete prompts before writing them:
 
 **"Film director" framing (June 2026):** Kling performs best when prompts describe a scene being filmed, not just an image. Think: "this is what my virtual camera crew captures" rather than "this is what the image looks like."
 
+**Front-load the camera instruction (July 2026):** Write the camera motion FIRST in the prompt text, even within the CSAT spine. "Slow dolly push forward" at the start outperforms the same phrase buried mid-sentence. The model weighs earlier tokens more heavily — camera sets the spatial frame before action is read.
+
+**Dolly ≠ Zoom: depth layers required (July 2026):** A dolly prompt without foreground, midground, and background elements in the hero frame becomes a zoom instead. The model cannot synthesize depth that isn't in the source image. Check the hero frame: if it's flat (subject against plain wall), use `zoom: -1` in camera_control instead. If you need a true dolly, ensure the hero frame has visible depth layers (street scene, doorway, furniture etc.).
+
+**Micro-detail prompting for Kling 3.0 Pro (July 2026):** Kling 3.0's real breakthrough vs earlier versions is in micro-texture fidelity. Activating it requires explicit texture prompts — generic descriptions like "realistic" do not trigger it. For character close-ups, add physical specifics: "fabric creases on black crewneck, skin texture visible, light catching logo edge, film grain". For product/brand shots: "surface sheen on truck panel, paint texture, subtle light catch on lettering edge". Tactile language outputs tactile video.
+
 ## CFG Scale Guidelines
 
 **v3 range: 0.0–1.0 only** (v1.x allowed up to 2.0 — do not exceed 1.0 on v3, confirmed May 2026).
@@ -468,6 +474,8 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 
 **⚠️ Cross-platform naming trap (July 2026):** The native Kling API uses `multi_shots` (plural, boolean) and `sound` (boolean) for audio. AIMLAPI uses `multi_shot` (singular) and `generate_audio` (boolean). Do NOT copy-paste JSON from native Kling docs, KIE AI docs, or Griptape README into AIMLAPI calls — the parameter names diverge silently (wrong names are ignored, not rejected). AIMLAPI naming is what our pipeline uses throughout this document.
 
+**⚠️ `elements` parameter cross-platform naming trap (July 2026):** Three different names for the same concept across platforms. AIMLAPI uses `elements` (array). KIE.ai uses `kling_elements` (array). AI SDK (ai-sdk.dev) uses `elementList`. None of these transfer between platforms — passing the wrong name silently no-ops the character binding. Our pipeline uses AIMLAPI `elements` exclusively. Do NOT copy element definitions from KIE.ai or AI SDK examples.
+
 **HALAL RISK: Audio is always enabled in multi-shot mode.** `generate_audio: false` is ignored when `multi_shot: True` is set — the model generates audio for every multi-shot sequence. **Strip audio immediately post-generation:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4` — do NOT play audio before stripping.
 
 **Constraints:**
@@ -552,7 +560,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 is confirmed (`klingai/video-v2-6-pro-motion-control`). Kling v3 Motion Control (Standard + Pro) released March 5, 2026 and is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab (`kling-v3-motion-control`), MindStudio, EachLabs, and Media.io — but **NOT on AIMLAPI as of July 3, 2026** (confirmed absent: no `v3-standard-motion-control` or `v3-pro-motion-control` page in AIMLAPI docs index; the June 17 Turbo launch did NOT include v3 Motion Control; v3 Motion Control presence on 7+ other platforms does NOT guarantee AIMLAPI availability). Expected model strings when added: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. Farouq AIMLAPI-only directive means v3 Motion Control is blocked until it appears on AIMLAPI.
+**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). However, an AIMLAPI blog post (July 2026) implies Kling v3 Motion Control is available, stating "both Kling 2.6 Pro and v3 Pro available on AI/ML API with a single endpoint switch" in a motion control context — **status upgraded to POSSIBLE but unconfirmed.** No dedicated `v3-standard-motion-control` or `v3-pro-motion-control` docs page found in AIMLAPI docs index as of July 12, 2026. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -576,6 +584,16 @@ Three new capabilities added in the v3 Motion Control tier that do not exist in 
 - **Intensity**: amplitude of the shake movement
 - **Frequency**: how rapidly the shake oscillates  
 Combine low intensity + low frequency for subtle handheld; high intensity + high frequency for action/impact. Can be combined with Curve Dolly. Not available in standard I2V.
+
+### Kling v3 Motion Control CANARY CHECKLIST (July 2026 — attempt if needed for walking shots)
+
+- [ ] Try model string `klingai/video-v3-standard-motion-control` with a 3s motion reference clip
+- [ ] If 404: also try `klingai/video-v3-pro-motion-control`
+- [ ] If 404 for both: fall back to v2.6 (`klingai/video-v2-6-pro-motion-control`)
+- [ ] If accepted: run short (3s) canary with half-body reference image + half-body motion clip
+- [ ] Confirm cost vs v2.6 from AIMLAPI dashboard
+- [ ] Run brand binary checklist and identity check before production use
+- [ ] If confirmed: update AIMLAPI availability status above; add expected model strings to routing matrix
 
 ## Kling O1 Series — Available on AIMLAPI (Confirmed May 2026)
 
