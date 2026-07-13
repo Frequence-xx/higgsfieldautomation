@@ -90,7 +90,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Important:** Elements extract face + posture + clothing together. **No face_weight API parameter exists on AIMLAPI.** "Subject Binding 80-90" in CLAUDE.md is a quality target, not a parameter.
 
-### Step 3a: Differential Prompt Rule — Action + Camera Only When Refs Are Provided (pass 24 finding, 2026-06-29)
+### Step 3a: Differential Prompt Rule — Action + Camera Only When Refs Are Provided (pass 24 finding, 2026-06-29; DomainShuttle validation pass 30, 2026-07-13)
 
 When `elements` or `image_url` reference images are provided, describe **only what changes** from those references — NOT the character's static attributes. References already carry face, build, skin tone, and clothing; redundant description competes with the reference signal and can cause identity drift.
 
@@ -109,6 +109,8 @@ The man with short dark brown hair and olive skin wearing a navy polo shirt and 
 Independently confirmed by Atlas Cloud Kling 3.0 prompt guide: *"With image-to-video, the model already sees your starting frame, so repeating descriptions wastes characters… drop the Subject and Scene description that the image already supplies, and lead with Subject Movement plus Camera Language."*
 
 **Exception:** If the scene places the character in a context NOT visible in any reference (new background, new lighting), briefly describe the new context. Do NOT re-describe attributes already shown in refs.
+
+**DomainShuttle research validation (arXiv 2606.26058, June 2026):** DomainShuttle introduces Video-Reference DualRoPE — reference image tokens and video generation tokens are placed in **separate RoPE spaces**. This proves architecturally that identity description in the motion prompt competes directly with reference embeddings (same embedding space, interference guaranteed). The correct design isolates identity to the reference channel and text to action+camera only. No public code or AIMLAPI endpoint — research only, validates our existing differential prompt rule.
 
 ### Step 3b: Multi-Character Scene
 
@@ -388,6 +390,12 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
 **Identity-Action Decoupling — IaD Framework (arXiv 2606.22347, June 2026):** Addresses a failure mode in inference-time identity injection (ConsisID, ID-Animator): injecting facial identity features also injects pose and expression info from the reference image, making the model generate monotonous or incorrect facial movements even when the prompt requests specific action. IaD introduces two loss functions — **Identity Decoupling Loss (L_ID)** separates identity features from pose/expression attributes; **Text Alignment Loss (L_TA)** ensures the decoupled action space follows the text prompt faithfully. Result: rich, controllable expressions and scene variations while maintaining cross-temporal identity consistency, without subject-specific fine-tuning. **Practical implication for our pipeline (pass 28 finding, 2026-07-09):** Provides the academic grounding for WHY our differential prompt rule (Step 3a) works — prompts that describe ONLY action + camera, letting references carry identity, avoid the identity/action entanglement problem IaD solves architecturally. When retrying a clip with wrong facial movement, check whether the motion prompt contains identity-descriptive words ("the friendly man", "the olive-skinned person") competing with the reference signal — strip these to action-only. No public code or AIMLAPI endpoint as of 2026-07-09 — research only.
 
+**Avatar V — Future Watch (arXiv 2606.13872, HeyGen, released April 8, 2026; pass 30 finding, 2026-07-13):** Video-reference avatar generation from HeyGen. Key mechanism: conditions on the **full token sequence of a reference VIDEO** (not just still images) at every transformer layer via Sparse Reference Attention (linear complexity vs reference length). Unlike our current still-image refs, Avatar V extracts "video-DNA" — talking rhythm, micro-expressions, gesture habits — from the reference clip. The identity-aware super-resolution refiner reuses the full reference conditioning for output upscaling. Available on HeyGen's API (`developers.heygen.com`). **NOT on AIMLAPI — AIMLAPI-only pipeline.** When Avatar V or equivalent appears on AIMLAPI, prioritize over still-image refs for characters.
+
+**Practical implication NOW:** This validates our existing `klingai/video-o1-video-to-video-reference` pathway. A 15-second reference clip of Karel or Mourad working (carrying a box, walking purposefully) carries richer temporal identity than 4 still photos — the model sees actual motion, micro-expressions, and posture dynamics. When filming crew reference material: prioritize capturing a short reference clip (15–30s, even with phone, stable lighting) in addition to the 4 still reference photos. Use the clip as the `video_url` element for Kling O1 video-to-video-reference instead of still images when available.
+
+**Avatar V — NOT for our pipeline today:** HeyGen's API requires avatar enrollment (user submits a 15s reference clip to create a persistent avatar object). This enrollment-then-animate workflow differs from our per-call element binding. Content-policy note: HeyGen's platform is not shariah-reviewed; AIMLAPI pipeline avoids these concerns.
+
 **Aura — Future Watch (arXiv 2607.04311, July 7, 2026, code released):** Consistent multi-subject video generation via VLM-Grounded Semantic Alignment. Code: github.com/Camellia997/Aura. Two key innovations: (1) **AI director-level captions** — dense, structured descriptions of video content that capture scene dynamics and subject interactions rather than simple noun-phrase descriptions; (2) **VLM-Grounded Semantic Alignment** — two-stage alignment that progressively maps VLM features into the DiT feature space, bridging the gap between language understanding and visual generation. Directly improves multi-subject identity consistency where existing methods struggle. No AIMLAPI endpoint as of 2026-07-11. **Practical implication now:** The "AI director-level caption" concept validates writing prompts that describe inter-character dynamics explicitly ("Image1 hands the box to Image2, who turns left to carry it inside") rather than listing character actions independently. This gives the model richer relational context for multi-character shots. Monitor for hosted API — when Aura-based endpoints appear (likely as a Wan or CogVideo successor), test on Karel+Mourad two-person shots where feature swapping is a known failure mode.
 
 **MAGREF — Future Watch (ICLR 2026, code released, FP8 available):** Multi-reference video generation with masked guidance and subject disentanglement (arXiv 2505.23742). Code: github.com/MAGREF-Video/MAGREF. Backbone: Wan2.1 14B. Addresses copy-paste artifacts and character entanglement in multi-reference generation — the core problem our Kling element binding partially solves.
@@ -647,7 +655,7 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 ## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-06.** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-13 (pass 30 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
@@ -779,7 +787,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 29 update, 2026-07-11):** `alibaba/wan-2-7-r2v` is confirmed on AIMLAPI — multiple independent sources validate its presence in the model database. No dedicated R2V docs page at `docs.aimlapi.com` has appeared yet (only `wan-2.7-image-to-video` is documented). Status upgrade: "likely live" → **"confirmed on AIMLAPI — canary-test required before production adoption."**
+**Wan 2.7 R2V status on AIMLAPI (pass 30 recheck, 2026-07-13):** `alibaba/wan-2-7-r2v` remains confirmed in the AIMLAPI model database. No dedicated R2V docs page at `docs.aimlapi.com` has appeared yet — only `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` are documented. Status: **"confirmed in model database — canary-test required before production adoption."** No change from pass 29.
 
 **Upstream parameter format (official Alibaba/WaveSpeed API):** `images` array (not `reference_images`); prompt binding uses `"Image1"`, `"Image2"` — capitalized, no @-prefix, no brackets. AIMLAPI adapter parameter name may differ; confirm on first canary call.
 
