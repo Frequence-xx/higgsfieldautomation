@@ -560,7 +560,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). However, an AIMLAPI blog post (July 2026) implies Kling v3 Motion Control is available, stating "both Kling 2.6 Pro and v3 Pro available on AI/ML API with a single endpoint switch" in a motion control context — **status upgraded to POSSIBLE but unconfirmed.** No dedicated `v3-standard-motion-control` or `v3-pro-motion-control` docs page found in AIMLAPI docs index as of July 12, 2026. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
+**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). However, an AIMLAPI blog post (July 2026) implies Kling v3 Motion Control is available, stating "both Kling 2.6 Pro and v3 Pro available on AI/ML API with a single endpoint switch" in a motion control context — **status upgraded to POSSIBLE but unconfirmed.** No dedicated `v3-standard-motion-control` or `v3-pro-motion-control` docs page found in AIMLAPI docs index as of July 14, 2026. SC209 search confirmed Kling v3 Motion Control remains absent from AIMLAPI model index. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output)
@@ -584,6 +584,15 @@ Three new capabilities added in the v3 Motion Control tier that do not exist in 
 - **Intensity**: amplitude of the shake movement
 - **Frequency**: how rapidly the shake oscillates  
 Combine low intensity + low frequency for subtle handheld; high intensity + high frequency for action/impact. Can be combined with Curve Dolly. Not available in standard I2V.
+
+**Camera Shake production-tested example values (community-confirmed July 2026):**
+| Effect | intensity | frequency | Use case |
+|--------|-----------|-----------|----------|
+| Gentle float | 1 | 1 | Subtle handheld establishing shot |
+| Moderate handheld | **2** | **3** | Natural documentary feel — start here for canary |
+| Large sway | 4 | 1 | Ocean/earthquake feel |
+| Electronic vibration | 1 | 8 | Sci-fi/mechanical context |
+Test with `intensity: 2, frequency: 3` first — the most balanced starting point for natural realism. Scale from there.
 
 ### Kling v3 Motion Control CANARY CHECKLIST (July 2026 — attempt if needed for walking shots)
 
@@ -721,7 +730,7 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of July 3, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI. O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of July 14, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI. A `site:aimlapi.com` search for "video-v3-omni" returns zero results as of July 14, 2026. O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:**
 - Multi-image element building: up to **7 reference images** per call (vs. 3 for v3 Pro)
