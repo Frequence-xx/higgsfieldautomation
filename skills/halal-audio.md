@@ -62,7 +62,7 @@ No music. No instruments. Ever. Audio is restricted to:
 | **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
-**`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.53.0+, stable through v2.57.0, July 9 2026; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
+**`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.53.0+, stable through v2.58.0, July 13 2026; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
 
 **eleven_v3 IPA inline pronunciation for Dutch brand names (confirmed, June 2026):** eleven_v3 natively understands IPA symbols wrapped in forward slashes directly in the text string. Use this when `apply_text_normalization="on"` still mispronounces a Dutch proper noun. Pronunciation dictionaries (`client.pronunciation_dictionaries.create_from_rules()`) also work with eleven_v3 for persistent project-wide rules. Consistency: 80–90% (not 100% — always QA with Scribe v2).
 
@@ -243,6 +243,8 @@ Use ONLY with owner Telegram approval before adding to any video.
 | **Riad Nasheeds** — youtube.com/channel/UC9NUIlplMU9CztLIIy8nbEA | Custom | **Unconfirmed for commercial use** — email riadnasheeds@gmail.com before use | Check per track | yt-dlp (see below) |
 | **Nasheed Without Music** — youtube.com/@NasheedWithoutMusic. (channel: UChHmS2ziIi1bIeHjtvmQfJw) | Unknown / per-video | YouTube: check individual video description (channel name implies free use; terms not published). Outside YouTube: unconfirmed — email nomusicbiz@gmail.com before commercial use. | Check per video | yt-dlp |
 | **Nasheed Vocals™** — youtube.com/@nasheedvocals | Unknown / per-video | **Unconfirmed** — check individual video description before any use. Outside YouTube: unconfirmed — contact via YouTube before commercial use. | Check per video | yt-dlp |
+| **Nasheed Flow** — youtube.com/c/VocalsOnlyMedia | Unknown / per-video | **Unconfirmed** — no license statement on channel page. Check individual video descriptions. Contact via YouTube before commercial use. | Check per video | yt-dlp |
+| **Muslimi Studios — Vocalize** — muslimi.com | Unknown | **Unconfirmed** — professional studio recordings; contact Muslimi Studios before any commercial use. Do NOT assume free use. | N/A | Check muslimi.com per series |
 
 **Practical rule:** For YouTube-distributed ads, use NCN with credit in description. For paid/boosted ads (Instagram, TikTok, paid reach), use Halal Soundtracks (royalty-free commercial license) or confirm licensing per track for all other sources. Internet Archive CC0 tracks are always safe for commercial use.
 
@@ -259,6 +261,10 @@ Use ONLY with owner Telegram approval before adding to any video.
 **Islamic Audio Library:** `islamicaudiolibrary.com` / YouTube `youtube.com/c/IslamicAudioLibrary-Free` — channel explicitly labelled "Free To Use / No Copyright". Covers background nasheeds, vocal nasheeds, and halal SFX. Verify license per track in video description before commercial use; no blanket CC license stated. Use yt-dlp command below to extract.
 
 **Halal Sounds (SoundCloud):** Channel `soundcloud.com/hasib-mahfin-777406511` — explicit "No Copyright Vocals Only Background Nasheed" tracks (Destiny, Grateful, Lost In Dreams, Beauty Of Creation). SoundCloud's ToS permits streaming only; verify license in track description before downloading for commercial use.
+
+**Nasheed Flow:** YouTube `youtube.com/c/VocalsOnlyMedia` — channel explicitly created for those who do not listen to music or instruments; dedicates all uploads to Islamic songs without music or instruments. No license statement published on the channel page. **Commercial use UNCONFIRMED** — check individual video descriptions and contact via YouTube before using in paid/boosted ads. Run nasheed_check.py (§9) before use — channel name suggests vocal-only but always verify by ear and script.
+
+**Muslimi Studios — Vocalize series:** `muslimi.com` — professional vocal-only nasheed series featuring studio-recorded performances from international nasheed artists (no instruments). Series launched 2026. **Commercial use UNCONFIRMED** — license terms not published publicly. Contact Muslimi Studios before use in any ad. Run nasheed_check.py (§9) before use. Do NOT assume free use — these are professionally produced recordings with likely held copyright.
 
 **Finding vocals-only tracks on NCN:** Search for "acapella", "vocals only", or "no instrument" in the track title on the NCN channel page.
 
@@ -847,7 +853,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Want instrument-free ambient bed but consider using ElevenLabs Music API `ambience` mode | Music API (both `music_v1` and `music_v2`) generates AI music in ALL modes (`track`, `loop`, `ambience`) — contains instrumentation; `force_instrumental=True` removes vocals but keeps instruments | Use ElevenLabs SFX v2 (`eleven_text_to_sound_v2`) instead. Add "no music, no instruments, no melody" to the SFX v2 prompt. Both `music_v1` and `music_v2` are banned in this pipeline. |
 | Dutch brand name or phone number sounds rushed / hard to parse | Default speed 1.0 gives ElevenLabs no pronunciation headroom for multi-syllable Dutch words | Set `speed=0.95` in `VoiceSettings` — see §0 parameters table. Confirmed in SDK v2.53.0+ (`VoiceSettings` has `speed: Optional[float]`, REST API range 0.25–4.0). |
 | `speed` + `[slows down]` tag both applied to same phrase | Stacking global speed reduction and per-phrase tag causes unpredictable over-slowing | Use EITHER `speed=0.95` (global) OR `[slows down]` tag (per-phrase) — never both. |
-| ElevenLabs help center article "Can I change the pace of the voice?" says speed range is 0.7–1.2 | That article describes the Agents Platform restriction, NOT the REST API | REST API (`VoiceSettings`) range is **0.25–4.0** (confirmed: github.com/elevenlabs/skills voice-settings.md, SDK v2.57.0). Agents Platform caps at 0.7–1.2. Standard TTS pipeline uses the REST API — 0.95 is always valid. |
+| ElevenLabs help center article "Can I change the pace of the voice?" says speed range is 0.7–1.2 | That article describes the Agents Platform restriction, NOT the REST API | REST API (`VoiceSettings`) range is **0.25–4.0** (confirmed: github.com/elevenlabs/skills voice-settings.md, SDK v2.58.0). Agents Platform caps at 0.7–1.2. Standard TTS pipeline uses the REST API — 0.95 is always valid. |
 | "SNELVERHUIZEN" still mispronounced despite `apply_text_normalization="on"` and `speed=0.95` | Dutch compound brand name too opaque for eleven_v3 text normalisation; proper noun not in model vocabulary | Use IPA inline: write `SNELVERHUIZEN /snɛl.vɛr.ˈhœy.zən/` in the text, OR create a pronunciation dictionary rule (see IPA section in §0). QA result with Scribe v2. Consistency: 80–90%. |
 | SFX v2 output sounds thin or artifacts after loudnorm | Default SFX v2 output is 22kHz/32kbps MP3 — too low for mixing | Add `output_format="mp3_44100_128"` to every SFX v2 API call. For Pro plan: use `pcm_48000` for lossless SFX library masters (`wav_44100` is NOT in AllowedOutputFormats). |
 | `wav_44100` format rejected / TypeError in SFX v2 call | `wav_44100` is not in `AllowedOutputFormats` SDK type for the SFX endpoint | Use `pcm_48000` (lossless 48kHz, Pro+) or `mp3_44100_192` (high-quality non-lossless) instead. `pcm_48000` is the confirmed lossless master format for SFX v2. |
@@ -1099,7 +1105,21 @@ ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA
 
 **Two variants available (confirmed via SDK types):**
 - **REST batch**: `client.text_to_speech.text_to_dialogue.convert()` — one audio file per call. Up to 10 voice IDs, up to 2,000 chars total. Full VoiceSettings supported.
-- **WebSocket streaming**: `TextToDialogueWebsocketClientMessage` — real-time streaming variant for eleven_v3 dialogue. Up to 10 voices for `eleven_v3`, exactly 1 for `eleven_v3_conversational`. **Limitation:** only `stability` is supported in `TextToDialogueWebsocketVoiceSettings` (other VoiceSettings fields like similarity_boost, style, speed are unavailable). Has 20-second inactivity timer; send `keep_alive` messages for long pauses. Use `flush=True` to force output without closing the socket.
+- **WebSocket streaming (Multi)**: `TextToDialogueWebsocketClientMessageMulti` — real-time streaming variant for eleven_v3 dialogue (renamed to Multi in SDK v2.58.0). Up to 10 voices for `eleven_v3`, exactly 1 for `eleven_v3_conversational`. **Limitation:** only `stability` is supported in `TextToDialogueWebsocketVoiceSettings` (other VoiceSettings fields like similarity_boost, style, speed are unavailable). Has 20-second inactivity timer; send `keep_alive` messages for long pauses. Use `flush=True` to force output without closing the socket.
+
+**SDK v2.58.0 (July 13, 2026) — Complete Multi WebSocket response types confirmed:**
+
+The v2.58.0 SDK regeneration added the full server→client message type set for the WebSocket dialogue protocol. When using the WebSocket streaming variant, handle these response types:
+
+| Type | Direction | Purpose |
+|------|-----------|---------|
+| `TextToDialogueWebsocketClientMessageMulti` | client → server | Send text + voice_id for a turn |
+| `TextToDialogueWebsocketAudioChunkMulti` | server → client | Streaming audio chunk for a turn |
+| `TextToDialogueWebsocketFinalAudioForTurnMulti` | server → client | Final audio segment for a completed turn |
+| `TextToDialogueWebsocketFinalMulti` | server → client | Signals end of entire generation |
+| `ReceiveTextToDialogueWebsocketMessageMulti` | server → client | Discriminated union of all three above — use as the receive type |
+
+**Practical note for future Snelverhuizen multi-speaker scenes:** dispatch on the `type` field of `ReceiveTextToDialogueWebsocketMessageMulti` — match `"audio_chunk"` to accumulate audio bytes per turn, `"final_audio_for_turn"` to flush a completed turn's audio to disk, and `"final"` to close the connection cleanly. REST batch (`convert()`) remains simpler for non-real-time two-voice scene production.
 
 For batch (non-real-time) multi-speaker dialogue, use the REST endpoint — it supports the full VoiceSettings. Use WebSocket only if you need real-time streaming output.
 
