@@ -764,9 +764,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.489 (released 2026-07-12)** | `@remotion/effects` now includes `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (all v4.0.481 — see §11h), `radialProgressiveBlur()` (SC161 — see §11a), `cornerPin()`, `lightTrail()` (see §11c), `linearGradient()` (SC168 — see §11d), `venetianBlinds()` (SC189 — see §11f), `paper()` (SC195 — see §11g), and `roughenEdges()` (SC195 — see §11g). ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows added. v4.0.488 fixes looped audio dropout. v4.0.489 (2026-07-12): studio-only patch (runtime config, element install targets, file source origin fix) — no effects or pipeline changes. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.489 (released 2026-07-12, confirmed 2026-07-15)** | `@remotion/effects` now has **50+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j). ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. v4.0.489: studio-only patch — no effects changes. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC214 update (2026-07-15):** All tool versions confirmed unchanged. No FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no rife-ncnn-vulkan CLI newer than v20250112, no PySceneDetect v0.7.1 stable (still in dev). Remotion remains at v4.0.489. **SC140 documentation gap corrected:** v4.0.479 (Jun 17, 2026) also added `thermalVision()`, `pixelate()`, `shrinkwrap()`, and `burlap()` to @remotion/effects — these were omitted from SC140's notes. Documented in §11i below. **@remotion/effects library scope corrected:** The package has shipped 50+ effects since its launch at v4.0.465 (May 22, 2026). Effects added in v4.0.465–478 (May–June 2026) were never documented in this skill — the most pipeline-relevant are `glow()` and `duotone()`. Documented in §11j below.
 
 **SC207 update (2026-07-13):** Remotion advanced to **v4.0.489** (released 2026-07-12) — studio-only patch (runtime config, element install-target request, file-source origin security fix); no effects, codec, or pipeline-relevant changes. **TNTwise REAL Video Enhancer GUI repo (`TNTwise/REAL-Video-Enhancer`) ARCHIVED 2026-07-13 by owner — read-only, no further development.** Pipeline impact: none for headless use — the `rife-ncnn-vulkan` CLI binary repo (`TNTwise/rife-ncnn-vulkan`, v20250112) is a separate repository and is NOT archived. All pipeline interpolation work continues via CLI (§3b). No other tool changes: FFmpeg 8.1.2 unchanged, PySceneDetect v0.7.1 still in dev (not released), SVT-AV1 v4.1.0 unchanged, Practical-RIFE v4.26 unchanged (v4.25 remains pipeline default for diffusion video).
 
@@ -1136,6 +1138,147 @@ import { zoomBlur } from "@remotion/effects";
 
 ---
 
+### 11i. `@remotion/effects` — v4.0.479 Gap: `thermalVision()` and `pixelate()` (SC140 missed)
+
+Four effects were added in v4.0.479 (June 17, 2026) but were not documented in SC140's update note. Two are pipeline-relevant:
+
+**`thermalVision()`** — maps frame luminance to a customizable thermal heat-map color ramp using WebGL2. Low practical relevance for moving company ads (gimmicky), but useful for dramatic impact cuts or stylized freeze-frame reveals.
+
+```tsx
+import { thermalVision } from "@remotion/effects";
+
+// Full thermal effect — replace entirely with heat palette
+<AbsoluteFill style={{
+  filter: thermalVision({ amount: 1 }),
+}} />
+
+// Blended thermal — 30% thermal overlay on normal footage
+<AbsoluteFill style={{
+  filter: thermalVision({ amount: 0.3 }),
+}} />
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `amount` | `number` | `1` | Blend 0–1. `1` = full thermal; `0.3` = subtle overlay on source. |
+| `palette` | `string[]` | Blue→green→yellow→red→white | Minimum 2 colors required. Custom ramp possible — e.g., `['#1a1a2e', '#FC8434', '#ffffff']` for brand-orange ramp. |
+
+**Snelverhuizen use case:** Apply with `amount: 0.3` + brand-orange palette for a stylized title card look. Skip for character/truck shots — the effect makes faces unrecognizable.
+
+---
+
+**`pixelate()`** — applies a mosaic pixel-block effect. Not useful for final delivery; use only for deliberate stylized transitions or a "loading/reveal" animation where footage pixelates in.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `blockSize` | `number` | `20` | 1–200 | Larger = more pixelated. Animate from high→low over ~8 frames for a "sharpen-in" reveal. |
+
+```tsx
+import { pixelate } from "@remotion/effects";
+import { interpolate, useCurrentFrame } from "remotion";
+
+// Sharpen-in reveal: starts fully pixelated, clears over 12 frames
+const frame = useCurrentFrame();
+const blockSize = interpolate(frame, [0, 12], [60, 1], {
+  extrapolateLeft: "clamp",
+  extrapolateRight: "clamp",
+});
+
+<AbsoluteFill style={{
+  filter: pixelate({ blockSize }),
+}} />
+```
+
+**`shrinkwrap()`** and **`burlap()`** — also added in v4.0.479. `burlap()` renders a woven textile/fabric texture (similar to `paper()` but coarser, burlap-style). `shrinkwrap()` creates a plastic-wrap/shrink-film distortion effect. Neither has a defined use in our current ad pipeline. Skip unless a future brief calls for a specific material texture.
+
+---
+
+### 11j. `@remotion/effects` — Pipeline-Relevant Older Effects (v4.0.465–478, May–June 2026)
+
+The @remotion/effects package launched at v4.0.465 (May 22, 2026) and shipped 30+ effects before SC140 (the first version our skill started tracking). These were never documented. The two highest-value effects for Snelverhuizen production are `glow()` and `duotone()`.
+
+---
+
+**`glow()`** (added v4.0.468, May 27, 2026) — WebGL2 luminous blur that adds a soft halo around bright areas. The most directly useful of the undocumented effects: adds warm light bloom to orange #FC8434 elements or character highlights.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `radius` | `number` | `20` | 0–100 px | Spread of the glow bloom |
+| `intensity` | `number` | `1` | 0–5 | Brightness multiplier; `1.5–2` for visible glow |
+| `threshold` | `number` | `0` | 0–1 | Luminance threshold — only pixels above this brightness receive the glow. `0` = all pixels, `0.7` = bright-only |
+| `color` | `string` | `'#ffffff'` | any hex/css | Glow color — set to `'#FC8434'` for brand orange bloom |
+
+**Snelverhuizen use cases:**
+```tsx
+import { glow } from "@remotion/effects";
+
+// Warm white glow on hero frame — adds cinematic halo to highlights
+<AbsoluteFill style={{
+  filter: glow({ radius: 25, intensity: 1.5, threshold: 0.6 }),
+}} />
+
+// Brand orange glow on title card text or badge
+<AbsoluteFill style={{
+  filter: glow({ radius: 15, intensity: 2, threshold: 0.5, color: '#FC8434' }),
+}} />
+```
+
+**When to use:** Apply to a `<Sequence>` wrapping the orange badge or CTA pill for a warm brand-color bloom. Also effective on the hero frame arrival reveal to add cinematic warmth. **Do NOT apply to character faces at intensity > 1.5** — the face loses detail.
+
+**When NOT to use:** Truck shots (glow may bleed onto surrounding frame and look unrealistic), or any shot requiring clean, crisp edges.
+
+---
+
+**`duotone()`** (added v4.0.468, May 27, 2026) — WebGL2 two-color treatment. Converts frame to a two-tone image based on luminance threshold. Very useful for stylized intro/outro frames and brand-color title cards.
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `darkColor` | `string` | `'#000000'` | Color for shadows/dark pixels |
+| `lightColor` | `string` | `'#ffffff'` | Color for highlights/bright pixels |
+| `threshold` | `number` | `0.5` | Luminance split point (0–1) |
+
+**Snelverhuizen use cases:**
+```tsx
+import { duotone } from "@remotion/effects";
+
+// Brand duotone: deep navy shadows, orange highlights — cinematic brand frame
+<AbsoluteFill style={{
+  filter: duotone({
+    darkColor: '#1a1a2e',    // deep navy
+    lightColor: '#FC8434',  // brand orange
+    threshold: 0.45,
+  }),
+}} />
+
+// Black + orange — high contrast logo reveal or end frame
+<AbsoluteFill style={{
+  filter: duotone({
+    darkColor: '#000000',
+    lightColor: '#FC8434',
+    threshold: 0.5,
+  }),
+}} />
+```
+
+**When to use:** End frame / logo reveal shots. Transition frames between scenes. Hero frame title card (static or near-static). **Do NOT apply to the main character or truck action shots** — duotone makes faces unnatural and is inappropriate for a sincere moving company ad. Reserve for stylized graphic frames (0–2s duration).
+
+---
+
+**Other notable undocumented effects (v4.0.465–478) — low priority for our pipeline:**
+
+| Effect | Added | Use case | Priority |
+|--------|-------|----------|----------|
+| `brightness()` | v4.0.466 | Single param `amount` (-1 to 1). Quick in-Remotion brightness tweak on a layer. | Low — use FFmpeg eq filter for video, or CSS `filter: brightness()` for static layers |
+| `dropShadow()` | v4.0.469 | Params: `radius` (12), `offsetX` (8), `offsetY` (8), `opacity` (0.5), `color` ('#000000'). Shadow under brand badge or text overlay in Remotion. | Medium — useful if building badge overlays in Remotion rather than FFmpeg drawvg |
+| `chromaticAberration()` | v4.0.467 | Cinematic lens color split for impact transitions | Low — stylistic only, not appropriate for straightforward ad |
+| `halftone()` | v4.0.466 | Print-dot pattern effect | Low — decorative only |
+| `scanlines()` | v4.0.470 | Retro CRT TV effect | Low — not on-brand |
+| `vignette()` | v4.0.468 | Darkens frame edges — was fixed in v4.0.481 for transparent layers | Documented separately in §11h fix note |
+
+**Note on `noise()`:** The package includes `noise.ts` in source, but it was not identified as exported in the main API timeline. This may be an internal utility or a future public effect. Do not use until confirmed in a changelog entry.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1158,7 +1301,7 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.488 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames) — see §11a, §11c, §11d, §11f, §11g, §11h
+- [ ] Remotion v4.0.489 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames); use `glow()` for warm brand-color bloom on orange badge/CTA elements (radius=15–25, intensity=1.5–2, threshold=0.5–0.7, color='#FC8434'); use `duotone()` for stylized brand-color end/title frames only (darkColor='#1a1a2e', lightColor='#FC8434', threshold=0.45) — NOT on character/truck shots; use `pixelate()` animated sharpen-in reveal (blockSize 60→1 over 12 frames) — see §11a, §11c, §11d, §11f, §11g, §11h, §11i, §11j
 - [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to v4.0.488 if affected
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
