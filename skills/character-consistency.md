@@ -757,9 +757,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **Key parameters (Together AI/fal.ai format; AIMLAPI format expected similar):**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # likely now on AIMLAPI as of 2026-07-09 — canary-test before production
+    "model": "alibaba/wan-2-7-r2v",   # confirmed in AIMLAPI model DB as of 2026-07-15 — canary-test before production
     "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
-    "reference_images": [
+    "reference_images": [              # confirmed param name for AIMLAPI-compatible wrappers (pass 31)
         "https://cdn.example.com/crew_lead/front.png",
         "https://cdn.example.com/crew_lead/three_quarter.png",
         "https://cdn.example.com/crew_lead/face_crop.png",
@@ -768,7 +768,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "resolution": "720p",         # "720p" or "1080p"; use 720p for drafts
     "aspect_ratio": "9:16",
     "duration": 5,
-    "generate_audio": False,
+    "shot_type": "single",        # "single" or "multi" (multi-shot storyboard) — confirm passthrough on AIMLAPI
+    # DO NOT use generate_audio: False — Wan 2.7 uses different audio param (unconfirmed on AIMLAPI)
+    # MANDATORY: strip audio in post via FFmpeg (see audio control section below)
 }, headers=headers, timeout=120)
 ```
 
@@ -787,13 +789,15 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 30 recheck, 2026-07-13):** `alibaba/wan-2-7-r2v` remains confirmed in the AIMLAPI model database. No dedicated R2V docs page at `docs.aimlapi.com` has appeared yet — only `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` are documented. Status: **"confirmed in model database — canary-test required before production adoption."** No change from pass 29.
+**Wan 2.7 R2V status on AIMLAPI (pass 31 recheck, 2026-07-15):** `alibaba/wan-2-7-r2v` remains confirmed in the AIMLAPI model database. No dedicated R2V docs page at `docs.aimlapi.com` has appeared yet — only `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` are documented. Status: **"confirmed in model database — canary-test required before production adoption."** No change from pass 30.
 
-**Upstream parameter format (official Alibaba/WaveSpeed API):** `images` array (not `reference_images`); prompt binding uses `"Image1"`, `"Image2"` — capitalized, no @-prefix, no brackets. AIMLAPI adapter parameter name may differ; confirm on first canary call.
+**Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
-**Canary procedure:** Karel/Mourad `front.png` as `images[0]`, 720p, audio explicitly muted (see below). Score with InsightFace buffalo_l (PASS threshold 0.62). If identity score ≥ 0.62 across 3 runs → eligible for draft-tier use at ~$0.625/5s. Only promote to production finals after owner-reviewed output passes brand binary checklist. If canary returns model-not-found → fall back to Wan 2.6 R2V or Kling O1.
+**`shot_type` parameter (pass 31 finding):** `"single"` or `"multi"` — controls whether the model runs a single continuous generation or a multi-shot storyboard sequence. Documented across multiple wrappers. Add to canary call to confirm passthrough.
 
-**CRITICAL — Wan 2.7 R2V audio control (pass 29 finding, 2026-07-11):** Wan 2.7 R2V does **NOT** use a `generate_audio: false` boolean like Kling. The official API uses mode values: `"auto"` (model decides), `"origin"` / `"keep_original"` (preserve source audio), or `"mute"` (silence all audio). The exact AIMLAPI adapter parameter name for this mode is **unconfirmed** as of 2026-07-11 — no R2V docs page exists yet to check. **Safety protocol for all Wan 2.7 R2V clips:** Always strip audio in post as a mandatory step:
+**Canary procedure:** Karel/Mourad `front.png` as `reference_images[0]`, 720p, audio explicitly muted (see below). Score with InsightFace buffalo_l (PASS threshold 0.62). If identity score ≥ 0.62 across 3 runs → eligible for draft-tier use at ~$0.625/5s. Only promote to production finals after owner-reviewed output passes brand binary checklist. If canary returns model-not-found → fall back to Wan 2.6 R2V or Kling O1.
+
+**CRITICAL — Wan 2.7 R2V audio control (pass 29 finding, updated pass 31 2026-07-15):** Wan 2.7 R2V does **NOT** use a `generate_audio: false` boolean like Kling. Upstream (WaveSpeed/official Alibaba API) audio mode values: `"auto"` (model decides based on prompt) and `"origin"` (preserve source audio). Some wrappers document a `"mute"` or `"keep_original"` value. The exact AIMLAPI adapter parameter name for this mode is **unconfirmed** as of 2026-07-15 — no dedicated R2V docs page at docs.aimlapi.com. **Safety protocol for all Wan 2.7 R2V clips:** Always strip audio in post as a mandatory step:
 
 ```bash
 ffmpeg -i wan_r2v_output.mp4 -an -c:v copy wan_r2v_muted.mp4
@@ -817,6 +821,10 @@ Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrad
 - Check pricing: if ≤ $0.10/img → upgrade immediately; if > $0.195/img → keep NBP Edit
 
 **Current hero frame routing stays unchanged until Kling Image O3 confirms on AIMLAPI.**
+
+**ConsID-Gen — Research Validation (arXiv 2602.10113, CVPR 2026, code released):** View-Consistent and Identity-Preserving I2V generation. Code: github.com/eBay/ConsID-Gen. Curated dataset: ConsIDVid (Hugging Face: `mingyang-wu/ConsIDVid`). Core mechanism: augments the generation's first frame with **unposed auxiliary views** (multi-angle renders of the subject), then fuses semantic identity cues + geometric/structural cues via a dual-stream visual-geometric encoder and text-visual connector into a DiT backbone. Outperforms Wan2.1 and HunyuanVideo on identity fidelity and temporal coherence under real-world viewpoint variation. Accepted CVPR 2026 + associated VGBE 2026 challenge winner.
+
+**Production implication for our pipeline (pass 31 finding, 2026-07-15):** ConsID-Gen confirms architecturally WHY our multi-angle reference strategy (front + 3/4 + profile + face crop) works: these angles are exactly the "unposed auxiliary views" that provide geometric + structural cues at varied viewpoints. The "dual-stream" (semantic ID + geometric structure) parallels our combination of texture-preserving references (full-body front) and structure-isolating references (tight face crop). No AIMLAPI endpoint — research only. Monitor for hosted API — if a ConsID-Gen-based I2V endpoint appears, it would excel at identity lock through camera moves (pan + zoom shots) where single-angle Kling O1 tends to drift.
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
