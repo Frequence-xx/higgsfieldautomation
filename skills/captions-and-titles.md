@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19 — CI build fix only, no DTW changes)
+   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-16, no newer release)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,11 +708,17 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.490 (July 16, 2026):**
+- New package: `@remotion/rough-notation` (hand-drawn annotation animations — not relevant for caption pipeline).
+- `remotion`: New `output: "perceptual-scale"` option for `interpolate()` — maps values through a sqrt transform so scale animations feel more natural to human perception (uses `sign(x) * x²` → interpolate → `sign(x) * √|x|`). Studio now defaults scale keyframes to perceptual output. **Not needed for caption word-scale (1.0 → 1.05 range is too small for perceptual nonlinearity to matter; keep linear or `Easing.spring`).** Useful for wider-range scale transitions (0 → 1.5+).
+- `@remotion/effects`: Progressive pixelation effect added.
+- **No changes to `@remotion/captions` API** — caption pipeline is unaffected. `npm install remotion@4.0.490`.
+
 **Remotion v4.0.489 (July 12, 2026):**
 - `@remotion/studio`: Request element install targets on demand; use runtime Studio config.
 - `@remotion/studio-server`: Fix file source origin check; reject origin-less requests.
 - `remotion`: Fix image loading during premount transitions.
-- **No changes to `@remotion/captions` API** — caption pipeline is unaffected. `npm install remotion@4.0.489`.
+- **No changes to `@remotion/captions` API** — caption pipeline is unaffected.
 
 **Remotion v4.0.488 (July 11, 2026):**
 - **Fixed looped audio dropping out after multiple iterations.** If your caption composition includes a looped ambient audio layer (e.g., background ambience looped for the full video duration), it previously cut out silently after repeating several times. Now fixed. Safe to upgrade.
@@ -732,7 +738,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.489 — confirmed current as of 2026-07-14; no caption API changes in 4.0.485–4.0.489)
+### Full API (v4.0.490 — confirmed current as of 2026-07-16; no caption API changes in 4.0.485–4.0.490)
 
 | Export | Purpose |
 |--------|---------|
