@@ -447,7 +447,7 @@ ffmpeg -i normalized.mp4 \
 
 ### 5h. AV1 Archive Encoding (Internal Storage Only — NOT for Platform Upload)
 
-SVT-AV1 v4.1 (2026-03-23, confirmed current 2026-06-05) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
+SVT-AV1 v4.2.0 (2026-07-13) + FFmpeg 8.x libsvtav1 offers 30–50% smaller files vs H.264 at equivalent quality. Use for internal archive masters to save disk space.
 
 ```bash
 # Check SVT-AV1 availability
@@ -763,10 +763,12 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise REAL Video Enhancer | ~~v2.4.1~~ **ARCHIVED 2026-07-13** | GUI repo archived — do NOT use for new work. Use rife-ncnn-vulkan CLI (§3b) directly. |
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
-| SVT-AV1 | v4.1.0 (2026-03-23) | No v4.2 as of 2026-06-30 — current pipeline commands unchanged |
-| Remotion | **v4.0.489 (released 2026-07-12, confirmed 2026-07-15)** | `@remotion/effects` now has **50+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j). ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. v4.0.489: studio-only patch — no effects changes. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| SVT-AV1 | **v4.2.0 (2026-07-13)** | New: `--tune-vmaf` (~15% VMAF BD-rate gain for VOD/archive); CBR Kalman-filter rate control; ARM NEON/SVE2 kernels. Pipeline commands (§5h) unchanged — `-svtav1-params tune=0` (VQ) remains correct. See SC221 update. |
+| Remotion | **v4.0.490 (released 2026-07-16)** | `@remotion/effects` now has **50+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. v4.0.490: `interpolate()` adds `output: "perceptual-scale"` for Studio keyframes. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC221 update (2026-07-17):** Two substantive changes this cycle. (1) **SVT-AV1 v4.2.0 released 2026-07-13** — new `--tune-vmaf` flag targeting ~15% VMAF BD-rate improvement for VOD/archive encodes; CBR Kalman-filter rate control added (RTC/low-latency use); ARM NEON forward-transform kernels + SVE2 VMAF kernels. Our pipeline commands in §5h are unchanged — `-svtav1-params tune=0` (VQ/perceptual) remains the correct archive setting. The `--tune-vmaf` flag is not exposed via `libsvtav1` FFmpeg plugin as of this writing — relevant when using the standalone `SvtAv1EncApp` binary, not our FFmpeg-based pipeline. (2) **Remotion v4.0.490 released 2026-07-16** — new `linearProgressivePixelate()` effect in `@remotion/effects` (pixelation intensity gradient, analogous to `linearProgressiveBlur()` but for pixelation — see §11k); new `@remotion/rough-notation` package (sketch/handdrawn annotation overlays, wraps the rough-notation library); `interpolate()` gains `output: "perceptual-scale"` for Studio keyframes (no pipeline impact for code-driven renders). All other tools unchanged: FFmpeg 8.1.2, rife-ncnn-vulkan 20250112, PySceneDetect v0.7.0 stable (v0.7.1-dev0 pre-release from Jul 6 — not a stable release), Practical-RIFE v4.26 (v4.26.heavy not found in upstream hzwer README — supported by TNTwise binary only).
 
 **SC214 update (2026-07-15):** All tool versions confirmed unchanged. No FFmpeg 8.1.3, no SVT-AV1 v4.2, no Practical-RIFE v4.27, no rife-ncnn-vulkan CLI newer than v20250112, no PySceneDetect v0.7.1 stable (still in dev). Remotion remains at v4.0.489. **SC140 documentation gap corrected:** v4.0.479 (Jun 17, 2026) also added `thermalVision()`, `pixelate()`, `shrinkwrap()`, and `burlap()` to @remotion/effects — these were omitted from SC140's notes. Documented in §11i below. **@remotion/effects library scope corrected:** The package has shipped 50+ effects since its launch at v4.0.465 (May 22, 2026). Effects added in v4.0.465–478 (May–June 2026) were never documented in this skill — the most pipeline-relevant are `glow()` and `duotone()`. Documented in §11j below.
 
@@ -1279,6 +1281,64 @@ import { duotone } from "@remotion/effects";
 
 ---
 
+### 11k. `@remotion/effects` — `linearProgressivePixelate()` and `@remotion/rough-notation` (v4.0.490)
+
+**`linearProgressivePixelate()`** (added v4.0.490, 2026-07-16) — applies a pixelation (mosaic) effect that varies in intensity across the frame in one direction, analogous to `linearProgressiveBlur()` but using pixel-block size instead of blur radius. Strong pixelation at one edge fades to no pixelation at the other.
+
+```tsx
+import { linearProgressivePixelate } from "@remotion/effects";
+
+// Pixelation increases from 0 at top (y=0) to blockSize=40 at bottom (y=1)
+// Use for a stylized reveal where the frame "clarifies" from bottom-to-top
+<AbsoluteFill style={{
+  filter: linearProgressivePixelate({
+    direction: "to top",
+    blockSizeAtEnd: 40,
+    from: 0,
+    to: 1,
+  }),
+}} />
+```
+
+**Parameters** (mirroring `linearProgressiveBlur` API):
+| Parameter | Type | Notes |
+|-----------|------|-------|
+| `direction` | `string` | `"to bottom"`, `"to top"`, `"to left"`, `"to right"` |
+| `blockSizeAtEnd` | `number` | Pixelation (block size, px) at the strong end. 0 at the other end. |
+| `from` | `number` | UV fraction (0–1) where pixelation starts |
+| `to` | `number` | UV fraction (0–1) where pixelation reaches full `blockSizeAtEnd` |
+
+**Snelverhuizen use cases:**
+- **Stylized intro reveal:** Animate `blockSizeAtEnd` from 40→0 over ~15 frames with `direction: "to top"` — the frame de-pixelates upward, like a cinematic scan-reveal.
+- **Title card texture:** Static `blockSizeAtEnd=20` over the lower third behind captions for a graphic-art look. Combine with `linearGradient()` dark scrim for legibility.
+- **Cross-shot transition:** Apply at the end of one clip (blockSize 0→30) and start of the next (30→0) — creates a pixelate/de-pixelate cut-through effect. Keep transition under 8 frames to avoid looking gimmicky.
+
+**When to use vs `pixelate()`:**
+- `pixelate()` (§11i) — uniform pixelation across the entire frame; useful for animate-in/animate-out reveals
+- `linearProgressivePixelate()` — graduated pixelation in one direction; useful for partial-frame graphic treatments and directional reveals
+
+**Note:** API name `linearProgressivePixelate` inferred from Remotion's naming convention (`linearProgressiveBlur` → `linearProgressivePixelate`). Verify against the published `@remotion/effects` package before use in production.
+
+---
+
+**`@remotion/rough-notation`** (new package, v4.0.490) — wraps the [rough-notation](https://roughnotation.com/) library to render sketch/handdrawn annotation overlays on Remotion compositions. Supported annotation types: underline, box, circle, highlight, strike-through, crossed-off, bracket.
+
+**Snelverhuizen use case:** Handdrawn circle or underline around the SNELVERHUIZEN.NL URL or phone number in a title-card frame for an organic, personal-touch feel. Use with the brand orange `#FC8434` color (`color: "#FC8434"`). Appropriate for still or near-still frames only — rough-notation animations do not synchronize frame-accurately to Remotion's frame clock without custom integration.
+
+```tsx
+// Install: npm install @remotion/rough-notation rough-notation
+import { RoughNotation } from "@remotion/rough-notation";
+
+// Orange underline under a URL text element
+<RoughNotation type="underline" color="#FC8434" strokeWidth={3} show={true}>
+  <span>SNELVERHUIZEN.NL</span>
+</RoughNotation>
+```
+
+**Limitation:** rough-notation drives animations via a JS animation loop that is not frame-clock-aligned. For static (non-animating) annotations, `show={true}` renders immediately — safe. For animated strokes, the timing is wall-clock-based, not Remotion-frame-based, meaning render consistency may vary. Only use with `show={true}` (no animation) for reliable render output.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1299,9 +1359,9 @@ Before marking video as delivered:
 - [ ] Export: H.264, -pix_fmt yuv420p, -movflags +faststart, AAC 48kHz 256kbps
 - [ ] ffprobe check passes (correct codec, resolution, fps confirmed)
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
-- [ ] AV1 archive: use `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only) — see §5h. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.1 + tune=0 is correct path.
+- [ ] AV1 archive: use SVT-AV1 v4.2.0 (released 2026-07-13) — `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only). New in v4.2: `--tune-vmaf` flag (~15% VMAF BD-rate gain) but only via standalone binary, not FFmpeg libsvtav1 — pipeline commands unchanged. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.2 + tune=0 is correct path. See §5h.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.489 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames); use `glow()` for warm brand-color bloom on orange badge/CTA elements (radius=15–25, intensity=1.5–2, threshold=0.5–0.7, color='#FC8434'); use `duotone()` for stylized brand-color end/title frames only (darkColor='#1a1a2e', lightColor='#FC8434', threshold=0.45) — NOT on character/truck shots; use `pixelate()` animated sharpen-in reveal (blockSize 60→1 over 12 frames) — see §11a, §11c, §11d, §11f, §11g, §11h, §11i, §11j
+- [ ] Remotion v4.0.490 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames); use `glow()` for warm brand-color bloom on orange badge/CTA elements (radius=15–25, intensity=1.5–2, threshold=0.5–0.7, color='#FC8434'); use `duotone()` for stylized brand-color end/title frames only (darkColor='#1a1a2e', lightColor='#FC8434', threshold=0.45) — NOT on character/truck shots; use `pixelate()` animated sharpen-in reveal (blockSize 60→1 over 12 frames); use `linearProgressivePixelate()` (v4.0.490, §11k) for directional pixelation reveals (blockSizeAtEnd=30–40, 15-frame animate-in) or partial-frame graphic treatments; use `@remotion/rough-notation` for static sketch-style annotations on title cards (color='#FC8434', show={true} only — no animation) — see §11a, §11c, §11d, §11f, §11g, §11h, §11i, §11j, §11k
 - [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to v4.0.488 if affected
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
