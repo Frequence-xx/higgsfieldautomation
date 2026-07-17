@@ -628,6 +628,13 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - Driving video does NOT need to be halal-compliant (it's never in the output); only the output is QA'd
 - Act-Two generates no audio — add voiceover in post via FFmpeg, same as all other clips
 
+**FixTalk — Identity Leakage Risk in Performance-Driven Animation (arXiv 2507.01390, ICCV 2025):** Identity leakage (IL) is a confirmed failure mode in Act-Two and FaceFusion lip_syncer workflows: motion features extracted from the driving video carry the driver's identity information, which can bleed into the output and corrupt the target character's face (especially under extreme poses or large expressions). FixTalk (ICCV 2025) proves this architecturally — identity is embedded in motion features, not cleanly separable by default. **Practical implications for our pipeline:**
+1. When recording driving videos for Act-Two, prefer drivers whose ethnic appearance and facial geometry is similar to Karel/Mourad — dissimilar drivers increase identity bleed risk.
+2. If a clearly different driver is unavoidable, use `expression_intensity: 1–2` (lower end) to reduce motion magnitude and limit identity transfer.
+3. Run InsightFace QA with strict threshold (≥0.68 vs the normal ≥0.62) on Act-Two output when the driver differs significantly from the target character.
+4. Identity leakage shows up as a score drop below 0.60 — that is the diagnostic signal, not an animation quality issue.
+No AIMLAPI endpoint — research only, validates existing QA step.
+
 ## Veo 3.1 Reference-to-Video — BLOCKED for Character Shots
 
 - **Cost: ~$0.788/sec → $6.30 per 5s clip** (vs Kling v3 Pro $0.291/sec → $1.46 per 5s clip)
@@ -655,7 +662,7 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 ## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-13 (pass 30 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-17 (pass 32 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
@@ -721,7 +728,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Wan 2.7 R2V — Character Shots at 3× Lower Cost (LIKELY NOW ON AIMLAPI — canary-test required)
+## Wan 2.7 R2V — Character Shots at Lower Cost (Coming Soon on AIMLAPI — NOT YET LIVE as of 2026-07-17)
 
 `alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. However, no dedicated R2V docs page at `docs.aimlapi.com` has been confirmed yet (only the I2V page exists). Status upgrade: "Coming Soon" → "likely live — must canary-test before production adoption." AIMLAPI AIMLAPI has not published the R2V parameter schema yet; use Segmind/Replicate docs as reference for expected params. (previously NOT on AIMLAPI as of 2026-07-06, pass 27)
 
@@ -757,7 +764,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **Key parameters (Together AI/fal.ai format; AIMLAPI format expected similar):**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # confirmed in AIMLAPI model DB as of 2026-07-15 — canary-test before production
+    "model": "alibaba/wan-2-7-r2v",   # Coming Soon on AIMLAPI as of 2026-07-17 — NOT live yet
     "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
     "reference_images": [              # confirmed param name for AIMLAPI-compatible wrappers (pass 31)
         "https://cdn.example.com/crew_lead/front.png",
@@ -789,7 +796,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 31 recheck, 2026-07-15):** `alibaba/wan-2-7-r2v` remains confirmed in the AIMLAPI model database. No dedicated R2V docs page at `docs.aimlapi.com` has appeared yet — only `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` are documented. Status: **"confirmed in model database — canary-test required before production adoption."** No change from pass 30.
+**Wan 2.7 R2V status on AIMLAPI (pass 32 recheck, 2026-07-17):** `alibaba/wan-2-7-r2v` is explicitly marked **"Coming Soon"** in AIMLAPI's video models listing — NOT live. No dedicated R2V docs page at `docs.aimlapi.com` exists (only `wan-2.7-image-to-video` is documented). **Status downgrade from pass 31 ("likely live") back to "Coming Soon — not live."** Do not canary-test until a docs page appears at docs.aimlapi.com. Fall back to Wan 2.6 R2V or Kling O1.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
