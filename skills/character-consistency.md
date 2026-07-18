@@ -662,7 +662,7 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 ## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-17 (pass 32 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-18 (pass 33 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
@@ -796,7 +796,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 32 recheck, 2026-07-17):** `alibaba/wan-2-7-r2v` is explicitly marked **"Coming Soon"** in AIMLAPI's video models listing — NOT live. No dedicated R2V docs page at `docs.aimlapi.com` exists (only `wan-2.7-image-to-video` is documented). **Status downgrade from pass 31 ("likely live") back to "Coming Soon — not live."** Do not canary-test until a docs page appears at docs.aimlapi.com. Fall back to Wan 2.6 R2V or Kling O1.
+**Wan 2.7 R2V status on AIMLAPI (pass 33 recheck, 2026-07-18):** `alibaba/wan-2-7-r2v` is still NOT live on AIMLAPI. docs.aimlapi.com documents `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` but no dedicated Wan 2.7 R2V page. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh) have Wan 2.7 R2V live — AIMLAPI is the notable holdout. Do not canary-test until a docs page appears at docs.aimlapi.com. Fall back to Wan 2.6 R2V or Kling O1.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
@@ -804,7 +804,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Canary procedure:** Karel/Mourad `front.png` as `reference_images[0]`, 720p, audio explicitly muted (see below). Score with InsightFace buffalo_l (PASS threshold 0.62). If identity score ≥ 0.62 across 3 runs → eligible for draft-tier use at ~$0.625/5s. Only promote to production finals after owner-reviewed output passes brand binary checklist. If canary returns model-not-found → fall back to Wan 2.6 R2V or Kling O1.
 
-**CRITICAL — Wan 2.7 R2V audio control (pass 29 finding, updated pass 31 2026-07-15):** Wan 2.7 R2V does **NOT** use a `generate_audio: false` boolean like Kling. Upstream (WaveSpeed/official Alibaba API) audio mode values: `"auto"` (model decides based on prompt) and `"origin"` (preserve source audio). Some wrappers document a `"mute"` or `"keep_original"` value. The exact AIMLAPI adapter parameter name for this mode is **unconfirmed** as of 2026-07-15 — no dedicated R2V docs page at docs.aimlapi.com. **Safety protocol for all Wan 2.7 R2V clips:** Always strip audio in post as a mandatory step:
+**CRITICAL — Wan 2.7 R2V audio control (pass 29 finding, updated pass 33 2026-07-18):** Wan 2.7 R2V does **NOT** use a `generate_audio: false` boolean like Kling. Audio mode values confirmed across 5+ independent wrappers (Segmind, Kie.ai, EvoLink, Apiframe, inference.sh): **`"mute"`** (silence output), `"auto"` (model decides), `"keep_original"` / `"origin"` (preserve source audio). Use `"mute"` for all production clips. The AIMLAPI adapter parameter name for this mode is **unconfirmed** — no R2V docs page at docs.aimlapi.com as of 2026-07-18. Additionally: `reference_voice` accepts a 1–10s audio URL for voice cloning; omit entirely (do NOT set) to suppress voice generation. **Safety protocol — mandatory:** Always strip audio in post regardless of API parameter state:
 
 ```bash
 ffmpeg -i wan_r2v_output.mp4 -an -c:v copy wan_r2v_muted.mp4
