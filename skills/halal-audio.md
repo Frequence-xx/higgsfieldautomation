@@ -41,7 +41,7 @@ No music. No instruments. Ever. Audio is restricted to:
 | Model | Model ID | Dutch? | Cost/1K chars | Use case |
 |-------|----------|--------|---------------|----------|
 | **Eleven v3** | `eleven_v3` | ✓ (74 lang) | ~$0.10/1K chars | **Production** — most expressive, audio tag support. GA since March 14, 2026. NOT real-time capable (use `eleven_v3_conversational` for agents only). |
-| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.10/1K chars | Fallback if v3 unavailable (same cost tier) |
+| Multilingual v2 | `eleven_multilingual_v2` | ✓ | ~$0.10/1K chars | Fallback if v3 unavailable (same cost tier). ⚠ `language_code` param is NOT supported — silently ignored (June 29, 2026 changelog). |
 | Flash v2.5 | `eleven_flash_v2_5` | ✓ (32 lang) | ~$0.05/1K chars | **Draft/iteration** — 75ms latency, ~50% cheaper |
 
 **Pricing note (May 7, 2026 — PAYG rollout):** ElevenLabs reduced TTS prices by up to 55% and introduced pay-as-you-go (PAYG) credit top-ups. Flash v2.5 confirmed at $0.05/1K chars on PAYG/Creator plan (down from $0.06). Eleven v3 and Multilingual v2 are ~$0.10/1K chars (1 character = 1 credit; 0.5 credits/character for Flash/Turbo). Overage rates on subscription plans vary by tier ($0.12–$0.30/1K chars). Always check `elevenlabs.io/pricing/api` for the current live rate before budgeting a production run.
@@ -839,6 +839,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Dutch phonemes sound off | Wrong model | Use `eleven_v3` (production) or `eleven_multilingual_v2` (fallback). Never monolingual v1. |
 | Phone number "085 3331133" spoken in English | `language_code` not set / text normalisation off | Set `language_code="nl"` and `apply_text_normalization="on"` in every API call (see §0) |
 | Draft VO (Flash v2.5) mispronounces "085 3331133" despite `apply_text_normalization="on"` | `apply_text_normalization` is **Enterprise-only for Flash v2.5** — ignored on standard plans | On non-Enterprise plans, Flash v2.5 always outputs unnormalized phone numbers. Do NOT use Flash v2.5 to QA Dutch phone number pronunciation — use eleven_v3 for that verification step only. |
+| `language_code="nl"` passed to `eleven_multilingual_v2` has no effect | `language_code` is NOT supported on `eleven_multilingual_v2` — silently ignored (clarified June 29, 2026 changelog). The param only works on `eleven_v3` and Flash models. | When using `eleven_multilingual_v2` as a fallback, omit `language_code` entirely. Dutch pronunciation relies on text context alone. Use `eleven_v3` for any call where correct Dutch number/proper-noun pronunciation is critical. |
 | VO sounds uneven — loud on some sentences, quiet on others | Single loudnorm pass doesn't equalise intra-clip dynamics | Use two-stage chain: dynaudnorm first, then loudnorm (see §4h) |
 | Prosody break / unnatural join between VO chunks | Script split across multiple API calls; no continuity stitching available for eleven_v3 | Request stitching is NOT supported for eleven_v3 (official docs). Split at sentence boundaries. Join chunks with 5–10 ms crossfade in FFmpeg. Snelverhuizen ad scripts (~600–1200 chars) never hit the 5,000-char limit — chunking should not be needed. |
 | Pixabay/Mixkit return no suitable SFX for a specific scene | Limited library coverage for niche or locale-specific sounds | Generate with ElevenLabs SFX v2 (`eleven_text_to_sound_v2`, `loop=True`) — see §2 Tier 1c |
@@ -1079,7 +1080,7 @@ ffmpeg -i sfx_noisy.wav \
 
 Deep-learning model that separates vocal signal from background noise. Useful for cleaning ambient SFX files that contain unwanted room tone, crowd noise, or bleed. Also useful for extracting a clean vocal track from a nasheed that has recording artifacts (room reverb, hiss) — but NOT as a substitute for rejecting a nasheed with actual instruments (policy: reject those outright, do not strip them).
 
-**Cost:** 1000 characters per minute of audio (uses same ElevenLabs credit pool as TTS). A 30-second SFX file costs ~500 credits (~$0.06 at Creator plan rates). Use sparingly — only when arnndn/afwtdn insufficient.
+**Cost:** 1000 credits per minute of audio (subscription plans) / $0.12 per minute (PAYG API — confirmed 2026). A 30-second SFX file costs ~500 credits (~$0.06 on Creator plan). Use sparingly — only when arnndn/afwtdn insufficient.
 
 **Supports:** WAV, MP3, FLAC, OGG, AAC (input); up to 500MB / 1 hour. (Note: STT/Scribe accepts up to 5.0GB — the 500MB limit here applies to Voice Isolator specifically.)
 
