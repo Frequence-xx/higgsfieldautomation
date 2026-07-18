@@ -69,7 +69,7 @@ the vehicle remains rigid and solid, metal does not deform,
 motion intensity 0.1
 ```
 
-**`motion intensity 0.1` is a Prompt Syntax 2.0 text technique (June 2026):** Kling 3.0 responds to numeric intensity values embedded in prompt text on a 0.1–1.0 scale (0.1 = near-static, 0.5 = default, 1.0 = dramatic). This phrase speaks to the physics engine layer — a stronger signal than prose descriptions alone. Use 0.1 for maximum stationarity. Not an API parameter; must appear in the `prompt` string itself. Community-reported; combine with all other layers for maximum protection.
+**`motion intensity 0.1` is a Prompt Syntax 2.0 text technique (June 2026):** Kling 3.0 responds to numeric intensity values embedded in prompt text. Scale is 0–3 (July 2026 community consensus: 0.4 = arabesque, 2.8 = sprinting). 0.1 is the minimum extreme on this scale — use it for maximum stationarity. Older guides described a 0.1–1.0 range; the 0–3 scale is now more consistently documented (SC223, July 18, 2026). Not an API parameter; must appear in the `prompt` string itself. Community-reported; combine with all other layers for maximum protection.
 
 ### Layer 2: Negative Prompt
 
