@@ -24,7 +24,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 1. **Extract word-level timestamps** — three options in priority order:
 
    **Option A: ElevenLabs Forced Alignment (primary, paid)** — TWO endpoints exist, only ONE is verified for word-level timestamps:
-   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports **29 languages including Dutch** (introduced 2025-04; built on multilingual v2 technology — not the full 70+ language set of eleven_v3). Works with both `eleven_multilingual_v2` and `eleven_v3`.
+   - ✅ **CORRECT: `POST /v1/forced-alignment`** — returns word AND character-level timestamps (submit audio + transcript after TTS generation). Supports **150+ languages including Dutch** (introduced 2025-04; **auto-detects language — no `language` parameter needed**; exceeds eleven_v3's 70+ language set — Python client params are `file` + `text` only, confirmed from SDK 2026-07-18). Works with both `eleven_multilingual_v2` and `eleven_v3`.
 
      **Response schema (confirmed from Python SDK `ForcedAlignmentResponseModel` — 2026-05-23):**
      ```python
@@ -233,8 +233,8 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - `condition_on_prev_text=False` by default — prevents context bleeding between segments
    - Use `large-v3-turbo` (preferred) or `large-v2` for Dutch. Do NOT use `large-v3` — it regresses on Dutch vs v2. Turbo is based on v3 architecture but with 4 decoder layers (vs 32 in v3/v2) and reverts to v2-level accuracy while being ~3x faster.
 
-   **Qwen3-ForcedAligner (free, watch item — Dutch NOT yet supported as of 2026-07-05):**
-   Released January 2026 by Alibaba Cloud. The 0.6B model achieves ~42.9ms average alignment shift vs WhisperX's ~200ms — a 67-77% error reduction. Its 11 supported languages are: Chinese, English, Cantonese, French, German, Italian, Japanese, Korean, Portuguese, Russian, Spanish. **Dutch (nl) is not in the supported set.** Qwen3-ASR (the companion transcription model) does support Dutch, but without Dutch ForcedAligner support, it cannot improve our timestamp accuracy over wav2vec2. The current WhisperX + wav2vec2 + Dutch last-word fix (Option B above) remains the correct free path. Monitor `Qwen/Qwen3-ForcedAligner-0.6B` on HuggingFace for Dutch addition — if added, it would be a meaningful accuracy upgrade.
+   **Qwen3-ForcedAligner (free, watch item — Dutch NOT yet supported as of 2026-07-18):**
+   Released January 2026 by Alibaba Cloud. The 0.6B model achieves ~42.9ms average alignment shift (AAS) vs WhisperX wav2vec2's ~133.2ms on MFA-labeled data (Qwen3-ASR technical report) — a 67-77% error reduction. Its 11 supported languages are: Chinese, English, Cantonese, French, German, Italian, Japanese, Korean, Portuguese, Russian, Spanish. **Dutch (nl) is not in the supported set.** Qwen3-ASR (the companion transcription model) does support Dutch, but without Dutch ForcedAligner support, it cannot improve our timestamp accuracy over wav2vec2. The current WhisperX + wav2vec2 + Dutch last-word fix (Option B above) remains the correct free path. Monitor `Qwen/Qwen3-ForcedAligner-0.6B` on HuggingFace for Dutch addition — if added, it would be a meaningful accuracy upgrade.
 
    **Option C: @remotion/install-whisper-cpp with DTW (free, Remotion-native, no Python needed)**
    Uses whisper.cpp with Dynamic Time Warping on attention weights — no separate language model. Works for Dutch without a wav2vec2 model. Integrates directly with `toCaptions()`.
