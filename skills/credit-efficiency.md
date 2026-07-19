@@ -122,8 +122,8 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Hailuo 02 I2V (6s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.437** ($0.0728/sec × 6s) | No audio param — NOTE: $0.28 flat was fal.ai price, AIMLAPI is per-second |
 | Hailuo 02 I2V (10s) | `minimax/hailuo-02` | 1080p (9:16 ✓) | **$0.728** ($0.0728/sec × 10s) | NOT the cheapest — Hailuo 2.3 Fast wins at $0.416/10s; DO NOT USE |
 | Hailuo 2.3 Fast | `minimax/hailuo-2.3-fast` | 1080p 24fps | **$0.0416/sec** ($0.416/10s flat — corrected 2026-05-19) | 5s = $0.208 — **cheapest non-char clip at ALL durations** (beats LTXV 2 Fast) |
-| LTXV 2 Fast I2V | `ltxv/ltxv-2-fast` | 1080p | **$0.052/sec on AIMLAPI** (CONFIRMED 2026-06-14) | ⚠️ **AUTO-ROUTING TODAY (2026-07-15, SC213):** As of July 15, LTX's API auto-routes `ltx-2-fast` calls to `ltx-2-3-fast` at same price — `ltxv/ltxv-2-fast` on AIMLAPI now silently uses LTX-2.3 quality. Drop-in compatible. **String will ERROR after August 15 unless AIMLAPI adds `ltxv/ltxv-2-3-fast`.** Monitor AIMLAPI docs. Hailuo 2.3 Fast ($0.0416/sec) remains production fallback. |
-| LTXV 2 Standard I2V | `ltxv/ltxv-2` | 1080p | **$0.06/sec** ($0.36/6s min) | ⚠️ Same auto-routing + August 15 removal risk as LTXV 2 Fast. Do not use until AIMLAPI adds new string. |
+| LTXV 2 Fast I2V | `ltxv/ltxv-2-fast` | 1080p | **$0.052/sec on AIMLAPI** (CONFIRMED, unchanged July 2026) | ⚠️ **URGENT: 27 days to Aug 15 deprecation (2026-07-19, SC227).** LTX-2 deprecated July 15 — string now auto-routes to LTX-2.3 quality at same price. **String WILL ERROR after Aug 15 unless AIMLAPI adds `ltxv/ltxv-2-3-fast`.** Monitor AIMLAPI docs by Aug 1. `generate_audio: false` confirmed working with LTX-2.3 routing. Hailuo 2.3 Fast ($0.0416/sec) is fallback if string errors. |
+| LTXV 2 Standard I2V | `ltxv/ltxv-2` | 1080p | **$0.06/sec** ($0.36/6s min) | ⚠️ Same August 15 removal risk as LTXV 2 Fast. Do not use until AIMLAPI adds new string. |
 | Luma Ray Flash 2 I2V | `luma/ray-flash-2` | 720p (9:16 ✓) | **~$0.048/sec** (~$0.24/5s, AIMLAPI $0.002/M pixels) | No audio generation, no surcharge risk — CANARY REQUIRED. I2V + first+last frame. Max 9s. |
 | Grok Imagine Video 1.5 I2V/R2V | `xai/grok-imagine-video` | 720p (9:16 ✓) | **~$0.104/sec 480p** (~$0.52/5s); **~$0.182/sec 720p** (~$0.91/5s) — CORRECTED 2026-06-18. Audio always generated — strip required. WIDE RELEASE June 17. CANARY REQUIRED. |
 | Seedance 2.0 Fast | `bytedance/seedance-2-0-fast` | TBD | **$0.316/sec ($1.58/5s — CONFIRMED 2026-06-30)** | **DO NOT USE** — more expensive than Kling Pro ($1.46/5s) at corrected price. Standard = $0.394/sec ($1.97/5s), also DO NOT USE. Face content-policy block risk. |
@@ -550,13 +550,15 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 
 ### LTXV 2 Fast (`ltxv/ltxv-2-fast`) — LIVE on AIMLAPI, PRICING CONFIRMED 2026-06-14
 
+⚠️ **DEPRECATION URGENT — 27 DAYS LEFT (as of 2026-07-19):** LTX-2 deprecated July 15 (confirmed, already happened). `ltxv/ltxv-2-fast` now auto-routes to LTX-2.3 quality. **String WILL ERROR after August 15, 2026** unless AIMLAPI adds `ltxv/ltxv-2-3-fast`. As of July 19, AIMLAPI has NOT added the new string. **Action: check docs.aimlapi.com for new LTXV string by Aug 1. If not live by Aug 10 → escalate to owner, route all non-char I2V to Hailuo 2.3 Fast until resolved.** Good news: LTX-2.3 auto-routing is drop-in compatible — quality improved (22B params) at same cost. `generate_audio: false` confirmed working with LTX-2.3 routing (2026-07-19, SC227).
+
 Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-character I2V option for 6s+ clips where composition anchoring is needed.**
 
-**Pricing: $0.052/sec on AIMLAPI (CONFIRMED 2026-06-14, AIMLAPI pricing page).** fal.ai charges $0.04/sec; AIMLAPI's markup brings it to $0.052/sec. This resolves the long-running canary question. 6s = $0.312, 10s = $0.52. 1440p = higher cost.
+**Pricing: $0.052/sec on AIMLAPI (CONFIRMED 2026-06-14, unchanged July 2026).** fal.ai charges $0.04/sec; AIMLAPI's markup brings it to $0.052/sec. Lightricks native API raised to $0.06/sec after April 1 but fal.ai (and AIMLAPI) kept old rate. 6s = $0.312, 10s = $0.52. 1440p = higher cost.
 
-**Model strings (AIMLAPI confirmed):**
-- I2V: `ltxv/ltxv-2-fast`
-- Standard (slower, higher quality): `ltxv/ltxv-2`
+**Model strings (AIMLAPI confirmed — use until Aug 15):**
+- I2V: `ltxv/ltxv-2-fast` (auto-routes to LTX-2.3 quality since 2026-07-15)
+- Standard (slower, higher quality): `ltxv/ltxv-2` (same August 15 removal risk)
 
 **Parameters:**
 - `image_url` — anchor frame for I2V (snake_case like Kling, NOT camelCase like Veo)
@@ -564,8 +566,10 @@ Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-cha
 - `aspect_ratio: "9:16"` — vertical output (snake_case confirmed)
 - `duration` — 6-20 seconds with frame-level precision (MINIMUM 6s — no 5s option)
 - `resolution: "1080p"` — default; also supports 1440p, 2160p at higher cost
-- `generate_audio: false` — CRITICAL: disable audio (snake_case, same as Kling; audio defaults ON)
+- `generate_audio: false` — CRITICAL: disable audio (snake_case, same as Kling; audio defaults ON). ✓ Confirmed working with LTX-2.3 routing (2026-07-19)
 - `seed` — supported for reproducibility
+
+**LTX-2.3 improvements (via auto-routing since July 15):** 22B parameters (vs LTX-2), better physics and motion quality, native synchronized audio capability (audio-off still supported via `generate_audio: false`). No prompt or parameter changes needed — drop-in.
 
 **Use case:** Non-character I2V shots (6s+ clips) where the anchor frame is needed for composition control. I2V capability gives it a role when Hailuo 2.3 Fast (T2V only) cannot be used. DO NOT use for character face shots or when T2V is sufficient.
 
@@ -652,7 +656,7 @@ Note: "Kling v4" does not exist. Our production strings remain `klingai/video-v3
 
 **Turbo Pro final-pass savings (if canary passes):** 1 character + 1 truck final: saves ~$1.10/video ($1.46 → $0.91 × 2 clips). Requires InsightFace cosine similarity ≥ 95% vs v3 Pro baseline before routing finals here. Subject Binding (elements parameter) is supported in Turbo Pro (confirmed — "enhanced subject consistency" for faces and brand assets).
 
-**Kling O3/Omni and v3 Motion Control are still NOT on AIMLAPI as of June 2026.** See `generation-video.md` for full Turbo canary checklist and per-tier parameter details.
+**Kling O3/Omni and v3 Motion Control are still NOT on AIMLAPI as of July 2026 (reconfirmed SC227 2026-07-19).** Kling Omni received a June 17 upgrade (4K editing, 3-15s clips, better consistency) but remains unavailable on AIMLAPI. See `generation-video.md` for full Turbo canary checklist and per-tier parameter details.
 
 ---
 
