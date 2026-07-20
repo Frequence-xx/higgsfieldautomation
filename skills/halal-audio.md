@@ -715,8 +715,23 @@ ffmpeg -i final_output.mp4 \
 
 **Or use ffmpeg-normalize (pip install ffmpeg-normalize):**
 ```bash
-ffmpeg-normalize final_output.mp4 -t -14 --true-peak -1.5 -c:a aac -b:a 192k -o final_output_normalized.mp4
+# Current recommended command (v1.40.0+):
+# --threshold 1.0 skips re-encode if file is already within 1 LUFS of target (saves time on re-runs)
+# -c:a aac kept explicit for consistent 192k quality (auto-selected by v1.41.0+ but keep for control)
+ffmpeg-normalize final_output.mp4 -t -14 --true-peak -1.5 \
+  -c:a aac -b:a 192k \
+  --threshold 1.0 \
+  -o final_output_normalized.mp4
 ```
+
+**ffmpeg-normalize version history (pipeline-relevant — latest: v1.41.1, July 10, 2026):**
+- v1.38.0 (June 20, 2026): No longer writes temporary files — less disk I/O, faster pipeline on constrained storage
+- v1.39.0 (June 27, 2026): `--keep-mtime` preserves input modification timestamps; bit depth preservation is now ON by default (lossless input files no longer silently lose bit depth)
+- v1.40.0 (June 27, 2026): `--threshold DELTA` skips already-normalized files (set to 1.0 LUFS tolerance); `--print-stats` per-file output now includes `normalized`/`skipped`/`error` status; non-zero exit code if any file fails — scripts can now detect failure without parsing logs
+- v1.41.0 (June 29, 2026): Auto-selects output audio codec from container type (PCM for containers that support it, otherwise container default) — `-c:a aac` is now optional for MP4 output, but keep it explicit here for quality control at 192k
+- v1.41.1 (July 10, 2026): Windows-only console window fix — no change for Linux/Mac pipeline
+
+**Practical `--threshold` rule:** Use `--threshold 1.0` on all batch normalization runs. Files already at -14 ±1 LUFS pass through without re-encoding — no quality degradation, saves time on partial re-runs.
 
 ---
 
@@ -869,6 +884,9 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
 | `[pauses]` tag in old scripts not working | Official ElevenLabs form is `[pause]` (no 's') — `[pauses]` may be silently ignored | Update scripts to use `[pause]` (confirmed canonical form from official ElevenLabs blog posts). Both may work but test on Willem to confirm. |
 | `[confident]` / `[direct]` ignored on Willem | These are unconfirmed tags; Willem may not respond | Substitute with confirmed `[deliberate]` — same professional pacing effect, confirmed in official ElevenLabs delivery control category. |
+| ffmpeg-normalize re-encodes already-normalized master (wastes time on re-runs) | No skip threshold set — tool re-encodes even if file is already at target LUFS | Add `--threshold 1.0` to the command (v1.40.0+, June 27, 2026). Files already within ±1 LUFS of -14 are copied unchanged. See §4f. |
+| ffmpeg-normalize script exits 0 even when files fail | Old versions (pre-v1.40.0) did not set non-zero exit on per-file failure | Upgrade to v1.40.0+. Now exits non-zero if any file fails — pipeline scripts can check `$?` for batch run health. |
+| ffmpeg-normalize writing large temp files to disk fills pipeline storage | Old versions (pre-v1.38.0) used temporary files during processing | Upgrade to v1.38.0+ — temp files removed; in-place processing. If on constrained storage (see disk check gate in CLAUDE.md), this upgrade is high priority. |
 
 ---
 
