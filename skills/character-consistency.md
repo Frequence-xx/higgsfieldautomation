@@ -660,11 +660,13 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 **Unverified on AIMLAPI as of 2026-06-19:** `kling_elements` passthrough on v3-standard-turbo. Run one draft before relying on it for character binding. If elements are silently ignored, fall back to Kling O1 reference-to-video for drafts.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-06-27)
+## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-07-20)
 
 Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-18 (pass 33 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
+
+**O3 not on AIMLAPI as of 2026-07-20 (pass 34 recheck).** O3 confirmed on Runware, fal.ai, Atlas Cloud. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -796,7 +798,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 33 recheck, 2026-07-18):** `alibaba/wan-2-7-r2v` is still NOT live on AIMLAPI. docs.aimlapi.com documents `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` but no dedicated Wan 2.7 R2V page. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh) have Wan 2.7 R2V live — AIMLAPI is the notable holdout. Do not canary-test until a docs page appears at docs.aimlapi.com. Fall back to Wan 2.6 R2V or Kling O1.
+**Wan 2.7 R2V status on AIMLAPI (pass 34 recheck, 2026-07-20):** `alibaba/wan-2-7-r2v` is still NOT live on AIMLAPI. docs.aimlapi.com documents `wan-2.7-image-to-video` and `wan-2.6-reference-to-video` but no dedicated Wan 2.7 R2V page. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh) have Wan 2.7 R2V live — AIMLAPI is the notable holdout. Do not canary-test until a docs page appears at docs.aimlapi.com. Fall back to Wan 2.6 R2V or Kling O1.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
@@ -832,6 +834,23 @@ Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrad
 **ConsID-Gen — Research Validation (arXiv 2602.10113, CVPR 2026, code released):** View-Consistent and Identity-Preserving I2V generation. Code: github.com/eBay/ConsID-Gen. Curated dataset: ConsIDVid (Hugging Face: `mingyang-wu/ConsIDVid`). Core mechanism: augments the generation's first frame with **unposed auxiliary views** (multi-angle renders of the subject), then fuses semantic identity cues + geometric/structural cues via a dual-stream visual-geometric encoder and text-visual connector into a DiT backbone. Outperforms Wan2.1 and HunyuanVideo on identity fidelity and temporal coherence under real-world viewpoint variation. Accepted CVPR 2026 + associated VGBE 2026 challenge winner.
 
 **Production implication for our pipeline (pass 31 finding, 2026-07-15):** ConsID-Gen confirms architecturally WHY our multi-angle reference strategy (front + 3/4 + profile + face crop) works: these angles are exactly the "unposed auxiliary views" that provide geometric + structural cues at varied viewpoints. The "dual-stream" (semantic ID + geometric structure) parallels our combination of texture-preserving references (full-body front) and structure-isolating references (tight face crop). No AIMLAPI endpoint — research only. Monitor for hosted API — if a ConsID-Gen-based I2V endpoint appears, it would excel at identity lock through camera moves (pan + zoom shots) where single-angle Kling O1 tends to drift.
+
+**Stand-In — Future Watch (arXiv 2508.07901, August 2025, code released):** Lightweight plug-and-play identity control for video generation. Code: github.com/cainstudios/stand-in. Weights: HuggingFace `BowenXue/Stand-In`. Backbone: **Wan2.1-14B-T2V**. Key innovation: adds only **1% additional parameters** to the base model via a conditional image branch + restricted self-attention with conditional position mapping. VRAM follows Wan2.1-14B requirements (~40–50 GB FP8, ~70 GB BF16).
+
+**Practical implications for our pipeline (pass 34 finding, 2026-07-20):**
+1. **Validates differential prompt rule:** Stand-In's own inference guide recommends using generic descriptors ("a man", "a woman") rather than character-specific text — avoid re-describing attributes already shown in the reference image. Identical to our existing Step 3a policy.
+2. **Limitation: frontal + medium-to-close-up videos only.** Stand-In does not reliably preserve identity in wide shots or strong profile angles. Our multi-angle ref strategy via Kling O1 handles this — Stand-In would only replace it if its hosted API targets close-up character shots.
+3. **Face swapping listed as experimental** — not a replacement for FaceFusion fallback in production.
+4. No AIMLAPI endpoint. When Wan2.1-based endpoints expand on AIMLAPI, Stand-In-style adapters may appear as options.
+
+**WildActor — Future Watch (arXiv 2603.00586, March 2026, code released):** Full-body identity consistency across unconstrained viewpoints and motions. Code: github.com/WildActor/WildActor. Dataset: Actor-18M (1.6M videos, 18M human images). Benchmark: Actor-Bench.
+
+Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tokens query identity cues from reference tokens, but reference tokens remain isolated from noisy backbone features. This unidirectional flow preserves identity fidelity while allowing free motion generation. Coupled with **Viewpoint-Adaptive Monte Carlo Sampling** for handling large viewpoint transitions.
+
+**Practical implications for our pipeline (pass 34 finding, 2026-07-20):**
+1. **Validates differential prompt rule architecturally:** AIPA's unidirectional design (identity flows reference→video only, not bidirectionally) is the architectural proof that text prompts should contain ONLY action+camera, not character attributes — attributes in the text compete with the unidirectional identity flow.
+2. **Handles full-body viewpoint transitions** — WildActor is explicitly designed for the failure mode (large viewpoint transitions, substantial body motion) where Kling O1 elements binding tends to drift. When a WildActor-based API endpoint appears, prioritize testing for wide-shot and walking-away shots of Karel/Mourad.
+3. **No AIMLAPI endpoint** as of 2026-07-20. Monitor for hosted API — backbone is not Wan2.1 (uses its own dataset/model), so AIMLAPI adoption timeline is uncertain.
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
