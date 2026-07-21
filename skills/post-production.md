@@ -764,9 +764,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | v0.7.0 (2026-05-03) | v0.7.1 still in development — not released as of 2026-06-30 |
 | SVT-AV1 | **v4.2.0 (2026-07-13)** | New: `--tune-vmaf` (~15% VMAF BD-rate gain for VOD/archive); CBR Kalman-filter rate control; ARM NEON/SVE2 kernels. Pipeline commands (§5h) unchanged — `-svtav1-params tune=0` (VQ) remains correct. See SC221 update. |
-| Remotion | **v4.0.491 (released 2026-07-18)** | `@remotion/effects` now has **50+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.495 (released 2026-07-20)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC235 update (2026-07-21):** **Remotion advanced to v4.0.495 (released 2026-07-20).** Four releases since SC228 (v4.0.491). (1) **v4.0.492:** `muted` prop added to `<Video>` schema — use `muted` on embedded video clips to silence source audio when layering independent SFX/voiceover in Remotion compositions; negative video offset support in `<Sequence>` containers (allows offsetting a clip start time behind frame 0 for pre-roll/crossfade effects). (2) **v4.0.493:** Studio-only (composition inspector metadata editing, keyframe copy/paste, single-node drag) — no pipeline impact. (3) **v4.0.494:** **Sequence opacity preservation fix** — prior bug where `<Sequence>` opacity did not correctly persist while the sequence was active; now fixed. **Pipeline impact:** If any caption overlay or branded layer composition uses `opacity` on a `<Sequence>` wrapper for fade-in/fade-out, upgrade to ≥ v4.0.494. AnimatedImage component now supports WebP animated files (auto-inserted by Studio; can be used for simple animated brand elements). (4) **v4.0.495:** Studio improvements (Figma paste, SVG drag-and-drop, composition inspector) — no pipeline impact. **Previously undocumented effects** confirmed in package: `wave()` (sine-wave distortion) and `noiseDisplacement()` (localized noise-based pixel displacement) — documented in new §11m below. **All other tools unchanged:** FFmpeg 8.1.2, SVT-AV1 v4.2.0, rife-ncnn-vulkan v20250112, PySceneDetect v0.7.0 stable (v0.7.1.dev0 pre-release, not stable).
 
 **SC228 update (2026-07-19):** **Remotion v4.0.491 released 2026-07-18.** Three pipeline-relevant changes: (1) Two new `@remotion/effects` additions — `liquidContours()` (WebGL2 procedural organic/fluid contour pattern; see §11l) and `skew()` (perspective skew transform; see §11l). (2) `@remotion/media` marked **stable** — was previously experimental/alpha; our pipeline was already using it as the recommended path, no code change needed. (3) **Remotion's bundled FFmpeg binary removes `--enable-nonfree`** — drops `libfdk_aac` AAC encoder from Remotion's own compositor binary. **Pipeline impact: zero** — our pipeline uses system FFmpeg (CLI), not Remotion's bundled binary, for all audio encoding. We use the built-in `aac` encoder (`-c:a aac`), which does not require `--enable-nonfree`. If any Remotion composition outputs audio via Remotion's compositor (not our FFmpeg post-step), it was already using the built-in aac encoder anyway. No action required. All other tools unchanged: FFmpeg 8.1.2, SVT-AV1 v4.2.0, rife-ncnn-vulkan v20250112, PySceneDetect v0.7.0 stable (v0.7.1 still in dev).
 
@@ -1446,6 +1448,73 @@ import { skew } from "@remotion/effects";
 
 ---
 
+### 11m. `@remotion/effects` — `wave()` and `noiseDisplacement()` (SC235 — Previously Undocumented)
+
+These effects ship in the `@remotion/effects` package (available since launch at v4.0.464) but were never documented in this skill. Confirmed present in v4.0.495.
+
+---
+
+**`wave()`** — applies a sine-wave distortion to the frame, bending content as if seen through rippling water or a warped lens. Useful for stylized intro/outro transitions or to add organic motion to otherwise static title cards.
+
+```tsx
+import { wave } from "@remotion/effects";
+
+// Subtle horizontal wave on a title card — organic, handcrafted feel
+<AbsoluteFill style={{
+  filter: wave({ amplitude: 10, wavelength: 80, speed: 0 }),
+}} />
+
+// Animated wave — drive speed with frame counter for flowing motion
+import { useCurrentFrame } from "remotion";
+const frame = useCurrentFrame();
+<AbsoluteFill style={{
+  filter: wave({ amplitude: 8, wavelength: 60, speed: frame * 0.05 }),
+}} />
+```
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `amplitude` | `number` | — | Vertical displacement in pixels; higher = more dramatic wave |
+| `wavelength` | `number` | — | Horizontal period of the wave in pixels; higher = broader, slower undulation |
+| `speed` | `number` | `0` | Phase offset — animate by multiplying `useCurrentFrame()` for flowing wave |
+
+**Snelverhuizen use cases:**
+- Static `speed: 0` on an end-frame title card for an organic, non-flat look (pair with `paper()` for handcrafted feel)
+- Animated wave intro (speed = frame × 0.05) on the opening brand-color background (`<LiquidContours>`) for ambient motion — avoid on character/truck shots
+- **NOT for any shot showing faces, the truck, or boxes** — wave distortion on subjects looks like a technical defect
+
+---
+
+**`noiseDisplacement()`** — displaces pixels based on a Perlin noise field, creating an irregular, organic shimmering/trembling effect. Different from `wave()` (regular sine pattern) — `noiseDisplacement()` is irregular and randomized per pixel.
+
+```tsx
+import { noiseDisplacement } from "@remotion/effects";
+
+// Subtle shimmer on a branded title card — feels alive without obvious motion
+<AbsoluteFill style={{
+  filter: noiseDisplacement({ strength: 5, scale: 0.01, seed: 42 }),
+}} />
+```
+
+| Parameter | Type | Notes |
+|-----------|------|-------|
+| `strength` | `number` | Displacement intensity in pixels. 3–8 = subtle shimmer; 15+ = visibly distorted |
+| `scale` | `number` | Noise frequency. Lower = larger, broader displacement blobs; higher = tighter, grainier |
+| `seed` | `number` | Deterministic seed — same seed produces same pattern; vary per composition to avoid identical looks |
+
+**Snelverhuizen use cases:**
+- `strength: 4, scale: 0.008` on a title-card background layer for a barely-visible living texture — heat-haze effect on end frame
+- `strength: 8` on an intro freeze-frame (static frame held 0.5s) to add organic life before cut to action
+- **NOT on character close-ups or truck shots** — irregular pixel displacement reads as video compression corruption
+
+**When to use `wave()` vs `noiseDisplacement()`:**
+- `wave()` — regular, rhythmic undulation; use for cinematic ripple or flowing reveal
+- `noiseDisplacement()` — irregular, random; use for organic "living" texture or heat-distortion on still frames
+
+**Note:** Both require WebGL2. Remotion renderer supports WebGL2 natively — no extra config needed.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1468,8 +1537,10 @@ Before marking video as delivered:
 - [ ] VMAF score ≥ 90 vs pre-export reference (if libvmaf available) — see §7
 - [ ] AV1 archive: use SVT-AV1 v4.2.0 (released 2026-07-13) — `-svtav1-params tune=0` (VQ, perceptual) — NOT tune=3 (AVIF/still-image only). New in v4.2: `--tune-vmaf` flag (~15% VMAF BD-rate gain) but only via standalone binary, not FFmpeg libsvtav1 — pipeline commands unchanged. SVT-AV1-PSY fork archived Feb 2026; mainline SVT-AV1 4.2 + tune=0 is correct path. See §5h.
 - [ ] Brand badge overlays: prefer `drawvg` (§10) + `drawtext` chain in FFmpeg 8.1+ for exact #FC8434 pill shapes without Remotion — use `setcolor #FC8434` (direct hex, preferred) or `setrgba`, then `roundedrect`/`fill` (NOT `set_source_rgb`/`rectangle`)
-- [ ] Remotion v4.0.491 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames); use `glow()` for warm brand-color bloom on orange badge/CTA elements (radius=15–25, intensity=1.5–2, threshold=0.5–0.7, color='#FC8434'); use `duotone()` for stylized brand-color end/title frames only (darkColor='#1a1a2e', lightColor='#FC8434', threshold=0.45) — NOT on character/truck shots; use `pixelate()` animated sharpen-in reveal (blockSize 60→1 over 12 frames); use `linearProgressivePixelate()` (v4.0.490, §11k) for directional pixelation reveals (blockSizeAtEnd=30–40, 15-frame animate-in) or partial-frame graphic treatments; use `@remotion/rough-notation` for static sketch-style annotations on title cards (color='#FC8434', show={true} only — no animation); use `<LiquidContours>` / `liquidContours()` (v4.0.491, §11l) for branded organic-pattern title card backgrounds (firstColor='#FC8434', secondColor='#1a1a2e' — animate offsetX slowly for ambient drift, never on character/truck shots); use `skew()` (v4.0.491, §11l) for kinetic forward-lean on CTA pills and headline text layers (x: 8–15°, keep under ±30 — never on face/character layers) — see §11a, §11c, §11d, §11f, §11g, §11h, §11i, §11j, §11k, §11l
-- [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to v4.0.488 if affected
+- [ ] Remotion v4.0.491 effect options: use `radialProgressiveBlur()` for cinematic DOF vignette on character close-ups (center on face, endBlur=20–30px); use `linearProgressiveBlur()` for caption-bar blur on light backgrounds; use `linearGradient()` for dark scrim behind captions or #FC8434 brand accent (startColor/endColor with alpha); use `cornerPin()` for perspective overlays on truck surfaces (UV coords 0–1 range); use `venetianBlinds()` for truck/scene reveal transitions (direction='horizontal', slats=8, drive progress 0→1 over ~12 frames); use `paper()` for organic film-grain texture on title cards (seed param, apply at low opacity); use `roughenEdges()` for torn-edge badge/overlay looks (border 15–25 subtle, 40+ dramatic); use `zoomBlur()` for impact/reveal transition punch-ins (strength 0.6–0.8, drive to 0 over ~6 frames); use `glow()` for warm brand-color bloom on orange badge/CTA elements (radius=15–25, intensity=1.5–2, threshold=0.5–0.7, color='#FC8434'); use `duotone()` for stylized brand-color end/title frames only (darkColor='#1a1a2e', lightColor='#FC8434', threshold=0.45) — NOT on character/truck shots; use `pixelate()` animated sharpen-in reveal (blockSize 60→1 over 12 frames); use `linearProgressivePixelate()` (v4.0.490, §11k) for directional pixelation reveals (blockSizeAtEnd=30–40, 15-frame animate-in) or partial-frame graphic treatments; use `@remotion/rough-notation` for static sketch-style annotations on title cards (color='#FC8434', show={true} only — no animation); use `<LiquidContours>` / `liquidContours()` (v4.0.491, §11l) for branded organic-pattern title card backgrounds (firstColor='#FC8434', secondColor='#1a1a2e' — animate offsetX slowly for ambient drift, never on character/truck shots); use `skew()` (v4.0.491, §11l) for kinetic forward-lean on CTA pills and headline text layers (x: 8–15°, keep under ±30 — never on face/character layers); use `wave()` (§11m) for sine-wave distortion on title card backgrounds (static speed=0 for organic texture, animated for flowing ripple — never on faces/truck); use `noiseDisplacement()` (§11m) for irregular living texture on freeze-frame or end-frame backgrounds (strength 3–8 subtle, 15+ distorted — never on character shots) — see §11a, §11c, §11d, §11f, §11g, §11h, §11i, §11j, §11k, §11l, §11m
+- [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to ≥ v4.0.488 if affected
+- [ ] Remotion Sequence opacity: if any `<Sequence>` wrapper uses `opacity` for fade-in/fade-out on caption overlays or branded layers, upgrade to ≥ v4.0.494 (fixed Sequence opacity preservation while active — prior versions did not maintain opacity correctly)
+- [ ] Remotion Video muted prop (v4.0.492+): when embedding video clips in Remotion compositions, use `<Video muted>` to silence source audio when layering independent SFX/voiceover above
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
 - [ ] Delivery to owner: WhatsApp **Document** share (not video message) for lossless 2GB delivery
 - [ ] Final video watched end-to-end before delivery (MANDATORY per CLAUDE.md)
