@@ -708,11 +708,19 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.496 (July 21, 2026):**
+- Studio layout refinements; asset opening in new windows; HtmlInCanvas fallback rendering fixes in web-renderer; prevent parentheses around wrapped assets in studio-server.
+- **No changes to `@remotion/captions` API.**
+- `npm install remotion@4.0.496`.
+
+**Remotion v4.0.495 (July 20, 2026):**
+- Studio: Figma paste/SVG paste support; composition inspector actions; nested sequence reordering fix; image metadata in asset inspector; split-clip action; open existing render output. Direct premounting for Video/Audio; seek when adjusting trim points.
+- **No changes to `@remotion/captions` API.**
+
 **Remotion v4.0.494 (July 19, 2026):**
 - **Fixed "Preserve Sequence opacity while active"** — Previously, opacity applied at the `<Sequence>` level was not reliably preserved while the sequence was playing. This affected caption fade-out animations where opacity was set directly on `<Sequence style={{ opacity: ... }}>` rather than on the inner component. If you use opacity on `<Sequence>` for caption page fades, upgrade to 4.0.494. Workaround for older versions: apply opacity inside the child component instead.
 - Fix AnimatedImage playback rate; Keep interactive components visible with negative offsets (Studio only).
 - **No changes to `@remotion/captions` API.**
-- `npm install remotion@4.0.494`.
 
 **Remotion v4.0.493 (July 19, 2026):**
 - Composition metadata editing in inspector; connected composition navigation; keyframe copy/paste (Studio only).
@@ -759,7 +767,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.494 — confirmed current as of 2026-07-20; no caption API changes in 4.0.485–4.0.494)
+### Full API (v4.0.496 — confirmed current as of 2026-07-22; no caption API changes in 4.0.485–4.0.496)
 
 | Export | Purpose |
 |--------|---------|
@@ -1007,6 +1015,17 @@ Always set `whiteSpace: 'pre'` on the caption container. Spaces are used as deli
 - CTA button style: `borderRadius: 24` (fully rounded, pill shape)
 
 If FFmpeg compositing is required without Remotion, generate a rounded-rect PNG background per phrase at pre-render time (ImageMagick or Pillow), then overlay it on video with `ffmpeg -i video -i pill.png -filter_complex [0][1]overlay=...`.
+
+### FFmpeg 8.0 Built-in Whisper Filter — NOT for word-level captions
+
+FFmpeg 8.0 "Huffman" (August 2025, current stable: 8.1.1 released May 4, 2026) added a native `whisper` audio filter that performs ASR transcription inside FFmpeg itself using whisper.cpp. **Do NOT use this for Snel Verhuizen caption pipeline.** Reason: it outputs segment-level SRT/JSON only — no word-level timestamps, no word-by-word highlighting. Suitable only for basic subtitle overlays without per-word orange highlight. Our pipeline requires word-level timestamps from Options A/B/C above.
+
+```bash
+# What FFmpeg 8.0 whisper filter does (context only — not for our pipeline):
+# ffmpeg -i voiceover.wav -af "whisper=model=path/to/ggml-large-v3-turbo.bin:language=nl" output.srt
+# → produces segment-level SRT, timestamps at phrase level, not word level
+# → word-by-word orange highlight is impossible with this output
+```
 
 ### ASS Karaoke — FFmpeg-Native Fallback (No Remotion)
 
