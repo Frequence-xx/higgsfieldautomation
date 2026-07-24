@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-16, no newer release)
+   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-24, no newer release)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -370,7 +370,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    }
    ```
 
-   Version: 4.0.494 (confirmed July 20, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+   Version: 4.0.498 (confirmed July 24, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
    **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
    Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
@@ -708,10 +708,18 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.498 (July 23, 2026):**
+- Core: SwiftShader fallback (v5.0 preview); `trimBefore` sequence freeze interaction fix; `@remotion/paths` and Next.js template updates; `@remotion/media` and `@remotion/renderer` changes.
+- **No changes to `@remotion/captions` API.**
+- `npm install remotion@4.0.498`.
+
+**Remotion v4.0.497 (July 23, 2026):**
+- Studio: background color editing, direct premounting for image components, timeline asset-drop support; `@remotion/transitions`, `@remotion/gif`, and `@remotion/cli` changes.
+- **No changes to `@remotion/captions` API.**
+
 **Remotion v4.0.496 (July 21, 2026):**
 - Studio layout refinements; asset opening in new windows; HtmlInCanvas fallback rendering fixes in web-renderer; prevent parentheses around wrapped assets in studio-server.
 - **No changes to `@remotion/captions` API.**
-- `npm install remotion@4.0.496`.
 
 **Remotion v4.0.495 (July 20, 2026):**
 - Studio: Figma paste/SVG paste support; composition inspector actions; nested sequence reordering fix; image metadata in asset inspector; split-clip action; open existing render output. Direct premounting for Video/Audio; seek when adjusting trim points.
@@ -767,7 +775,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.496 — confirmed current as of 2026-07-22; no caption API changes in 4.0.485–4.0.496)
+### Full API (v4.0.498 — confirmed current as of 2026-07-24; no caption API changes in 4.0.485–4.0.498)
 
 | Export | Purpose |
 |--------|---------|
@@ -1018,7 +1026,7 @@ If FFmpeg compositing is required without Remotion, generate a rounded-rect PNG 
 
 ### FFmpeg 8.0 Built-in Whisper Filter — NOT for word-level captions
 
-FFmpeg 8.0 "Huffman" (August 2025, current stable: 8.1.1 released May 4, 2026) added a native `whisper` audio filter that performs ASR transcription inside FFmpeg itself using whisper.cpp. **Do NOT use this for Snel Verhuizen caption pipeline.** Reason: it outputs segment-level SRT/JSON only — no word-level timestamps, no word-by-word highlighting. Suitable only for basic subtitle overlays without per-word orange highlight. Our pipeline requires word-level timestamps from Options A/B/C above.
+FFmpeg 8.0 "Huffman" (August 2025, current stable: 8.1.2 released June 17, 2026) added a native `whisper` audio filter that performs ASR transcription inside FFmpeg itself using whisper.cpp. **Do NOT use this for Snel Verhuizen caption pipeline.** Reason: it outputs segment-level SRT/JSON only — no word-level timestamps, no word-by-word highlighting. Suitable only for basic subtitle overlays without per-word orange highlight. Our pipeline requires word-level timestamps from Options A/B/C above.
 
 ```bash
 # What FFmpeg 8.0 whisper filter does (context only — not for our pipeline):
