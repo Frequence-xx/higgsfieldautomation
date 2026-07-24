@@ -62,7 +62,7 @@ No music. No instruments. Ever. Audio is restricted to:
 | **language_code** | **"nl"** | Always set explicitly for Dutch scripts. Ensures Dutch text normalisation rules apply (numbers, dates, phone numbers). Without this, "085 3331133" may be pronounced with English digit names. |
 | **apply_text_normalization** | **"on"** | Force Dutch text normalisation ON (not "auto"). Spells out numbers and phone numbers in Dutch. Critical for scripts containing "085 3331133". |
 
-**`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.53.0+, stable through v2.58.0, July 13 2026; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
+**`speed` note:** passed inside `VoiceSettings(speed=0.95)` (confirmed in SDK v2.53.0+, stable through v2.59.0, July 22 2026; `VoiceSettings` has `speed: Optional[float]`). Use EITHER `speed` for global rate control OR the `[slows down]` audio tag for per-phrase control — do not combine them, as stacking both creates unpredictable over-slowing on the tagged phrase.
 
 **eleven_v3 IPA inline pronunciation for Dutch brand names (confirmed, June 2026):** eleven_v3 natively understands IPA symbols wrapped in forward slashes directly in the text string. Use this when `apply_text_normalization="on"` still mispronounces a Dutch proper noun. Pronunciation dictionaries (`client.pronunciation_dictionaries.create_from_rules()`) also work with eleven_v3 for persistent project-wide rules. Consistency: 80–90% (not 100% — always QA with Scribe v2).
 
@@ -341,6 +341,11 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `mp3_44100_64` | Low | Free+ | 44.1kHz/64kbps — not suitable for production mixing. Use `mp3_44100_128` or higher for any pipeline SFX. |
 | `mp3_44100_96` | Moderate | Free+ | 44.1kHz/96kbps — marginally acceptable for SFX library scratch storage; prefer `mp3_44100_128` for any delivered asset. |
 | `mp3_24000_48` | Low–moderate | Free+ | 24kHz/48kbps — better than default 22kHz/32kbps; useful for quick preview renders where 44kHz is unnecessary overhead |
+| `pcm_8000` | Telephony PCM | Pro+ | 8kHz uncompressed — telephone quality; not suitable for video mixing. Present in AllowedOutputFormats (verified v2.59.0); use only for telephony/streaming integrations. |
+| `pcm_16000` | Low-rate PCM | Pro+ | 16kHz uncompressed — speech narrow-band; not suitable for video mixing. |
+| `pcm_22050` | Low-rate PCM | Pro+ | 22.05kHz uncompressed — AM radio quality; not suitable for production mixing. |
+| `pcm_24000` | Mid-rate PCM | Pro+ | 24kHz uncompressed — acceptable for preview-only use; use `pcm_44100` or `pcm_48000` for production. |
+| `pcm_32000` | Mid-rate PCM | Pro+ | 32kHz uncompressed — acceptable for preview-only use; use `pcm_44100` or `pcm_48000` for production. |
 | `alaw_8000` | Telephony | Free+ | A-law 8kHz codec — telephony only; not suitable for video mixing |
 | `ulaw_8000` | Telephony | Free+ | µ-law 8kHz codec — telephony only; not suitable for video mixing. Listed alongside `alaw_8000` in AllowedOutputFormats; use only for telephony integrations requiring µ-law encoding. |
 | `pcm_44100` | Lossless (44.1kHz) | Pro+ | **Do NOT use for SFX v2 masters.** SFX v2 native rate is 48kHz — requesting pcm_44100 forces a 44.1kHz downsample, degrading quality vs. `pcm_48000`. `pcm_44100` is the correct lossless format for TTS (eleven_v3 native 44.1kHz), not for SFX v2. Always use `pcm_48000` for lossless SFX v2 masters. |
@@ -1131,6 +1136,8 @@ ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA
 **Two variants available (confirmed via SDK types):**
 - **REST batch**: `client.text_to_speech.text_to_dialogue.convert()` — one audio file per call. Up to 10 voice IDs, up to 2,000 chars total. Full VoiceSettings supported.
 - **WebSocket streaming (Multi)**: `TextToDialogueWebsocketClientMessageMulti` — real-time streaming variant for eleven_v3 dialogue (renamed to Multi in SDK v2.58.0). Up to 10 voices for `eleven_v3`, exactly 1 for `eleven_v3_conversational`. **Limitation:** only `stability` is supported in `TextToDialogueWebsocketVoiceSettings` (other VoiceSettings fields like similarity_boost, style, speed are unavailable). Has 20-second inactivity timer; send `keep_alive` messages for long pauses. Use `flush=True` to force output without closing the socket.
+
+**SDK v2.59.0 (July 22, 2026):** Added HMAC-signed post-call webhook config for on-prem conversations — no changes to TTS, SFX, VoiceSettings, AllowedOutputFormats, or any audio pipeline parameters. All audio API calls in this skill file are confirmed valid on v2.59.0.
 
 **SDK v2.58.0 (July 13, 2026) — Complete Multi WebSocket response types confirmed:**
 
