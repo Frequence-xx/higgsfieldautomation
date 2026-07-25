@@ -11,15 +11,15 @@
 
 | Audit | Score | Delta vs 2026-07-24 | Delta vs Baseline |
 |-------|-------|--------------------|-------------------|
-| Operator Performance | **2.86 / 5.0** | ↓ −0.17 | ↓ −0.99 |
-| Skill Library & Policy | **89.4%** (143/160) | ↑ +0.6% | ↓ −2.1% |
+| Operator Performance | **2.92 / 5.0** | ↓ −0.11 | ↓ −0.93 |
+| Skill Library & Policy | **89.5%** (143.25/160) | ↑ +0.7% | ↓ −2.0% |
 | Creative Output Quality | **4.07 / 5.0** | → 0.00 | ↓ −0.33 |
 
-**Three study cycles (SC244–SC246) since the 2026-07-24 audit. Operator score falls to 2.86/5.0 (−0.17) — the first regression after two consecutive windows of gains. The primary driver is a ROOT DB error recurrence: SC245 and SC246 log commits wrote to `pipeline.db` (repository root, 61 440 B) instead of `data/pipeline.db` (155 648 B). This breaks the 4-window ROOT-clean streak that was the main positive signal in the July 24 audit and causes the authoritative study_cycles database to diverge from the root copy (121 rows vs 64 rows).**
+**Four study cycles (SC244–SC247) since the 2026-07-24 audit. SC247 arrived during this audit run.** Operator score falls to 2.92/5.0 (−0.11) — first regression after two consecutive windows of gains. The primary driver is a ROOT DB error recurrence: **SC245 and SC246** log commits wrote to `pipeline.db` (repository root, 61 440 B) instead of `data/pipeline.db` (155 648 B), breaking the 4-window ROOT-clean streak. SC247 immediately corrects course — clean pair + study_log write — providing partial recovery but not reversing the window-level regression.
 
-**Skill content quality remains high:** SC244's Kling v3 parameter-trap documentation (legacy faceStrength/subjectStrength dropped, reference_strength is a UI slider not a raw param) is the strongest skill contribution this window. SC245 and SC246 provide accurate version tracking (Remotion 4.0.498, ElevenLabs SDK v2.59.0). Skills score reaches 89.4% (+0.6%).
+**Skill content quality is high across all four cycles:** SC244's Kling v3 parameter-trap documentation (legacy faceStrength/subjectStrength dropped; reference_strength is a UI slider not a raw API param) is the window's strongest technical contribution. SC247's Wan 2.7 R2V status upgrade from "canary-test recommended" to **"AIMLAPI blog-confirmed available"** is the highest-value intelligence addition — the R2V canary is now unblocked and should be run immediately.
 
-**Persistent structural blockers:** CLAUDE.md frozen for the 29th consecutive audit. ElevenLabs v1 model IDs are now 16 days past retirement (404 guaranteed). LTXV Aug-15 deadline is 21 days away with no alert in the routing matrix. study_cycles id=118 still contains "FFmpeg 9.0 confirmed as current stable" (false) — P0 from July 24 audit, unaddressed. study_log gap expanded from 7 to 10 absent cycles (SC244/245/246 did not write to study_log). Creative output: day 92 with no approved video.
+**Persistent structural blockers:** CLAUDE.md frozen for the 29th consecutive audit. ElevenLabs v1 model IDs are now 16 days past retirement (404 guaranteed). LTXV Aug-15 deadline is 21 days away with no alert in the routing matrix. study_cycles id=118 still contains "FFmpeg 9.0 confirmed as current stable" (false) — P0 from July 24 audit, unaddressed. study_log partial recovery: SC247 wrote id=41 (cycle=247) but SC244/245/246 absent (gap: 10 cycles). Creative output: day 92 with no approved video.
 
 ---
 
@@ -35,19 +35,21 @@ Git commits since `acd03df` (July 24 audit):
 | 8e0d69e | SC245 log: record study cycle 245 commit hash in pipeline.db | `pipeline.db` (ROOT) ❌ | ROOT ❌ | ❌ ROOT DB ERROR |
 | 4d14ab2 | SC246: Halal audio (pass 37) — SDK v2.59.0 confirmed, PCM low-rate formats added to table | `skills/halal-audio.md` only | — | ✓ CLEAN CONTENT |
 | 650b262 | SC246 log: record study cycle 246 commit hash in pipeline.db | `pipeline.db` (ROOT) ❌ | ROOT ❌ | ❌ ROOT DB ERROR |
+| 519c566 | SC247: Character consistency (pass 36) — Wan 2.7 R2V AIMLAPI blog-confirmed available, Kling O3 still not on AIMLAPI (2026-07-25 recheck), InfinityStory future watch added | `skills/character-consistency.md` only | — | ✓ CLEAN CONTENT |
+| 27035c2 | SC247 log: record study cycle 247 commit hash in pipeline.db | `data/pipeline.db` only | `data/` ✓ | ✓ CLEAN LOG |
 
-**Protocol compliance this window (SC244–SC246):**
-- Clean pairs: **SC244 = 1/1 (100%)**
-- ROOT DB errors: **SC245 = ❌ ROOT, SC246 = ❌ ROOT** — 2/3 cycles ROOT-broken
-- ROOT-clean streak: **BROKEN** — was 4 consecutive clean windows (per July 24 audit); now 0
-- Bundling: all three cycles single-skill content — no bundling issues
-- study_log: **0/3 new entries** — SC244/245/246 absent from study_log; gap extends from 7 to 10+ cycles
+**Protocol compliance this window (SC244–SC247):**
+- Clean pairs: **SC244 = ✓, SC247 = ✓** (2/4 = 50% strict)
+- ROOT DB errors: **SC245 = ❌ ROOT, SC246 = ❌ ROOT** — 2/4 cycles ROOT-broken
+- ROOT-clean streak: **BROKEN** — was 4 consecutive clean windows (per July 24 audit); SC247 returns to clean but the window-level streak is still broken
+- Bundling: all four cycles single-skill content — no bundling issues
+- study_log: **1/4 new entries** — SC247 wrote id=41 (cycle=247) to data/pipeline.db; SC244/245/246 absent
 
-**ROOT DB divergence state:**
-- `pipeline.db` (root, 61 440 B): 64 study_cycles rows, no study_log table
-- `data/pipeline.db` (155 648 B): 121 study_cycles rows, 40 study_log rows
-- The root DB has SC245 and SC246 entries; `data/` DB does NOT
-- A production session with working directory at repository root queries the 64-row DB and misses 57 study_cycles entries (half the pipeline's accumulated intelligence)
+**ROOT DB divergence state (after SC247 rebase):**
+- `pipeline.db` (root, 61 440 B): 64 study_cycles rows, no study_log table; SC245/246 present here
+- `data/pipeline.db` (155 648 B): 122 study_cycles rows (SC244 + SC247), 41 study_log rows
+- SC245/246 exist ONLY in root DB; not in `data/pipeline.db`
+- A production session with working directory at repository root queries the 64-row DB and misses SC244, SC247, and 57 other entries
 
 ---
 
@@ -75,8 +77,14 @@ Git commits since `acd03df` (July 24 audit):
 - **FFmpeg n8.1.2 still current (July 24, 2026):** No n8.1.3 or n8.2 tag on GitHub. ffmpeg-normalize v1.41.1 unchanged.
 - Protocol: ✓ CLEAN CONTENT / ❌ ROOT LOG — same ROOT DB error as SC245.
 
-**study_log gap (cycle 235–241 + 244–246 = 10 absent cycles):**
-Current state: study_log has 40 rows; most recent is id=40, cycle=242 (SC243 content, written 2026-07-23T18:13:49). SC244/245/246 all absent. Root causes: (1) write trigger did not fire for SC244 despite correct `data/` DB path; (2) SC245/246 log commits targeted root DB which has no study_log table. Seven prior absent cycles (235–241) remain unaddressed.
+**SC247** — `skills/character-consistency.md` (519c566, Sat Jul 25 06:07:52) — +4/−2 lines:
+- **Wan 2.7 R2V status upgraded: AIMLAPI blog-confirmed available.** AIMLAPI blog post (`aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model`) explicitly confirms "The R2V mode is available via the AI/ML API platform." Status upgraded from "canary-test recommended" to **"AIMLAPI blog-confirmed — canary before production"**. docs.aimlapi.com still has no dedicated R2V page, but blog + inference.sh listing (`alibaba/wan-2-7-r2v`) are consistent. Canary: `reference_images` param, Karel `front.png`, 720p, strip audio. **The Wan 2.7 R2V canary is now unblocked by evidence — run at next opportunity.**
+- **InfinityStory future watch added (Adobe Research / Meta AI / KAUST, arXiv 2603.03646):** Character-Aware Shot Transition module + Background-Consistent Generation Pipeline. Best VBench scores: Background Consistency 88.94, Subject Consistency 82.11. Confirms shot boundaries as highest identity-loss risk — validates our re-anchor-per-clip policy. Research only, no AIMLAPI endpoint.
+- **Kling O3 not on AIMLAPI as of 2026-07-25 (pass 36 recheck):** Date-stamp updated; confirmed O3 on fal.ai/Atlas Cloud/Krea/Runware but not AIMLAPI. Farouq AIMLAPI-only directive stands.
+- Protocol: ✓ CLEAN PAIR (skill-only content + `data/` log). study_log: **id=41 written** (cycle=247, 2026-07-25) — second write in 4 days after 10-cycle gap.
+
+**study_log gap (cycle 235–241 + 244–246 = 10 absent cycles; SC247 wrote successfully):**
+Current state: study_log has **41** rows; most recent is id=41, cycle=247 (2026-07-25). SC244/245/246 still absent. Root causes: (1) SC245/246 log commits targeted root DB which has no study_log table; (2) SC244 used correct data/ path but still no study_log entry — trigger gap independent of DB path. SC247 wrote successfully (same data/ path as SC244) — the trigger condition differs between SC244 and SC247, unclear why. Seven prior absent cycles (235–241) remain unaddressed. Total absent: 10 cycles.
 
 ---
 
@@ -115,9 +123,9 @@ Weights: Reasoning 20% · Execution 20% · Memory 15% · Reliability 20% · Inte
 | ROOT DB divergence | root `pipeline.db`: 64 rows; `data/pipeline.db`: 121 rows — a production session in the repo root misses 57 entries of pipeline intelligence | ❌ Structural risk |
 | CLAUDE.md frozen | 29th consecutive audit — zero structural updates | ❌ Critical structural |
 
-**Score: 2.2/5.0** (↓ −0.3 — SC244 clean pair is the only positive; SC245 and SC246 both ROOT DB errors in 1 window breaks the 4-window streak that was the primary D2 positive in the previous audit; ROOT DB divergence is now a production risk)
+**Score: 2.3/5.0** (↓ −0.2 — SC244 and SC247 clean pairs are genuine positives; SC245 and SC246 ROOT DB errors break the 4-window streak; SC247's immediate return to correct `data/` path suggests an intermittent/session-specific failure rather than a full architectural regression; ROOT DB divergence for SC245/246 remains a production risk)
 
-**Failure classification: OPERATIONAL** — The correct `data/pipeline.db` path was confirmed by SC244's clean log commit in the same window. SC245 and SC246 reverted to root path. The failure is operational (inconsistent path usage in the log script or working directory drift), not architectural.
+**Failure classification: OPERATIONAL** — SC244 and SC247 both used correct `data/` path; SC245 and SC246 reverted to root. The failure is operational (working directory or log script path inconsistency in SC245/246 sessions), not architectural.
 
 ---
 
@@ -132,7 +140,7 @@ Weights: Reasoning 20% · Execution 20% · Memory 15% · Reliability 20% · Inte
 | **study_cycles id=118: "FFmpeg 9.0" stale entry UNADDRESSED** | P0 from July 24 audit — study_cycles row for SC239/halal-audio still reads "FFmpeg 9.0 confirmed as current stable." Any session querying study_cycles for halal-audio intelligence will get incorrect FFmpeg version. 1-window since P0 raised, zero action | Critical negative |
 | study_log: 0/3 new writes this window | Even SC244 (correct data/ path) did not write to study_log. Write trigger gap now confirmed as persistent structural issue, not random failure | Structural negative |
 
-**Score: 2.3/5.0** (↓ −0.2 — skill content continuity is good; study_log gap expanding (10 cycles now absent), study_cycles SC239 stale data unaddressed despite P0 flag, and SC245/246's root DB routing means their study_cycles entries exist only in the wrong database)
+**Score: 2.4/5.0** (↓ −0.1 — skill content continuity is good; SC247 wrote study_log id=41 (partial recovery); study_log gap is 10 cycles (235-241, 244-246); study_cycles SC239 stale data unaddressed; SC245/246's root DB routing means their study_cycles entries exist only in root DB)
 
 ---
 
@@ -148,7 +156,7 @@ Weights: Reasoning 20% · Execution 20% · Memory 15% · Reliability 20% · Inte
 | study_log gap expanding | SC244 log wrote to correct path but still no study_log entry — write trigger gap now at 10+ cycles | Structural concern |
 | No P0 action items from July 24 audit addressed | study_cycles id=118 backfill: not done. CLAUDE.md 3 fixes: not done. Canaries: not run | Negative |
 
-**Score: 2.2/5.0** (↓ −0.4 — the 4-window ROOT-clean streak was the dominant positive signal in D4; its elimination in a single window by two consecutive ROOT errors represents the largest single-window regression in recent D4 history; SC244 clean pair is the only structural positive this window)
+**Score: 2.3/5.0** (↓ −0.3 — SC244 and SC247 clean pairs are genuine positives; SC245/246 ROOT errors break the 4-window streak; SC247's immediate correction suggests intermittent failure rather than full regression; CLAUDE.md frozen 29th audit and no P0 items addressed are the non-negotiable floor)
 
 ---
 
@@ -161,12 +169,14 @@ Weights: Reasoning 20% · Execution 20% · Memory 15% · Reliability 20% · Inte
 | SC245: Remotion 4.0.498 full changelog | Two new releases (4.0.497, 4.0.498) accurately documented with production-relevant details (SwiftShader, premounting, trimBefore fix) | Positive |
 | SC246: ElevenLabs PCM completeness | 5 telephony PCM formats added to AllowedOutputFormats table with explicit "NOT for video mixing" guidance | Positive |
 | SC246: v2.59.0 scope accuracy | Confirmed HMAC webhook-only change — prevents unnecessary audit of audio parameters | Positive |
+| **SC247: Wan 2.7 R2V AIMLAPI blog-confirmed** | Blog post confirmation upgrades status from "canary-test recommended" to "AIMLAPI blog-confirmed available" — the R2V canary is now unblocked by evidence | Strong positive |
+| SC247: InfinityStory future watch | Research paper finding validating per-clip re-anchoring policy + shot boundary as identity risk point | Positive |
 | **CLAUDE.md routing matrix: LTXV active (21 days to Aug-15)** | At production generation time, routing matrix still has no deprecation warning | Critical negative |
 | **CLAUDE.md Check #5 wrong prompt length (29th audit)** | Wrong guidance at point of generation | Critical negative |
 | ROOT DB split: dual study_cycles | root (64 rows) vs data/ (121 rows) — a production session querying root DB gets stale/incomplete model landscape | Negative |
 | Three canaries unrun (13/12/5 days outstanding) | Wan 2.2 Animate Replace (13 days), Kling Turbo Pro (13 days), Wan 2.7 R2V (5 days) | Negative |
 
-**Score: 4.3/5.0** (→ unchanged — SC244's parameter distinction (UI slider vs raw API param) and multi-shot discrepancy handling are the window's strongest technical contributions; CLAUDE.md divergence and ROOT DB split are persistent but D5 credit stays with skill content quality)
+**Score: 4.3/5.0** (→ unchanged — SC244's parameter traps and SC247's Wan 2.7 R2V blog-confirmation are the window's strongest contributions; CLAUDE.md divergence and ROOT DB split are persistent but D5 credit stays with skill content quality)
 
 ---
 
@@ -188,14 +198,14 @@ Weights: Reasoning 20% · Execution 20% · Memory 15% · Reliability 20% · Inte
 | Dimension | Score | Weight | Contribution |
 |-----------|-------|--------|-------------|
 | D1 Reasoning | 3.1 | 20% | 0.620 |
-| D2 Execution | 2.2 | 20% | 0.440 |
-| D3 Memory | 2.3 | 15% | 0.345 |
-| D4 Reliability | 2.2 | 20% | 0.440 |
+| D2 Execution | 2.3 | 20% | 0.460 |
+| D3 Memory | 2.4 | 15% | 0.360 |
+| D4 Reliability | 2.3 | 20% | 0.460 |
 | D5 Integration | 4.3 | 15% | 0.645 |
 | D6 Social | 3.7 | 10% | 0.370 |
-| **Total** | — | 100% | **2.86 / 5.0** |
+| **Total** | — | 100% | **2.92 / 5.0** |
 
-**Delta vs 2026-07-24: −0.17** — First regression after two consecutive windows of gains. SC245 and SC246 ROOT DB errors break the 4-window streak and reverse the D2/D4 gains that drove the previous two windows' improvements. SC244 clean pair is the only structural positive. Skill content quality (D5) remains the pipeline's consistent strength.
+**Delta vs 2026-07-24: −0.11** — First regression after two consecutive windows of gains. SC245 and SC246 ROOT DB errors break the 4-window streak; SC247's immediate return to correct `data/` path + study_log write provides partial recovery. SC244 and SC247 both clean pairs. Skill content quality (D5) remains the pipeline's consistent strength.
 
 **Failure classification:**
 - OPERATIONAL: ROOT DB path recurrence (SC245/246) — SC244 used correct `data/` path; SC245/246 reverted to root. Working directory or log script path inconsistency.
@@ -215,7 +225,7 @@ Skills assessed: anti-sycophancy, brand-identity, brief-intake, captions-and-tit
 
 **Previous: 142/160 = 88.8%**
 
-### Changes this window (SC244–SC246)
+### Changes this window (SC244–SC247)
 
 **generation-video.md (SC244):**
 - Accuracy: +1.0 (two critical parameter warnings added: v3 dropped legacy params; reference_strength/motion_strength are UI slider abstractions not raw API params — these prevent real API call errors)
@@ -231,14 +241,19 @@ Skills assessed: anti-sycophancy, brand-identity, brief-intake, captions-and-tit
 - Coverage: +0.25 (5 PCM low-rate formats added to AllowedOutputFormats table with explicit telephony-only guidance)
 - Net: **+0.25 points** (completion of PCM format table; scope accuracy prevents false alarm)
 
-**Total new points this window: applying as +1.0 net (conservative — persistent deductions unchanged)**
+**character-consistency.md (SC247):**
+- Accuracy: +0.5 (Wan 2.7 R2V status upgraded to blog-confirmed — the key routing decision for next character session; Kling O3 recheck date updated)
+- Coverage: +0.25 (InfinityStory future watch adds validated research support for per-clip re-anchoring policy)
+- Net: **+0.25 points** (meaningful R2V intelligence upgrade; InfinityStory adds research depth to existing policy)
+
+**Total new points this window: applying as +1.25 net (conservative — persistent deductions unchanged)**
 
 **Persistent deductions (unchanged from previous audit):**
 - model-ceiling-detection.md: C8 wrong (Veo 3.1 Lite I2V in video escalation path — T2V only) — 24th audit, −1
 - model-prompting-guide.md Part 4: SC166 differential prompt rule absent — 24th audit, −1
 - CLAUDE.md meta-compliance: Pre-Gen Check #5 wrong, ElevenLabs v1 absent, LTXV matrix warning absent, Wan 2.7 R2V absent — continuing deductions (unchanged 7th consecutive)
 
-**Score: 143/160 = 89.4%** (↑ +0.6% — generation-video.md SC244 parameter trap documentation is the meaningful gain; captions and halal-audio provide incremental accuracy; structural deductions unchanged)
+**Score: 143.25/160 = 89.5%** (↑ +0.7% — generation-video.md SC244 parameter trap documentation and character-consistency.md SC247 Wan 2.7 R2V upgrade are the meaningful gains; structural deductions unchanged)
 
 ### CLAUDE.md Structural Audit
 
@@ -328,15 +343,20 @@ SKILL_AUDIT_COMPLETE
 - PCM table now complete (pcm_8000/16000/22050/24000/32000 marked telephony-only).
 - FFmpeg n8.1.2 still current stable (triple-confirmed: SC242/245/246).
 
+**Character consistency (SC247):**
+- **Wan 2.7 R2V NOW CONFIRMED: AIMLAPI blog-confirmed available.** Call `alibaba/wan-2-7-r2v`, `reference_images` param, Karel `front.png`, 720p, strip audio post. InsightFace gate ≥ 0.62.
+- O3 not on AIMLAPI as of July 25, 2026 — continue with Kling O1 for character shots.
+- InfinityStory confirms: shot boundaries are highest identity-loss risk → re-anchor every clip from original reference photos (not from prior clip's last frame).
+
 ### Ralph Loop
 
 *"What would a senior creative director still reject?"*
 
-1. **ROOT pipeline.db split is now a production risk.** The root `pipeline.db` (64 rows) diverges from `data/pipeline.db` (121 rows). Any pre-production intelligence check from the repo root queries half the pipeline's accumulated knowledge. The missing entries include SC244 (Kling v3 API traps), SC245 (Remotion version), and SC246 (ElevenLabs scope) in `data/`, plus SC245/246 exist only in root, not `data/`. A production session relying on study_cycles pre-brief could get contradictory information depending on working directory. A senior creative director would call this a single point of failure in the pipeline's memory system.
+1. **ROOT pipeline.db split is now a production risk.** The root `pipeline.db` (64 rows) diverges from `data/pipeline.db` (122 rows). Any pre-production intelligence check from the repo root queries half the pipeline's accumulated knowledge. SC244 (Kling v3 API traps) and SC247 (Wan 2.7 R2V blog-confirmation) exist only in `data/`; SC245/246 exist only in root. A production session relying on study_cycles pre-brief could get contradictory information depending on working directory. A senior creative director would call this a single point of failure in the pipeline's memory system.
 
 2. **LTXV expiry is 21 days away with no action plan.** CLAUDE.md routing matrix still lists LTXV for B-roll I2V with no deprecation warning. The replacement (`minimax/hailuo-2.3-fast`) was identified in SC234, documented in credit-efficiency.md, and has been in the audit's P0 list for 10 consecutive audits. No canary has been run. At the current rate (zero canaries per day), the LTXV route will fail in production with no validated replacement.
 
-3. **Three canaries outstanding for 92 days of no output.** Wan 2.2 Animate Replace ($0.06/gen, 13+ days past canary-ready date), Kling Turbo Pro (13+ days), Wan 2.7 R2V (5 days). The Animate Replace canary costs less than a cup of coffee and would validate a 24× cheaper character animation tier. Running zero canaries while accumulating study cycle intelligence about them is research without production benefit.
+3. **Three canaries outstanding — Wan 2.7 R2V is now AIMLAPI blog-confirmed.** Wan 2.7 R2V (SC247 today: blog-confirmed available on AIMLAPI — the blocker "not confirmed" is resolved), Wan 2.2 Animate Replace ($0.06/gen, 13+ days), Kling Turbo Pro (13+ days). There is no longer any "not confirmed available" excuse for the Wan 2.7 R2V canary. The Animate Replace canary costs less than a cup of coffee. Running zero canaries while accumulating 4+ cycles of intelligence about them is research without production benefit.
 
 4. **study_log gap is now 10 cycles.** SC235–241 (7 cycles) + SC244 (1 cycle, log wrote to correct data/ path but no study_log entry) + SC245 (root DB, no study_log table) + SC246 (root DB, no study_log table) = 10 absent cycles in study_log. A pre-production brief via study_log misses: fal.ai elements cap (SC237), camera_control 6-type API confirmation (SC237), Kling Turbo Pro HIGH quality confirmation (SC237), PySceneDetect v0.7.1 stable (SC235/242), Wan 2.7 R2V canary recommendation (SC240), LTXV 21-day warning (SC241), Kling v3 API traps (SC244), Remotion 4.0.498 (SC245), SDK v2.59.0 scope (SC246).
 
@@ -420,10 +440,11 @@ Correct: "FFmpeg 8.1.2 (n8.1.2, June 17 2026) is current stable — no n9.x rele
 
 ### [P0 — BEFORE NEXT PRODUCTION SESSION — 3 canaries outstanding]
 
-**6. Wan 2.7 R2V canary (SC240, 5 days outstanding):**
-- Call `alibaba/wan-2-7-r2v` with Karel `front.png` + 5s reference clip + 720p + `generate_audio: false`
-- If `model-not-found` → fall back to `wan-2.6-reference-to-video`
-- If output received: InsightFace ≥ 0.62 gate + brand binary + owner review
+**6. Wan 2.7 R2V canary (SC247: AIMLAPI BLOG-CONFIRMED, 5 days outstanding):**
+- AIMLAPI blog post: "The R2V mode is available via the AI/ML API platform" — confirmed today (SC247)
+- Call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images` + 720p + strip audio post
+- If `model-not-found` → fall back to `wan-2.6-reference-to-video`; update status to "blog says available but endpoint not live"
+- If output received: InsightFace ≥ 0.62 gate + brand binary + owner review; update CLAUDE.md routing matrix
 
 **7. Wan 2.2 Animate Replace canary (SC234, 13+ days outstanding):**
 - Step 1: NBP Edit hero frame as `image_url` + 5s drive video as `video_url`, mode: Move, $0.06
@@ -479,18 +500,18 @@ Report text (for manual resend if needed):
 ```
 📊 Daily Audit 2026-07-25 — Snelverhuizen Pipeline
 
-Operator: 2.86/5.0 (↓ -0.17) — ROOT DB errors broke 4-win streak
-Skills:   89.4% (+0.6%) — SC244 v3 param traps valuable
+Operator: 2.92/5.0 (↓ -0.11) — SC245/246 ROOT DB broke 4-win streak
+Skills:   89.5% (+0.7%) — SC244 v3 traps + SC247 Wan R2V confirmed
 Creative: 4.07/5.0 (→) — day 92, no new output
 
-⚠️ NEW: SC245+246 log commits wrote to ROOT pipeline.db (not data/).
-  data/pipeline.db (121 rows) vs root pipeline.db (64 rows) — split!
-  Fix: add SC245/246 to data/pipeline.db; fix log script path.
-⚠️ LTXV Aug-15 deadline: 21 days. No CLAUDE.md alert. No replacement canary.
-⚠️ study_log gap: 10 absent cycles (was 7). study_cycles id=118 still stale.
+🆕 SC247: Wan 2.7 R2V AIMLAPI blog-confirmed available — run canary NOW
+⚠️ SC245+246 log commits wrote to ROOT pipeline.db (not data/):
+  data/ (122 rows) vs root (64 rows) — SC245/246 missing from authoritative DB
+  Fix: insert SC245/246 into data/pipeline.db; fix log script path
+⚠️ LTXV Aug-15: 21 days. No CLAUDE.md alert. No replacement canary yet.
 
 TOP 3 ACTION ITEMS:
-1. Fix ROOT DB split: add SC245/246 to data/pipeline.db, fix log script path
-2. CLAUDE.md: Check #5 prompt length + ElevenLabs v1 (16d overdue) + LTXV Aug-15 alert
-3. Run LTXV replacement canary: minimax/hailuo-2.3-fast — 21 days to Aug-15
+1. Fix ROOT DB split: insert SC245/246 into data/pipeline.db + fix log path
+2. Wan 2.7 R2V canary: alibaba/wan-2-7-r2v (blog-confirmed — no more waiting)
+3. CLAUDE.md: ElevenLabs v1 (16d overdue, 404 now) + LTXV Aug-15 (21 days)
 ```
