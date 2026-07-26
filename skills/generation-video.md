@@ -482,6 +482,16 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 
 **CRITICAL: `multi_shot: True` is REQUIRED to activate multi-shot mode for ALL Kling v3 variants (Standard and Pro, T2V and I2V).** Without this flag, `multi_prompt` is silently ignored and the model falls back to single-shot generation using the main `prompt` field. Confirmed across multiple Kling v3 platform implementations (June 2026). Previously documented as O3-only — this was incorrect; it applies to all v3 tiers.
 
+**`shot_type` parameter (SC251, July 26, 2026 — CANARY REQUIRED on AIMLAPI):** Native Kling v3 API requires a `shot_type` parameter alongside `multi_shot: true`. Two values:
+- `"customize"` — user defines each shot via `multi_prompt` array (our current approach)
+- `"intelligence"` — AI auto-segments a single `prompt` string into up to 6 shots (no `multi_prompt` needed; use main `prompt` field)
+
+The native Kling API uses `shotType` (camelCase); AIMLAPI likely uses `shot_type` (snake_case — consistent with AIMLAPI's snake_case convention for `multi_shot`, `generate_audio` etc.). **CANARY REQUIRED:** try adding `"shot_type": "customize"` to an existing multi_prompt call — if it accepts without error, add it to all multi-shot calls. If AIMLAPI silently ignores unknown parameters (likely), our current calls may already work without it. However, if AIMLAPI validation becomes stricter, omitting `shot_type` when `multi_shot: true` may cause errors.
+
+**`intelligence` mode (SC251):** When `shot_type: "intelligence"`, write the full video narrative in the main `prompt` field — the model divides it automatically into 2–6 shots. Useful when you don't want to define exact shot boundaries. **DO NOT use intelligence mode if you need character element binding (@Element1) per shot** — shot_type: "customize" with multi_prompt is required for that.
+
+**Per-shot prompt character limit (SC251): 512 chars** per individual shot entry in multi_prompt (native Kling API docs — likely applies on AIMLAPI too). The main `prompt` field limit stays at 2500 chars for intelligence mode. Stay under 400 chars per shot prompt to leave margin for safety.
+
 **⚠️ Cross-platform naming trap (July 2026):** The native Kling API uses `multi_shots` (plural, boolean) and `sound` (boolean) for audio. AIMLAPI uses `multi_shot` (singular) and `generate_audio` (boolean). Do NOT copy-paste JSON from native Kling docs, KIE AI docs, or Griptape README into AIMLAPI calls — the parameter names diverge silently (wrong names are ignored, not rejected). AIMLAPI naming is what our pipeline uses throughout this document.
 
 **⚠️ `elements` parameter cross-platform naming trap (July 2026):** Three different names for the same concept across platforms. AIMLAPI uses `elements` (array). KIE.ai uses `kling_elements` (array). AI SDK (ai-sdk.dev) uses `elementList`. None of these transfer between platforms — passing the wrong name silently no-ops the character binding. Our pipeline uses AIMLAPI `elements` exclusively. Do NOT copy element definitions from KIE.ai or AI SDK examples.
@@ -490,15 +500,18 @@ Kling v3 supports generating up to 6 sequential shots in one API call. **On AIML
 
 **Constraints:**
 - `multi_shot: True` MUST be set (top-level flag) — without it, multi_prompt is silently ignored
-- Main `prompt` field MUST be empty when `multi_prompt` is used
+- `shot_type: "customize"` REQUIRED when using multi_prompt (CANARY on AIMLAPI — may be implicit)
+- Main `prompt` field MUST be empty when `multi_prompt` is used (`shot_type: "customize"` mode)
 - `tail_image_url` is INCOMPATIBLE with multi-shot — omit it
 - Total video duration = sum of all shot durations (max 15s total)
 - Each shot minimum duration: **3 seconds** on Magnific API (v3 wrapper) — do not set below 3s as the safe default. **⚠️ Discrepancy (SC244 July 2026):** Some fal.ai docs and community guides say 1 second minimum per shot; Magnific API docs say 3 seconds. AIMLAPI minimum is unconfirmed — use 3s until a canary confirms otherwise.
-- Each entry takes `prompt` and `duration` — no `index` field required on AIMLAPI
+- Each entry takes `prompt` and `duration` — no `index` field required on AIMLAPI (native API requires `index`; AIMLAPI wrapper may handle indexing automatically)
+- Per-shot `prompt` max: **512 chars** (native API; keep ≤400 chars for safety on AIMLAPI)
 
 ```python
 "multi_shot": True,   # REQUIRED — without this, multi_prompt is silently ignored
-"prompt": "",         # MUST be empty
+"shot_type": "customize",  # CANARY on AIMLAPI — add and test; may be implicit when multi_prompt is present
+"prompt": "",         # MUST be empty in customize mode
 "generate_audio": False,  # Set this anyway, but NOTE: may be ignored in multi-shot mode
 "multi_prompt": [
     {"prompt": "@Element1 walks to the truck, confident stride", "duration": 5},
@@ -570,7 +583,7 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). SC216, SC223, SC237 (July 21), and SC244 (July 24, 2026) searches found no AIMLAPI-sourced v3 Motion Control docs — docs index still only shows v2.6 motion control. Status: **POSSIBLE but NOT confirmed as of July 24, 2026**. Kling v3 Motion Control is confirmed live on Replicate (`kwaivgi/kling-v3-motion-control`), Eachlabs, ModelsLab, Kie AI, OpenArt, MindStudio, Media.io, and Artlist as of July 2026 — broad third-party availability increases likelihood it will land on AIMLAPI soon. Check AIMLAPI docs index before next walking-shot production. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
+**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). SC216, SC223, SC237 (July 21), SC244 (July 24), and SC251 (July 26, 2026) searches found no AIMLAPI-sourced v3 Motion Control docs — docs index still only shows v2.6 motion control. Status: **POSSIBLE but NOT confirmed as of July 26, 2026**. Kling v3 Motion Control is confirmed live on Replicate (`kwaivgi/kling-v3-motion-control`), Eachlabs, ModelsLab, Kie AI, OpenArt, MindStudio, Media.io, and Artlist as of July 2026 — broad third-party availability increases likelihood it will land on AIMLAPI soon. Check AIMLAPI docs index before next walking-shot production. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output on v2.6; see v3 duration limits below)
@@ -748,7 +761,7 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 
 ## Kling O3 — Future Watch (Not Yet on AIMLAPI)
 
-Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of July 24, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI. A `site:aimlapi.com` search for "video-v3-omni" returns zero results as of July 14, 2026. O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of July 26, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI. A `site:aimlapi.com` search for "video-v3-omni" returns zero results as of July 26, 2026. O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
 
 **O3 advantages worth monitoring:**
 - Multi-image element building: up to **7 reference images** per call (vs. 3 for v3 Pro)
