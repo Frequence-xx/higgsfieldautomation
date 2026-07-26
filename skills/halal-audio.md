@@ -890,6 +890,7 @@ Pre-trained model available at `https://essentia.upf.edu/models/classification-h
 | Need to verify Willem voice quality before production | No UI check in pipeline | Call GET /v1/voices?search=Willem — check `recording_quality` field. Proceed only if "studio" or "good". If "in_review" labelling_status, hold and re-check next session. |
 | Scribe v2 cost over-estimated | Old skill docs said "~1 credit/character" (wrong billing model) | Scribe v2 is billed per audio hour ($0.22/hour batch), not per character. A 30s VO QA call costs ~$0.002. Always cheap — budget is not a constraint for VO QA. |
 | VO transcript can't be verified against script | No cheap Dutch STT tool in pipeline | Run Scribe v2 (`model_id="scribe_v2"`, `language_code="nld"`, `timestamps_granularity="word"`) after every generation — see §11 |
+| Scribe v2 silently garbles a brand name with no visible error | transcript text looks plausible but is wrong (e.g. "SNELVERHUIZEN" → "Snelverhuizen" with wrong phonemes) | Check `logprob` field on each word in `result.words`. Any `logprob < -2.0` is low-confidence — flag for manual re-listen. Add logprob check to post-QA script (see §11). |
 | `[pauses]` tag in old scripts not working | Official ElevenLabs form is `[pause]` (no 's') — `[pauses]` may be silently ignored | Update scripts to use `[pause]` (confirmed canonical form from official ElevenLabs blog posts). Both may work but test on Willem to confirm. |
 | `[confident]` / `[direct]` ignored on Willem | These are unconfirmed tags; Willem may not respond | Substitute with confirmed `[deliberate]` — same professional pacing effect, confirmed in official ElevenLabs delivery control category. |
 | ffmpeg-normalize re-encodes already-normalized master (wastes time on re-runs) | No skip threshold set — tool re-encodes even if file is already at target LUFS | Add `--threshold 1.0` to the command (v1.40.0+, June 27, 2026). Files already within ±1 LUFS of -14 are copied unchanged. See §4f. |
@@ -972,7 +973,7 @@ if __name__ == "__main__":
 
 ## 11. Dutch VO Transcription QA (Scribe v2)
 
-Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch. GA since March 11, 2026: 99 languages, 98% speaker label accuracy.
+Use ElevenLabs Scribe v2 to verify that a generated voiceover matches the intended script and to extract word-level timestamps for caption alignment. Scribe v2 achieves ≤5% WER on Dutch — significantly more accurate than Whisper base on Dutch. GA since March 11, 2026: 99 languages, 98% speaker label accuracy. SDK recheck 2026-07-26: v2.59.0 confirmed current; `timestamps_granularity` now also accepts `"character"` for per-character timing; word response model includes `logprob` and `characters` fields (see below).
 
 **File size limit:** Scribe v2 batch accepts audio/video files up to **5.0GB** (increased from 3.0GB in June 2026 changelog). Supports WAV, MP3, MP4, M4A, WEBM, and other common formats. For VO QA, file sizes are always <<1GB — this limit only matters for long-form batch transcription.
 
@@ -1039,7 +1040,17 @@ Actively masks detected entities IN the transcript text. `entity_detection` only
 
 **`no_verbatim=True`:** removes filler words, false starts, and disfluencies from the transcript — makes script diff cleaner. Use for VO QA (comparing against intended script). Omit for caption timing use (fillers shift word timestamps).
 
-**Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`).
+**`timestamps_granularity` values (confirmed SDK v2.59.0):** `"word"` (default for pipeline use) · `"character"` (character-level timing per word) · `"none"` (no timestamps). The skill has always used `"word"` — use `"character"` only when you need per-character subtitle animation (karaoke-style). When `"character"` is set, each word object includes a `characters` array with per-character `{text, start, end}` timing. For all standard Snelverhuizen VO QA and caption alignment, `"word"` granularity is sufficient — no change to current workflow.
+
+**Output fields per word:** `text`, `start` (seconds), `end` (seconds), `type` (`word` | `spacing` | `audio_event`), `speaker_id` (diarization only), `logprob` (float — log probability of prediction), `characters` (character-level timing array — populated only when `timestamps_granularity="character"`).
+
+**Using `logprob` for brand name QA:** `logprob` is the natural log of the model's confidence (range: very negative = low confidence, ~0 = high confidence). Flag any word with `logprob < -2.0` for manual review — this catches silently garbled brand names that look plausible in the transcript:
+```python
+for word in result.words:
+    if word.type == "word" and word.logprob is not None and word.logprob < -2.0:
+        print(f"LOW CONFIDENCE: '{word.text}' at {word.start:.2f}s (logprob={word.logprob:.2f})")
+```
+Pay special attention to `logprob` on "SNELVERHUIZEN" and "085 3331133" — these are the two most likely to be transcribed with low confidence.
 
 **Cost:** Scribe v2 is billed **per audio hour**, NOT per character. Batch rate: **$0.22/hour** base (reduced from $0.40/hour — 45% cut, announced May 7, 2026). Keyterm surcharge: +$0.050/hr flat → $0.27/hr total with keyterms. Entity detection: +$0.070/hr. Realtime: $0.39/hour. A 30-second VO costs ~$0.0018 base + $0.000417 keyterm surcharge = **~$0.0022 total** — essentially free for VO QA use. Do NOT budget Scribe as if it were TTS credits.
 
@@ -1048,6 +1059,7 @@ Actively masks detected entities IN the transcript text. `entity_detection` only
 - [ ] Phone number "085 3331133" transcribed in Dutch digit form ("nul-acht-vijf...")
 - [ ] No extra/dropped words vs. approved script
 - [ ] Total duration within ±0.5 s of target video slot length — use `result.audio_duration_secs` (added April 7, 2026; no ffprobe needed)
+- [ ] No words with `logprob < -2.0` (flag for manual review if any found, especially brand names)
 
 **`result.audio_duration_secs` (added April 7, 2026):** The response now includes total audio duration as a float. Use this for the ±0.5 s duration check instead of `ffprobe` — saves a subprocess call:
 ```python
