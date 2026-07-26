@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-24, no newer release)
+   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-26, no newer release)
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,10 +708,14 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.499 (July 24, 2026):**
+- Zod bumped to 4.4.3; Studio sidebar clamping, visibility toggle, keyframe selection improvements; `@remotion/drag-and-drop` new payload package; `@remotion/web-renderer` opacity rendering fix; template dependency updates (PostCSS, React Router).
+- **No changes to `@remotion/captions` API.**
+- `npm install remotion@4.0.499`.
+
 **Remotion v4.0.498 (July 23, 2026):**
 - Core: SwiftShader fallback (v5.0 preview); `trimBefore` sequence freeze interaction fix; `@remotion/paths` and Next.js template updates; `@remotion/media` and `@remotion/renderer` changes.
 - **No changes to `@remotion/captions` API.**
-- `npm install remotion@4.0.498`.
 
 **Remotion v4.0.497 (July 23, 2026):**
 - Studio: background color editing, direct premounting for image components, timeline asset-drop support; `@remotion/transitions`, `@remotion/gif`, and `@remotion/cli` changes.
@@ -775,7 +779,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.498 — confirmed current as of 2026-07-24; no caption API changes in 4.0.485–4.0.498)
+### Full API (v4.0.499 — confirmed current as of 2026-07-26; no caption API changes in 4.0.485–4.0.499)
 
 | Export | Purpose |
 |--------|---------|
