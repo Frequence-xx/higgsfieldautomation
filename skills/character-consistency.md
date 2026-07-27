@@ -289,7 +289,7 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.7.1** is the current stable release (July 5, 2026). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). v3.7.0 was an architecture release; v3.7.1 patches a regression in it.
+FaceFusion **v3.7.1** is the current stable release (July 5, 2026; confirmed current pass 38 recheck, 2026-07-27). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). v3.7.0 was an architecture release; v3.7.1 patches a regression in it.
 
 **3.7.1 changes (pass 27 finding, 2026-07-06):**
 - **Frame distribution fix:** 3.7.0's multi-frame-aware architecture introduced a performance regression; 3.7.1 restores throughput to pre-3.7.0 levels.
@@ -373,6 +373,8 @@ python facefusion.py headless-run \
 ```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
+
+**Show and Polish — Future Watch (arXiv 2507.10293, MM 2025, July 2025):** Reference-Guided Identity Preservation in Face Video Restoration (IP-FVR). Accepted at ACM Multimedia 2025. Core mechanism: uses a high-quality reference face photo as a visual prompt injected via decoupled cross-attention during denoising, recovering identity-specific features in degraded/compressed face video. Also addresses intra-clip identity drift. **Practical implication for our pipeline (pass 38 finding, 2026-07-27):** Complements FaceFusion — where FaceFusion swaps/corrects identity post-generation, IP-FVR restores quality in degraded clips *while* using the reference to anchor identity. Useful when a clip passes InsightFace QA but has visible compression artifacts or low quality. No confirmed public code repo. Monitor for code release — if available as a REST endpoint, could replace the CodeFormer step in the FaceFusion pipeline for olive/brown-skin characters (CodeFormer can whiten skin; IP-FVR preserves reference appearance more faithfully).
 
 **GSwap — Future Watch (research stage, no OSS code as of 2026-06-17):** 3D head swap using neural Gaussian portrait representation embedded in SMPL-X body surface (arXiv 2603.23168, IEEE TVCG, March 2026). Models head, torso, and motion together (not just 2D face patch), with neural re-rendering for natural background integration. Addresses FaceFusion's known failure mode: detached/misaligned look under strong head motion. Project page: ustc3dv.github.io/GSwap/ — no public code release confirmed. Monitor for open-source release — would replace FaceFusion for clips with large head rotation or motion blur.
 
@@ -668,7 +670,7 @@ Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character 
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
-**O3 not on AIMLAPI as of 2026-07-25 (pass 36 recheck).** Search confirms O3 on fal.ai, Atlas Cloud ($0.15/sec), Krea, Runware — but no AIMLAPI-specific O3 endpoint found. AIMLAPI shows only v3-standard, v3-standard-turbo, v2.6-motion-control, v2-master. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
+**O3 not on AIMLAPI as of 2026-07-27 (pass 38 recheck).** Search confirms O3 on fal.ai, Atlas Cloud ($0.15/sec), Krea, Runware — but no AIMLAPI-specific O3 endpoint found. AIMLAPI shows only v3-standard, v3-standard-turbo, v2.6-motion-control, v2-master. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -800,7 +802,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 36 recheck, 2026-07-25):** AIMLAPI blog post (`aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model`) explicitly confirms "The R2V mode is available via the AI/ML API platform." Status upgraded to **"AIMLAPI blog-confirmed available — canary-test before production adoption"**. docs.aimlapi.com still has no dedicated Wan 2.7 R2V page (only I2V and Wan 2.6 R2V confirmed there), but AIMLAPI blog confirmation + inference.sh listing (`alibaba/wan-2-7-r2v`) are consistent. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live.
+**Wan 2.7 R2V status on AIMLAPI (pass 38 recheck, 2026-07-27):** AIMLAPI blog post (`aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model`) explicitly confirms "The R2V mode is available via the AI/ML API platform." However, docs.aimlapi.com video models listing shows only I2V for Wan 2.7 — no dedicated R2V page exists and search engine results describe the model as "Coming Soon" on AIMLAPI's model list. Status: **"AIMLAPI blog-confirmed available but docs-absent — canary-test is mandatory before any production use"**. If canary call to `alibaba/wan-2-7-r2v` returns 404/model-not-found, fall back to Wan 2.6 R2V or Kling O1. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed on AIMLAPI — use FFmpeg strip as mandatory safety step), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
