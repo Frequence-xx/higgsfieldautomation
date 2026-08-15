@@ -163,7 +163,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
 
-   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. As of June 2026, accepts `keyterms` (array, max 50 entries × 20 chars each) and `no_verbatim` params — both echoed back in `session_started` event. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct.
+   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. v2.63.0 SDK (Aug 11, 2026) added "missing realtime speech-to-text options" — additional config parameters for the WebSocket client. Batch Scribe API unchanged. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct. **Current SDK: v2.64.0 (Aug 14, 2026)** — no changes to forced-alignment or Scribe v2 batch API since v2.59.0.
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.7rc1 released June 26, 2026 is a pre-release (Windows CUDA fix + huggingface-hub pin relax only — no timestamp changes). **Stay on stable 3.8.6** for production. — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
@@ -241,7 +241,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. **v1.9.1 (June 19, 2026) is the current latest** — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). **No DTW, timestamp, or Parakeet changes** — all timing behavior identical to v1.8.5+. Upgrade is safe and recommended: Remotion's `installWhisperCpp()` accepts any semantic version string. Use `WHISPER_VERSION = '1.9.1'` for new installs.
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. v1.9.1 (June 19, 2026) — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). No DTW or timestamp changes. **v1.9.2 (August 4, 2026) is the current latest** — includes two meaningful fixes for our pipeline: (1) **"map token timestamps to original time when VAD is enabled" (PR #3910)** — when VAD is active (default in many whisper.cpp configs), token timestamps were previously relative to each VAD speech segment (restarting from zero per segment) rather than absolute positions in the original audio. This caused tokens to have wrong absolute timestamps whenever silence gaps preceded speech. For Dutch voiceovers with natural pauses ("Bel ons nu... [pause] ...085 3331133"), timestamps were shifted or incorrect. Now they map to original audio time — improved accuracy. (2) "Remove leading space from txt output" — affects `.txt` file format only, NOT JSON word timestamps; no impact on our Remotion/JSON pipeline. Upgrade is safe and recommended. Use `WHISPER_VERSION = '1.9.2'` for new installs.
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.1';        // v1.8.5+ for PR #2279 silence-gap fix; 1.9.1 is current latest (June 19, 2026 — confirmed 2026-07-26, no newer release)
+   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest (Aug 4, 2026) — VAD token timestamp fix (PR #3910): maps timestamps to original audio time when VAD active; v1.8.5+ for PR #2279 silence-gap fix
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -269,7 +269,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    const result = await transcribe({
      inputPath: 'voiceover.wav',
      whisperPath: WHISPER_PATH,          // REQUIRED — path from installWhisperCpp(to:)
-     whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version
+     whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version; use '1.9.2' for VAD timestamp fix
      model: 'large-v3-turbo',           // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
      tokenLevelTimestamps: true,        // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
@@ -325,7 +325,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const WHISPER_PATH = './whisper-cpp';
    const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
-   const WHISPER_VERSION = '1.9.1';
+   const WHISPER_VERSION = '1.9.2';
 
    await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
 
@@ -708,10 +708,15 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.509 (August 13, 2026 — current latest):**
+- No changes to `@remotion/captions` API in v4.0.500–4.0.509.
+- **v4.0.508**: `@remotion/install-whisper-cpp` — **"Do not kill Whisper when Metal falls back to CPU"** (by @anatolykoptev). Previously, if Metal GPU acceleration was unavailable on macOS, the whisper.cpp process was killed outright. Now it falls back gracefully to CPU. **Relevant for macOS production machines** — previously caused silent transcription failures when GPU was unavailable.
+- v4.0.504: `<Series>` made timeline-trimmable. v4.0.507: "hold" easing option in Studio. v4.0.510/511: Timeline precision inputs and keyframe clock refinements.
+- `npm install remotion@4.0.509`.
+
 **Remotion v4.0.499 (July 24, 2026):**
 - Zod bumped to 4.4.3; Studio sidebar clamping, visibility toggle, keyframe selection improvements; `@remotion/drag-and-drop` new payload package; `@remotion/web-renderer` opacity rendering fix; template dependency updates (PostCSS, React Router).
 - **No changes to `@remotion/captions` API.**
-- `npm install remotion@4.0.499`.
 
 **Remotion v4.0.498 (July 23, 2026):**
 - Core: SwiftShader fallback (v5.0 preview); `trimBefore` sequence freeze interaction fix; `@remotion/paths` and Next.js template updates; `@remotion/media` and `@remotion/renderer` changes.
@@ -779,7 +784,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.499 — confirmed current as of 2026-07-26; no caption API changes in 4.0.485–4.0.499)
+### Full API (v4.0.509 — confirmed current as of 2026-08-15; no caption API changes in 4.0.485–4.0.509)
 
 | Export | Purpose |
 |--------|---------|
