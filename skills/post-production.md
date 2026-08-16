@@ -777,11 +777,13 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | **v0.7.1 (2026-07-21)** | **NOW STABLE.** Replaces v0.7.0. All documented v0.7.1 features confirmed: `--expand` flag (use `split-video --expand`), `backend` kwarg, `expand_scenes_to_bounds()`. NEW: `VideoStreamConcat`, `VideoStream.decode_failures`, PyAV corrupt-frame tolerance (8 frames), PyAV PTS normalization. See §3d for full details. Install: `pip install scenedetect-headless`. |
 | SVT-AV1 | **v4.2.0 (2026-07-13)** | New: `--tune-vmaf` (~15% VMAF BD-rate gain for VOD/archive); CBR Kalman-filter rate control; ARM NEON/SVE2 kernels. Pipeline commands (§5h) unchanged — `-svtav1-params tune=0` (VQ) remains correct. See SC221 update. |
-| Remotion | **v4.0.509 (released ~2026-08-12)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496 (2026-07-21):** Studio-only — no pipeline impact. **v4.0.497 (2026-07-23):** Direct premounting for `<Img>`, `<AnimatedImage>`, `<CanvasImage>`, `<Gif>` (loads assets one frame earlier; improves frame-accurate rendering); fixed animated image decoder race condition; fixed audio tag stability when enabling AudioContext; no new @remotion/effects. **v4.0.498 (2026-07-23):** No new @remotion/effects. `getVideoMetadata()` deprecated — migrate any pipeline scripts using it; v5 preparation: ANGLE+SwiftShader as default v5 renderer, raised Node.js/ESLint requirements, Webpack/Rspack config overrides separated, buffering defaults enabled. Better handling of long variable-duration frames. **v4.0.499 (2026-07-24):** No new @remotion/effects. **Opacity leaking between layers in web-renderer fixed** — upgrade to ≥ v4.0.499 if any Remotion composition uses opacity on multiple stacked layers. Zod upgraded to 4.4.3. New `@remotion/drag-and-drop` payload package (Studio integration; no pipeline impact). Studio: sidebar width clamping, visibility toggle debounce fix. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.512 (released 2026-08-14)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m), **`regionblur()`** (v4.0.507), **`exposure()`** **`whiteBalance()`** **`vibrance()`** **`levels()`** **`shadowsHighlights()`** (v4.0.508), **`colorCorrection()`** (v4.0.509) — all documented in §11n (SC263). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496–499 (2026-07-21–24):** Studio-only / opacity-leak fix / Zod upgrade — see SC249 note. **v4.0.507 (2026-08-07): `regionblur()` added to @remotion/effects.** **v4.0.508 (2026-08-11): `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()` added.** **v4.0.509 (2026-08-12): `colorCorrection()` added.** v4.0.510 (2026-08-14): Studio enhancements only — no new effects. v4.0.511 (2026-08-14): Interactivity regression fix from v4.0.510. v4.0.512 (2026-08-14): Republish of v4.0.511 to fix npm staging delays. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
 
-**SC256 update (2026-08-14):** Two substantive changes this cycle. (1) **FFmpeg 9.0 "Lei" released 2026-08-04 — major version bump.** Patch 9.0.1 released 2026-08-12 (current stable). Named in tribute to Lei Xiaohua. **Pipeline impact for CLI users: minimal.** All existing FFmpeg filter commands (drawvg, h264_metadata BSF, loudnorm, zscale, hqdn3d, normalize, lut3d, haldclut, eq, libsvtav1, libvmaf, whisper, scdet) remain valid — 9.0 does not break filter syntax. Key behavioral change: **`tls_verify` defaults to 1** — HTTPS certificate verification is now ON by default. Previous 8.x behavior was to skip cert verification. For our pipeline, AIMLAPI CDN URLs are on CA-signed certs so no issue expected. If any `ffmpeg -i <https_url>` call starts failing with "certificate verify failed" after upgrading to 9.0, treat it as a CDN cert problem, not a reason to add `-tls_verify 0`. Library version bumps (libavcodec → 63.x series) are C API-level only — no impact on our shell-command pipeline. New 9.0 additions not currently used by our pipeline: native animated WebP decode, ONNX Runtime DNN GPU inference backend, `v360_vulkan` filter, Vulkan acceleration for APV codec. Upgrade path: replace `ffmpeg 8.1.2` with `ffmpeg 9.0.1` on pipeline machines; run `ffmpeg -version` to confirm; all existing FFmpeg commands can be re-run unchanged. (2) **Remotion advanced to v4.0.509 (released ~2026-08-12)** — ten releases since v4.0.499 (July 24). v4.0.500 changes: `remotion` re-checks audio resume success before reporting failure; `@remotion/player` adds `_experimentalKeepAudioContextAlive` prop (relevant if a composition keeps audio context alive between playback pauses); Studio adds copy-properties-between-components and GitHub.com "Open in" menu. v4.0.501–509: Studio-focused improvements — no new `@remotion/effects` additions identified in this range. All previously documented effects and pipeline patterns remain valid. **All other tools unchanged:** SVT-AV1 v4.2.0 (no new release), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 stable (no new release), Practical-RIFE v4.26 (no v4.27).
+**SC263 update (2026-08-16):** **SC256 CORRECTION — Remotion @remotion/effects additions in v4.0.507–509 were missed.** SC256 stated "no new `@remotion/effects` additions in v4.0.501–509" — this was INCORRECT. GitHub release history confirms: v4.0.507 (Aug 7) added `regionblur()`; v4.0.508 (Aug 11) added `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()`; v4.0.509 (Aug 12) added `colorCorrection()`. Seven new color correction / selective blur effects, all with full parameters confirmed from source. All documented in §11n. **Current Remotion: v4.0.512 (Aug 14, 2026).** v4.0.510 added Studio enhancements (easing icons) but no new @remotion/effects. v4.0.511 fixed an interactivity regression from v4.0.510. v4.0.512 was a npm republish of v4.0.511 to fix staging delays — no code changes. **All other tools unchanged:** FFmpeg 9.0.1 current (no 9.0.2), SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 stable (no v0.7.2), Practical-RIFE v4.26 (no v4.27).
+
+**SC256 update (2026-08-14):** Two substantive changes this cycle. (1) **FFmpeg 9.0 "Lei" released 2026-08-04 — major version bump.** Patch 9.0.1 released 2026-08-12 (current stable). Named in tribute to Lei Xiaohua. **Pipeline impact for CLI users: minimal.** All existing FFmpeg filter commands (drawvg, h264_metadata BSF, loudnorm, zscale, hqdn3d, normalize, lut3d, haldclut, eq, libsvtav1, libvmaf, whisper, scdet) remain valid — 9.0 does not break filter syntax. Key behavioral change: **`tls_verify` defaults to 1** — HTTPS certificate verification is now ON by default. Previous 8.x behavior was to skip cert verification. For our pipeline, AIMLAPI CDN URLs are on CA-signed certs so no issue expected. If any `ffmpeg -i <https_url>` call starts failing with "certificate verify failed" after upgrading to 9.0, treat it as a CDN cert problem, not a reason to add `-tls_verify 0`. Library version bumps (libavcodec → 63.x series) are C API-level only — no impact on our shell-command pipeline. New 9.0 additions not currently used by our pipeline: native animated WebP decode, ONNX Runtime DNN GPU inference backend, `v360_vulkan` filter, Vulkan acceleration for APV codec. Upgrade path: replace `ffmpeg 8.1.2` with `ffmpeg 9.0.1` on pipeline machines; run `ffmpeg -version` to confirm; all existing FFmpeg commands can be re-run unchanged. (2) **Remotion: v4.0.500 changes: `remotion` re-checks audio resume success before reporting failure; `@remotion/player` adds `_experimentalKeepAudioContextAlive` prop; Studio adds copy-properties-between-components and GitHub.com "Open in" menu.** ⚠️ Note: SC256 incorrectly stated "no new @remotion/effects in v4.0.501–509" — see SC263 correction above. **All other tools unchanged:** SVT-AV1 v4.2.0 (no new release), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 stable (no new release), Practical-RIFE v4.26 (no v4.27).
 
 **SC249 update (2026-07-25):** Remotion advanced to **v4.0.499** (July 24, 2026) — two releases since SC242. (1) **v4.0.498 (July 23):** No new `@remotion/effects`. `getVideoMetadata()` deprecated — if any pipeline script calls `getVideoMetadata()`, migrate before upgrading to v4.0.498. v5 preparation: ANGLE+SwiftShader fallback is now the default v5 renderer setting; Node.js and ESLint minimum requirements raised for v5 compatibility; Webpack and Rspack config overrides are now separate APIs; buffering defaults enabled for v5. Improved handling of long variable-duration frames in media playback. Studio: batch easing changes for keyframes, dynamic config option updates, license configuration in Studio. (2) **v4.0.499 (July 24):** No new `@remotion/effects`. **Opacity leaking between layers in web-renderer fixed** — upgrade to ≥ v4.0.499 if any Remotion composition stacks multiple layers with non-100% opacity (e.g., caption overlays over brand layers, badge compositions). Zod upgraded to 4.4.3 (no pipeline-visible change). New `@remotion/drag-and-drop` package adds drag-and-drop payload support + Studio "Install in Studio interface" — no pipeline impact. Studio: sidebar clamping, visibility toggle debounce, text input for InputDragger, ruler full-canvas span. **All other tools unchanged:** FFmpeg 8.1.2 (no 8.2 release), SVT-AV1 v4.2.0 (confirmed on GitLab — SC221 was correct), Practical-RIFE v4.26 (no v4.27), rife-ncnn-vulkan CLI v20250112, PySceneDetect v0.7.1 stable.
 
@@ -1534,6 +1536,220 @@ import { noiseDisplacement } from "@remotion/effects";
 
 ---
 
+### 11n. `@remotion/effects` — Color Correction Suite (v4.0.507–509, Aug 2026)
+
+**⚠️ SC256 CORRECTION:** SC256 (2026-08-14) incorrectly stated "no new `@remotion/effects` additions in v4.0.501–509." Confirmed via GitHub release history: v4.0.507 added `regionblur()`, v4.0.508 added five grading effects, v4.0.509 added `colorCorrection()`. Seven effects total were missed. Documented SC263 (2026-08-16).
+
+These are the most pipeline-relevant effects yet for Snelverhuizen — they address AI-generated video color correction directly in Remotion, avoiding an extra FFmpeg pass when doing caption/overlay compositions.
+
+---
+
+**`regionblur()`** (v4.0.507, Aug 7, 2026) — Gaussian blur applied only within a defined rectangular region. Does NOT blur the entire frame — only the specified area. Backend: WebGL2.
+
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `topLeft` | `[number, number]` | Required | UV coordinate (0–1) of region top-left corner |
+| `bottomRight` | `[number, number]` | Required | UV coordinate (0–1) of region bottom-right corner |
+| `blurRadius` | `number` | `40` | Gaussian blur radius in pixels |
+| `feather` | `number` | `0` | Soft edge width in pixels — feathers the blur boundary |
+| `roundness` | `number` | `0` | 0 = rectangular region, 1 = fully pill-shaped/rounded |
+
+```tsx
+import { regionblur } from "@remotion/effects";
+
+// Blur lower-right background area — e.g. hide distraction behind character
+<AbsoluteFill style={{
+  filter: regionblur({
+    topLeft:     [0.55, 0.60],
+    bottomRight: [1.00, 1.00],
+    blurRadius:  25,
+    feather:     20,
+    roundness:   0.3,
+  }),
+}} />
+```
+
+**Snelverhuizen use cases:**
+- Blur a distracting background region (e.g. car parked behind character) without re-generating the clip
+- Privacy-blur an incidental bystander in the background (feather=20 for natural transition)
+- Soft focus effect on lower-third background to improve caption readability — alternative to `linearProgressiveBlur()` when blur should not extend past a vertical boundary
+
+**When to use vs `linearProgressiveBlur()`:**
+- `regionblur()` — blurs a defined rectangular/rounded area; cleanest for isolated region correction
+- `linearProgressiveBlur()` — blurs in a gradient from one edge; better for full-frame directional softening behind caption rows
+
+---
+
+**`exposure()`** (v4.0.508, Aug 11, 2026) — single-parameter exposure correction in stops (±5 stop range). Applies a perceptual exposure multiplier — emulates how a camera sensor responds to light, not just a linear brightness shift. Backend: WebGL2.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `stops` | `number` | `0` | -5 to +5 | Exposure adjustment in stops. +1 = one stop brighter (doubles luminance); -1 = one stop darker |
+
+```tsx
+import { exposure } from "@remotion/effects";
+
+// Lift a slightly underexposed Kling clip by 0.5 stops
+<AbsoluteFill style={{
+  filter: exposure({ stops: 0.5 }),
+}} />
+```
+
+**Snelverhuizen use case:** Kling v3 Pro I2V clips occasionally render 0.3–0.5 stops underexposed, especially on interior shots (moving boxes in hallway) and overcast exterior shots. Apply `exposure({ stops: 0.3–0.5 })` in the Remotion composition before the `colorCorrection()` step to lift the base exposure without affecting the color grade.
+
+**Prefer `colorCorrection()` (below) when making multiple adjustments** — one WebGL2 pass is more efficient than chaining separate effects.
+
+---
+
+**`whiteBalance()`** (v4.0.508, Aug 11, 2026) — corrects color temperature (warm/cool) and tint (green/magenta) independently. Critical for AI-generated video: Kling and Veo outputs frequently have a slight cool or magenta cast compared to real-world footage.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `temperature` | `number` | `0` | -1 to +1 | Blue-to-amber. Negative = cooler (more blue); positive = warmer (more amber) |
+| `tint` | `number` | `0` | -1 to +1 | Green-to-magenta. Negative = greener; positive = more magenta |
+
+```tsx
+import { whiteBalance } from "@remotion/effects";
+
+// Warm up a cool AI-generated exterior shot
+<AbsoluteFill style={{
+  filter: whiteBalance({ temperature: 0.08, tint: -0.02 }),
+}} />
+```
+
+**Snelverhuizen use case:** Kling v3 Pro clips with outdoor Dutch scenes commonly show a cool-gray cast from overcast sky color contamination. Warm with `temperature: 0.05–0.15` to match the golden/warm look of our brand identity. Check against the approved V2-Proces reference frame before applying — if the AI clip matches the reference, skip.
+
+---
+
+**`vibrance()`** (v4.0.508, Aug 11, 2026) — intelligent saturation boost that protects skin tones. Unlike `saturation` in `colorCorrection()` (which boosts all colors equally), `vibrance` boosts desaturated colors more and leaves already-vivid colors (especially skin tones) largely untouched.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `amount` | `number` | `0` | -1 to +1 | +0.1 to +0.3 = subtle boost; +0.5+ = strong vivid pop; negative = desaturate muted tones |
+
+```tsx
+import { vibrance } from "@remotion/effects";
+
+// Subtle vibrance boost on a wide establishing shot — pops the orange truck
+// without blowing out skin tones on the character
+<AbsoluteFill style={{
+  filter: vibrance({ amount: 0.2 }),
+}} />
+```
+
+**Snelverhuizen use case:** Apply on wide shots (truck + character in frame) where the orange #FC8434 looks slightly muted due to AI-generated lighting. `amount: 0.15–0.25` boosts the truck's orange without making skin tones look oversaturated.
+
+---
+
+**`levels()`** (v4.0.508, Aug 11, 2026) — Photoshop-style input levels. Maps a custom input shadow/highlight range to full output black-to-white, then applies a midtone gamma correction. Use to set black point (clip shadows), white point (clip highlights), and lift/lower midtones.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `blackPoint` | `number` | `0` | 0–1 | Input value mapped to black output; raise to crush shadows (0.05–0.15 typical) |
+| `whitePoint` | `number` | `1` | 0–1 | Input value mapped to white output; lower to clip highlights (0.85–0.95 typical) |
+| `gamma` | `number` | `1` | 0.01–10 | Midtone lift/lower. < 1 = lift mids (brighter); > 1 = lower mids (darker); 0.85–0.90 for cinematic look |
+
+```tsx
+import { levels } from "@remotion/effects";
+
+// Cinematic levels — crush blacks slightly, clip highlights, lift mids
+<AbsoluteFill style={{
+  filter: levels({ blackPoint: 0.05, whitePoint: 0.92, gamma: 0.90 }),
+}} />
+```
+
+**Snelverhuizen use case:** AI-generated Kling clips tend to have "milky" shadows (elevated black floor) because diffusion models never produce true black. Apply `blackPoint: 0.04–0.08` to crush shadows to true black and add cinematic punch. Do NOT crush more than 0.10 — the correction looks posterized on smooth gradient areas.
+
+---
+
+**`shadowsHighlights()`** (v4.0.508, Aug 11, 2026) — recovers detail in shadow and highlight areas independently. Like the Adobe Camera Raw Shadows/Highlights sliders.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `shadows` | `number` | `0` | -1 to +1 | Positive = lift shadows (recover dark detail); negative = crush shadows |
+| `highlights` | `number` | `0` | -1 to +1 | Positive = recover blown highlights; negative = darken bright areas |
+
+```tsx
+import { shadowsHighlights } from "@remotion/effects";
+
+// Recover shadow detail in a dark hallway moving scene
+<AbsoluteFill style={{
+  filter: shadowsHighlights({ shadows: 0.25, highlights: -0.10 }),
+}} />
+```
+
+**Snelverhuizen use case:** Interior moving scenes (stairway, hallway shots) where subject faces are dark against a bright window. `shadows: 0.2–0.35` lifts faces without over-exposing the window. Pair with `highlights: -0.1` to pull back blown-out areas.
+
+---
+
+**`colorCorrection()`** (v4.0.509, Aug 12, 2026) — **single combined color correction effect** that chains all the above adjustments in one WebGL2 pass. The recommended approach when applying ≥2 color adjustments to a clip — more efficient than stacking multiple separate effects.
+
+| Parameter | Type | Default | Range | Notes |
+|-----------|------|---------|-------|-------|
+| `exposure` | `number` | `0` | -5 to +5 | Same as standalone `exposure()` |
+| `contrast` | `number` | `1` | 0–3 | Contrast multiplier around `pivot`. 1 = unchanged; 1.1 = slight contrast boost |
+| `pivot` | `number` | `0.5` | 0–1 | Contrast center point (luminance). 0.5 = neutral midpoint; lower = protects shadows |
+| `shadows` | `number` | `0` | -1 to +1 | Same as `shadowsHighlights().shadows` |
+| `highlights` | `number` | `0` | -1 to +1 | Same as `shadowsHighlights().highlights` |
+| `whites` | `number` | `0` | -1 to +1 | Fine-tune extreme highlights (above whitePoint); positive = expand whites |
+| `blacks` | `number` | `0` | -1 to +1 | Fine-tune extreme shadows (below blackPoint); negative = crush blacks |
+| `temperature` | `number` | `0` | -1 to +1 | Same as `whiteBalance().temperature` |
+| `tint` | `number` | `0` | -1 to +1 | Same as `whiteBalance().tint` |
+| `saturation` | `number` | `1` | 0–3 | Uniform saturation. 1 = unchanged; 1.1 = slight boost; 0.85 = slight desaturate |
+| `vibrance` | `number` | `0` | -1 to +1 | Same as standalone `vibrance()` |
+
+**Standard Snelverhuizen AI clip color pass:**
+```tsx
+import { colorCorrection } from "@remotion/effects";
+
+// Standard grade for Kling exterior shot (overcast Dutch sky)
+<AbsoluteFill style={{
+  filter: colorCorrection({
+    exposure:     0.3,      // lift 0.3 stops — Kling outdoor shots run slightly dark
+    contrast:     1.05,     // subtle punch
+    pivot:        0.45,     // protect shadows while adding contrast
+    blacks:      -0.06,     // crush black floor (Kling milky shadows)
+    temperature:  0.08,     // warm from cool AI cast
+    tint:        -0.02,     // slight green correction (Veo/Kling magenta cast)
+    vibrance:     0.15,     // pop the orange truck without harming skin tones
+  }),
+}} />
+
+// Interior moving scene (hallway, stairway)
+<AbsoluteFill style={{
+  filter: colorCorrection({
+    exposure:    0.4,
+    contrast:    1.03,
+    shadows:     0.20,       // lift faces vs bright window
+    highlights: -0.10,       // pull back blown windows
+    blacks:     -0.05,
+    temperature: 0.05,
+  }),
+}} />
+```
+
+**When to use `colorCorrection()` vs individual effects:**
+- **≥2 adjustments needed:** Always use `colorCorrection()` — one WebGL2 pass vs multiple
+- **Single adjustment only:** Use the standalone effect (`exposure()`, `whiteBalance()`, etc.) — cleaner code
+- **FFmpeg color grade (§2c eq filter):** Still preferred for video-only encode pipelines. Use `colorCorrection()` when the clip is already inside a Remotion composition (e.g., for caption overlay renders — avoids an extra FFmpeg transcode step)
+
+---
+
+**Note on import paths (all effects above):**
+```bash
+npm install @remotion/effects
+```
+```tsx
+import {
+  regionblur, exposure, whiteBalance, vibrance,
+  levels, shadowsHighlights, colorCorrection
+} from "@remotion/effects";
+```
+
+All require WebGL2. Remotion renderer supports WebGL2 natively — no extra config needed.
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1560,6 +1776,7 @@ Before marking video as delivered:
 - [ ] Remotion looped audio: if any Remotion composition loops ambient SFX via `<Audio>`, test for dropout — v4.0.488 fixed a looped audio dropout bug after multiple iterations; upgrade to ≥ v4.0.488 if affected
 - [ ] Remotion Sequence opacity: if any `<Sequence>` wrapper uses `opacity` for fade-in/fade-out on caption overlays or branded layers, upgrade to ≥ v4.0.494 (fixed Sequence opacity preservation while active — prior versions did not maintain opacity correctly)
 - [ ] Remotion layer opacity leak (v4.0.499): if any composition stacks multiple layers with non-100% opacity (brand badge over video, caption over scrim), upgrade to ≥ v4.0.499 — v4.0.499 fixes opacity leaking between stacked layers in web-renderer
+- [ ] Remotion color correction (§11n, SC263): if clip is inside a Remotion composition and shows AI color cast → apply `colorCorrection()` in one WebGL2 pass instead of chaining multiple effects. Standard exterior Kling pass: exposure=0.3, contrast=1.05, pivot=0.45, blacks=-0.06, temperature=0.08, tint=-0.02, vibrance=0.15. Interior (dark hallway): exposure=0.4, shadows=0.20, highlights=-0.10, blacks=-0.05, temperature=0.05. Single adjustments: use standalone `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()`, or `regionblur()` (selective area blur, topLeft/bottomRight UV coords required)
 - [ ] Remotion Video muted prop (v4.0.492+): when embedding video clips in Remotion compositions, use `<Video muted>` to silence source audio when layering independent SFX/voiceover above
 - [ ] `getVideoMetadata()` deprecated (v4.0.498): if any pipeline script calls Remotion's `getVideoMetadata()`, flag for migration before upgrading past v4.0.497
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
