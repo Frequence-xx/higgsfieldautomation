@@ -289,11 +289,24 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.7.1** is the current stable release (July 5, 2026; confirmed current pass 38 recheck, 2026-07-27). v3.6.0 added the `fran` age modification processor (de-age / re-age faces) and new background remover models (`corridor_key_1024`, `corridor_key_2048`). v3.7.0 was an architecture release; v3.7.1 patches a regression in it.
+FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 39 recheck, 2026-08-16). Previously v3.7.1 (July 5, 2026).
+
+**⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
+
+**3.8.0 changes (pass 39 finding, 2026-08-16):**
+- `--workflow-strategy` argument: `memory` (faster, higher RAM use) or `disk` (slower, RAM-efficient). Add `--workflow-strategy memory` for speed on high-RAM machines; use `disk` if OOM errors occur during batch processing.
+- `--workflow-mode` argument: aligns with upcoming architecture changes (no production-visible effect yet).
+- **AV1 support** via FFmpeg decoding and encoding. Use `--output-video-encoder libsvtav1` for better compression if needed (our default stays `libx264rgb` for skin-tone fidelity — do not change).
+- `--temp-pixel-format`: alpha channel support for compositing workflows. Not relevant to our face-swap pipeline.
+
+**3.8.2 fixes (pass 39 finding, 2026-08-16):**
+- **Fixed broken pipeline with FFmpeg 9 after `-vsync` removal** — the primary reason to upgrade immediately.
+- Fixed incorrect frame enhancer output for in-memory processing.
+- Frame enhancer model now drives output scale in UI.
 
 **3.7.1 changes (pass 27 finding, 2026-07-06):**
 - **Frame distribution fix:** 3.7.0's multi-frame-aware architecture introduced a performance regression; 3.7.1 restores throughput to pre-3.7.0 levels.
-- **2-processor bug fix:** Fixed image-to-image workflow when using exactly 2 processors. **Directly affects our pipeline** — `face_swapper + face_enhancer` and `face_swapper + expression_restorer` combos were broken in 3.7.0 on still-image inputs. Upgrade to 3.7.1 before running any image-to-image FaceFusion jobs.
+- **2-processor bug fix:** Fixed image-to-image workflow when using exactly 2 processors. **Directly affects our pipeline** — `face_swapper + face_enhancer` and `face_swapper + expression_restorer` combos were broken in 3.7.0 on still-image inputs.
 
 **3.7.0 changes (pass 25 finding, 2026-07-02):**
 1. **Multi-frame aware processors:** Processors now consider neighboring frames simultaneously rather than processing each frame in isolation. This directly improves temporal consistency in video output — less flickering, morphing, and facial geometry shifts between frames. Benefit for our clips: expression_restorer and face_enhancer should produce smoother cross-frame results on 5s clips.
@@ -305,7 +318,9 @@ FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `h
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion
-# v3.7.0: --onnxruntime is now positional (no flag name needed)
+# IMPORTANT: use v3.8.2+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
+git checkout 3.8.2
+# v3.7.0+: --onnxruntime is now positional (no flag name needed)
 python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
 # v3.7.0 syntax (headless-run, NOT run)
@@ -670,7 +685,7 @@ Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character 
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
-**O3 not on AIMLAPI as of 2026-07-27 (pass 38 recheck).** Search confirms O3 on fal.ai, Atlas Cloud ($0.15/sec), Krea, Runware — but no AIMLAPI-specific O3 endpoint found. AIMLAPI shows only v3-standard, v3-standard-turbo, v2.6-motion-control, v2-master. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
+**O3 not on AIMLAPI as of 2026-08-16 (pass 39 recheck).** AIMLAPI docs show only Kling video v3-standard, v3-standard-turbo, and O1 reference-to-video. No O3-specific endpoint found. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -802,7 +817,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 38 recheck, 2026-07-27):** AIMLAPI blog post (`aimlapi.com/blog/wan-2-7-video-next-generation-ai-video-generation-model`) explicitly confirms "The R2V mode is available via the AI/ML API platform." However, docs.aimlapi.com video models listing shows only I2V for Wan 2.7 — no dedicated R2V page exists and search engine results describe the model as "Coming Soon" on AIMLAPI's model list. Status: **"AIMLAPI blog-confirmed available but docs-absent — canary-test is mandatory before any production use"**. If canary call to `alibaba/wan-2-7-r2v` returns 404/model-not-found, fall back to Wan 2.6 R2V or Kling O1. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed on AIMLAPI — use FFmpeg strip as mandatory safety step), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist.
+**Wan 2.7 R2V status on AIMLAPI (pass 39 recheck, 2026-08-16):** Status unchanged from pass 38. AIMLAPI blog confirms R2V availability but docs.aimlapi.com video models listing still shows only I2V for Wan 2.7 — no dedicated R2V docs page as of 2026-08-16. Model ID `alibaba/wan-2-7-r2v` listed as "Coming Soon" in model database. Status: **"AIMLAPI blog-confirmed available but docs-absent — canary-test is mandatory before any production use"**. If canary call to `alibaba/wan-2-7-r2v` returns 404/model-not-found, fall back to Wan 2.6 R2V or Kling O1. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed on AIMLAPI — use FFmpeg strip as mandatory safety step), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
