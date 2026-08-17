@@ -233,7 +233,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    - `condition_on_prev_text=False` by default — prevents context bleeding between segments
    - Use `large-v3-turbo` (preferred) or `large-v2` for Dutch. Do NOT use `large-v3` — it regresses on Dutch vs v2. Turbo is based on v3 architecture but with 4 decoder layers (vs 32 in v3/v2) and reverts to v2-level accuracy while being ~3x faster.
 
-   **Qwen3-ForcedAligner (free, watch item — Dutch NOT yet supported as of 2026-07-18):**
+   **Qwen3-ForcedAligner (free, watch item — Dutch NOT yet supported as of 2026-08-17 recheck):**
    Released January 2026 by Alibaba Cloud. The 0.6B model achieves ~42.9ms average alignment shift (AAS) vs WhisperX wav2vec2's ~133.2ms on MFA-labeled data (Qwen3-ASR technical report) — a 67-77% error reduction. Its 11 supported languages are: Chinese, English, Cantonese, French, German, Italian, Japanese, Korean, Portuguese, Russian, Spanish. **Dutch (nl) is not in the supported set.** Qwen3-ASR (the companion transcription model) does support Dutch, but without Dutch ForcedAligner support, it cannot improve our timestamp accuracy over wav2vec2. The current WhisperX + wav2vec2 + Dutch last-word fix (Option B above) remains the correct free path. Monitor `Qwen/Qwen3-ForcedAligner-0.6B` on HuggingFace for Dutch addition — if added, it would be a meaningful accuracy upgrade.
 
    **Option C: @remotion/install-whisper-cpp with DTW (free, Remotion-native, no Python needed)**
@@ -708,11 +708,16 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.509 (August 13, 2026 — current latest):**
+**Remotion v4.0.512 (August 14, 2026 — current latest; no caption API changes in v4.0.510–4.0.512):**
+- v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
+- v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
+- v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
+- `npm install remotion@4.0.512`.
+
+**Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
 - **v4.0.508**: `@remotion/install-whisper-cpp` — **"Do not kill Whisper when Metal falls back to CPU"** (by @anatolykoptev). Previously, if Metal GPU acceleration was unavailable on macOS, the whisper.cpp process was killed outright. Now it falls back gracefully to CPU. **Relevant for macOS production machines** — previously caused silent transcription failures when GPU was unavailable.
-- v4.0.504: `<Series>` made timeline-trimmable. v4.0.507: "hold" easing option in Studio. v4.0.510/511: Timeline precision inputs and keyframe clock refinements.
-- `npm install remotion@4.0.509`.
+- v4.0.504: `<Series>` made timeline-trimmable. v4.0.507: "hold" easing option in Studio.
 
 **Remotion v4.0.499 (July 24, 2026):**
 - Zod bumped to 4.4.3; Studio sidebar clamping, visibility toggle, keyframe selection improvements; `@remotion/drag-and-drop` new payload package; `@remotion/web-renderer` opacity rendering fix; template dependency updates (PostCSS, React Router).
@@ -784,7 +789,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.509 — confirmed current as of 2026-08-15; no caption API changes in 4.0.485–4.0.509)
+### Full API (v4.0.512 — confirmed current as of 2026-08-17; no caption API changes in 4.0.485–4.0.512)
 
 | Export | Purpose |
 |--------|---------|
