@@ -289,7 +289,7 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 39 recheck, 2026-08-16). Previously v3.7.1 (July 5, 2026).
+FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 40 recheck, 2026-08-17). Previously v3.7.1 (July 5, 2026).
 
 **⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
@@ -388,6 +388,8 @@ python facefusion.py headless-run \
 ```
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
+
+**LaVieID — Future Watch (arXiv 2508.07603, ACM MM 2025, code released, pass 40 finding, 2026-08-17):** Local Autoregressive Diffusion Transformers for Identity-Preserving Video Creation. Code: github.com/ssugarwh/LaVieID. Key mechanisms: (1) **Local Router** — represents latent states as weighted combinations of fine-grained local facial structures, directly alleviating feature interference between identity cues and background/clothing content (the mechanism that causes our known identity drift under large head rotations); (2) **Temporal Autoregressive Module** — divides denoised latent tokens into temporal chunks and exploits long-range temporal dependencies to predict correction biases per chunk before video decoding, significantly improving inter-frame identity consistency over 5s clips. No AIMLAPI endpoint as of 2026-08-17. **Practical implication now:** The Local Router validates our 4-ref strategy — providing geometrically distinct face views gives the model distinct "local structures" to anchor against, reducing feature interference. The temporal chunk correction mechanism suggests that longer clips (10s+ at O3) benefit more from this architecture than short 5s clips; for our 5s standard, Kling O1 elements remain the correct choice until a LaVieID-based endpoint appears on AIMLAPI.
 
 **Show and Polish — Future Watch (arXiv 2507.10293, MM 2025, July 2025):** Reference-Guided Identity Preservation in Face Video Restoration (IP-FVR). Accepted at ACM Multimedia 2025. Core mechanism: uses a high-quality reference face photo as a visual prompt injected via decoupled cross-attention during denoising, recovering identity-specific features in degraded/compressed face video. Also addresses intra-clip identity drift. **Practical implication for our pipeline (pass 38 finding, 2026-07-27):** Complements FaceFusion — where FaceFusion swaps/corrects identity post-generation, IP-FVR restores quality in degraded clips *while* using the reference to anchor identity. Useful when a clip passes InsightFace QA but has visible compression artifacts or low quality. No confirmed public code repo. Monitor for code release — if available as a REST endpoint, could replace the CodeFormer step in the FaceFusion pipeline for olive/brown-skin characters (CodeFormer can whiten skin; IP-FVR preserves reference appearance more faithfully).
 
@@ -529,7 +531,7 @@ Nano Banana Pro text-only. Not reusable. Best for wide shots, back-of-head, silh
 - **Background:** Pure flat white or green screen — MANDATORY for Kling Element binding
 - **Lighting:** Soft, even, diffused. All 4 angles MUST be from the same lighting setup
 - **Expression:** Neutral across ALL reference images
-- **Ref count sweet spot:** 3–4 refs optimal; cap at 4 (Kling hard limit). More than 4 increases copy-paste artifact risk ("view-dependent copy-paste," per arXiv 2508.09476 MoFE; further confirmed by Mv²ID, arXiv 2603.21299, March 2026).
+- **Ref count sweet spot:** 3–4 refs optimal; cap at 4 (Kling hard limit). More than 4 increases copy-paste artifact risk ("view-dependent copy-paste," per arXiv 2508.09476 CoFE — paper retitled Dec 2025 from "MoFE" to "Collaborative Face Experts Fusion"; further confirmed by Mv²ID, arXiv 2603.21299, March 2026).
 - **Angular diversity > expression diversity:** front + 3/4 + profile is the minimal effective multi-view set (confirmed by Mv²ID and MoFE research). Do NOT replace an angle ref with an expression variant — cover angles first.
 - **Include a tight face crop as the 4th ref (pass 15 finding, 2026-06-07):** Within the 4-ref cap, replace the full-body standing ref with a tight face crop (eyes-to-chin, no hair, flat background). Mv²ID (arXiv 2603.21299) establishes that region-focused conditioning on the face area is the primary identity signal under large angle variations — simply adding more full-body refs exacerbates copy-paste without improving identity lock. Save as `assets/characters/{name}/face_crop.png` (crop from approved front-view photo). Include as ref 3 or 4. **Especially effective when the character appears in profile or 3/4 view in the generated clip** — the model can extract identity from the face-crop ref even when the full-body angle differs.
 - **Array order does not matter for Kling elements binding.** No published evidence of order sensitivity. Focus on angle coverage.
@@ -581,6 +583,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | 900 FPS | Batch QA; identical accuracy |
 | buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | — | Edge/mobile only |
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
+
+**InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
 **buffalo_m (pass 9 finding, 2026-05-23):** Identical accuracy to buffalo_l but 2× faster throughput (900 vs 450 FPS on RTX-3090). Use buffalo_m for batch QA pipelines (many frame extractions in one session) where speed matters. Use buffalo_l for per-clip evaluation where accuracy is paramount. Same threshold calibration as buffalo_l applies.
 
@@ -659,6 +663,50 @@ No AIMLAPI endpoint — research only, validates existing QA step.
 - **Cost: ~$0.788/sec → $6.30 per 5s clip** (vs Kling v3 Pro $0.291/sec → $1.46 per 5s clip)
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
+
+## Happy Horse 1.1 — High-Ref Character Video (AIMLAPI blog-confirmed, canary required)
+
+Alibaba ATH/Taotian Group model that generates character-consistent video from up to **9 reference images** in one call — the highest reference count of any model currently accessible. AIMLAPI has published a blog guide; docs.aimlapi.com page not confirmed as of 2026-08-17.
+
+**Key specs:**
+- References: up to 9 images (images, video clips, or audio — mixed). Prompt binding: `Image1`, `Image2`, `Video1` (positional, no @ prefix)
+- Output: 720P or 1080P, 3–15s clips, 9 aspect ratios including 9:16
+- Pricing (Atlas Cloud/EvoLink reference): **$0.14/sec at 720P → $0.70/5s; $0.28/sec at 1080P → $1.40/5s** — AIMLAPI pricing TBC on canary
+- Joint audio-video generation in one pass (**audio ON by default — CRITICAL Shari'ah risk**)
+- 7-language lip-sync: English, Mandarin, Cantonese, Japanese, Korean, German, French — **Dutch NOT supported**
+- Model ID pattern (expect AIMLAPI): `alibaba/happyhorse-1.1` or `alibaba/happyhorse-1.1/reference-to-video`
+
+**⚠️ MANDATORY audio mute** — Happy Horse generates audio by default. Always strip in post:
+```bash
+ffmpeg -i happyhorse_output.mp4 -an -c:v copy happyhorse_muted.mp4
+```
+Also attempt to set audio-disable param at API call (param name unconfirmed — use FFmpeg strip as the safety net regardless).
+
+**When to evaluate vs Kling O1:**
+- Happy Horse wins on **reference count** (9 vs O1's 4-image element limit) — useful when 4 refs aren't capturing a complex character
+- Happy Horse 720P at $0.70/5s is slightly **more expensive** than Kling O3 ($0.5625/5s when it lands) and similar to Kling O1 at $1.46 (Pro). At 720P draft use only.
+- Dutch lip-sync not supported → joint audio generation has no production use for our Dutch voiceovers; always mute
+- Character identity quality vs Kling O1 for olive/brown-skin characters **unverified** — run InsightFace QA (PASS ≥ 0.62)
+
+**Canary procedure:** 1 Karel/Mourad reference image at 720P, strip audio post, InsightFace score ≥ 0.62. Do NOT use in production without owner-reviewed output passing brand binary checklist. (pass 40 finding, 2026-08-17)
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "alibaba/happyhorse-1.1",   # model ID TBC — verify on canary
+    "prompt": "Image1 lifts a moving box and walks toward the front door, golden hour light, 9:16",
+    "reference_images": [               # param name TBC — check docs on canary
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+        "https://cdn.example.com/characters/crew_lead/profile.png",
+        "https://cdn.example.com/characters/crew_lead/face_crop.png",
+    ],
+    "aspect_ratio": "9:16",
+    "resolution": "720p",
+    "duration": 5,
+    # DO NOT trust audio param — always strip audio in FFmpeg post step
+}, headers=headers, timeout=120)
+# After receive: ffmpeg -i output.mp4 -an -c:v copy muted.mp4
+```
 
 ## Kling 3.0 Turbo — Character Draft Iteration Model (on AIMLAPI as `v3-standard-turbo`)
 
