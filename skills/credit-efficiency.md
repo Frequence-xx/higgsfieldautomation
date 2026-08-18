@@ -488,8 +488,8 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 
 **STATUS UPDATE (2026-06-14):** Wan 2.7 T2V doc page confirmed live. R2V remains unavailable.
 
-**STATUS UPDATE (2026-07-11 — SC199):** R2V status upgraded to LIKELY LIVE:
-- R2V: `alibaba/wan-2-7-r2v` — AIMLAPI blog post (Wan 2.7 launch article) explicitly states "all four modes (T2V, I2V, R2V, and video editing)" are accessible via AIMLAPI. Docs navigation entry for R2V is present. Model string `alibaba/wan-2-7-r2v` appears in AIMLAPI model database. Third-party Segmind pricing ($0.625/720p, $0.9375/1080p flat) confirmed for Segmind only — NOT AIMLAPI. **CANARY REQUIRED before any production call.** `image_urls` max 3 image-only refs (total refs ≤ 5 when mixing images + videos). Duration cap: 2-10s for R2V (NOT 2-15). Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains fallback.
+**STATUS UPDATE (2026-07-11 — SC199, reconfirmed SC269 2026-08-18):** R2V status: HIGH-CONFIDENCE LIVE on third-party providers; LIKELY LIVE on AIMLAPI.
+- R2V: `alibaba/wan-2-7-r2v` — AIMLAPI blog post (Wan 2.7 launch article) explicitly states "all four modes (T2V, I2V, R2V, and video editing)" are accessible via AIMLAPI. Docs navigation entry for R2V is present. Model string `alibaba/wan-2-7-r2v` appears in AIMLAPI model database. **SC269 2026-08-18:** inference.sh live listing confirms `alibaba/wan-2-7-r2v` is callable; Segmind also live. Third-party pricing ($0.625/720p flat on Segmind) is Segmind-only — NOT AIMLAPI. **CANARY REQUIRED before any production AIMLAPI call.** `image_urls` max 3 image-only refs (total refs ≤ 5 when mixing images + videos). Duration cap: 2-10s for R2V (NOT 2-15). Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains fallback.
 
 **Pricing (updated 2026-05-30):** ~$0.10/sec flat (AIMLAPI blog: "from $0.10/sec"). Previous $0.08/sec (720p) estimate was below the confirmed rate. Use $0.10/sec for all planning. At 2s: ~$0.20. At 3s: ~$0.30. At 5s: ~$0.50.
 
@@ -537,6 +537,24 @@ Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Mod
 
 **Wan 2.6 pricing resolved (2026-05-15):** $0.07/sec is the **720p rate**; $0.13/sec is the **1080p rate**. Both figures were correct — they reflect resolution tiers, not conflicting data. AIMLAPI's listed $0.13 is for 1080p. Use 720p ($0.07/sec, $0.35/5s) for all B-roll and fallback use cases.
 
+### MiniMax H3 (Hailuo 3.0) — WATCH ITEM, NOT ON AIMLAPI (2026-08-18 SC269)
+
+**Released July 31, 2026.** Omni-modal 2K video model — T2V, I2V, R2V, video editing in one model. 15s max clip, 2560×1440 (2K), native stereo audio. Also known as Hailuo 3.0 / Hailuo 03. Model ID on MiniMax API: `MiniMax-H3`. OpenRouter slug: `minimax/hailuo-3`.
+
+**Pricing (MiniMax native API):**
+- 2K: $0.13/sec ($0.65/5s, $1.95/15s)
+- 768p: $0.08/sec ($0.40/5s) — closed beta as of 2026-08-18; when open, cheapest confirmed MiniMax tier
+
+**Status on AIMLAPI:** NOT confirmed as of 2026-08-18. No AIMLAPI docs page or blog post found. Prior Hailuo models (Hailuo 2.3 Fast, Hailuo 02) were added to AIMLAPI weeks after MiniMax launch — expect `minimax/hailuo-h3` or `minimax/hailuo-3` model string when added.
+
+**Cost position vs current alternatives (5s clip, when/if on AIMLAPI at ~1.3× markup):**
+- 768p estimated: ~$0.104/sec → ~$0.52/5s — worse than Hailuo 2.3 Fast ($0.208/5s)
+- 2K estimated: ~$0.169/sec → ~$0.845/5s — not competitive for non-char shots
+
+**Why to watch:** R2V (character consistency) and 15-second max clip length could displace Hailuo 2.3 Fast in premium establishing shots. 768p tier at $0.08/sec native could drop to ~$0.104/sec on AIMLAPI — still 2.5× Hailuo 2.3 Fast but with better quality. Monitor AIMLAPI blog for launch announcement.
+
+---
+
 ### Kling 2.6 Pro I2V (CANARY REQUIRED)
 
 Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard. Not yet in routing matrix.
@@ -549,9 +567,13 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 3. If all pass → route truck-only shots to Kling 2.6 Pro during draft phase
 4. Savings: $0.63/truck draft (vs $1.09 Kling v3 Standard)
 
-### LTXV 2 Fast (`ltxv/ltxv-2-fast`) — LIVE on AIMLAPI, PRICING CONFIRMED 2026-06-14
+### LTXV 2 Fast (`ltxv/ltxv-2-fast`) — ❌ BROKEN since 2026-08-15, PRICING WAS $0.052/sec
 
-⚠️ **DEPRECATION URGENT — 27 DAYS LEFT (as of 2026-07-19):** LTX-2 deprecated July 15 (confirmed, already happened). `ltxv/ltxv-2-fast` now auto-routes to LTX-2.3 quality. **String WILL ERROR after August 15, 2026** unless AIMLAPI adds `ltxv/ltxv-2-3-fast`. As of July 19, AIMLAPI has NOT added the new string. **Action: check docs.aimlapi.com for new LTXV string by Aug 1. If not live by Aug 10 → escalate to owner, route all non-char I2V to Hailuo 2.3 Fast until resolved.** Good news: LTX-2.3 auto-routing is drop-in compatible — quality improved (22B params) at same cost. `generate_audio: false` confirmed working with LTX-2.3 routing (2026-07-19, SC227).
+⚠️ **BROKEN — DO NOT CALL.** LTX-2 strings (`ltxv/ltxv-2-fast`, `ltxv/ltxv-2`) were removed by Lightricks on August 15, 2026 and NOW ERROR on AIMLAPI. **AIMLAPI has NOT added a replacement string (`ltxv/ltxv-2-3-fast`) as of 2026-08-18 (SC269 recheck — no AIMLAPI docs page found for LTX-2.3 or LTX-2.5).** Use Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) for all non-char I2V. Watch for `ltxv/ltxv-2-3-fast` or `ltxv/ltxv-2-5-fast` to appear on AIMLAPI.
+
+**LTX-2.5 (NEW — 2026-08-11):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. NOT on AIMLAPI as of 2026-08-18. When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast.
+
+**LTX-2.3 (intermediate — 2026-07-15 to 2026-08-11):** LTX-2 strings auto-routed to LTX-2.3 during the grace period. LTX-2.3 itself is superseded by LTX-2.5. Expected AIMLAPI strings: `ltxv/ltxv-2-3-fast`, `ltxv/ltxv-2-3` — neither confirmed on AIMLAPI as of 2026-08-18.
 
 Lightricks open-source model, confirmed available on AIMLAPI. **Cheapest non-character I2V option for 6s+ clips where composition anchoring is needed.**
 
