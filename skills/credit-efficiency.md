@@ -488,8 +488,8 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 
 **STATUS UPDATE (2026-06-14):** Wan 2.7 T2V doc page confirmed live. R2V remains unavailable.
 
-**STATUS UPDATE (2026-07-11 — SC199, reconfirmed SC269 2026-08-18):** R2V status: HIGH-CONFIDENCE LIVE on third-party providers; LIKELY LIVE on AIMLAPI.
-- R2V: `alibaba/wan-2-7-r2v` — AIMLAPI blog post (Wan 2.7 launch article) explicitly states "all four modes (T2V, I2V, R2V, and video editing)" are accessible via AIMLAPI. Docs navigation entry for R2V is present. Model string `alibaba/wan-2-7-r2v` appears in AIMLAPI model database. **SC269 2026-08-18:** inference.sh live listing confirms `alibaba/wan-2-7-r2v` is callable; Segmind also live. Third-party pricing ($0.625/720p flat on Segmind) is Segmind-only — NOT AIMLAPI. **CANARY REQUIRED before any production AIMLAPI call.** `image_urls` max 3 image-only refs (total refs ≤ 5 when mixing images + videos). Duration cap: 2-10s for R2V (NOT 2-15). Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains fallback.
+**STATUS UPDATE (SC276 2026-08-19 — CONFIRMED):** R2V is CONFIRMED LIVE on AIMLAPI.
+- R2V: `alibaba/wan-2-7-r2v` ✓ CONFIRMED — AIMLAPI models page (`aimlapi.com/models/wan-2-7`) confirms all 4 Wan 2.7 modes live. Blog post "Wan 2.7 Video — Next-Generation AI Video Generation Model" explicitly states "all four modes (T2V, I2V, R2V, and video editing)" accessible via AIMLAPI. Pricing $0.10/sec confirmed across all four modes per multiple sources. `image_urls` max 3 image-only refs (total refs ≤ 5 when mixing images + videos). Duration cap: 2-10s for R2V (NOT 2-15). **Identity quality canary still required** — test InsightFace score ≥ 0.62 vs NBP Edit baseline before routing production character shots here. Wan 2.6 R2V (`alibaba/wan-2-6-r2v`) remains fallback.
 
 **Pricing (updated 2026-05-30):** ~$0.10/sec flat (AIMLAPI blog: "from $0.10/sec"). Previous $0.08/sec (720p) estimate was below the confirmed rate. Use $0.10/sec for all planning. At 2s: ~$0.20. At 3s: ~$0.30. At 5s: ~$0.50.
 
@@ -513,7 +513,7 @@ Listed in routing matrix as B-roll fallback. **Price researched 2026-04-26: ~$0.
 **First+Last Frame pinning for ghost-driving (NEW — 2026-05-30):**
 Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Model interpolates between two identical frames → truck stays stationary, ambient motion only. Same technique as Veo 3.1 First+Last Fast but at ~$0.10/sec vs ~$0.13/sec. Verify exact `last_image` parameter name in canary.
 
-**R2V character consistency (LIKELY LIVE on AIMLAPI as of 2026-07-11 — CANARY REQUIRED):**
+**R2V character consistency (✓ CONFIRMED ON AIMLAPI — SC276 2026-08-19; identity quality canary still required):**
 - `image_urls` (array) — confirmed parameter name from official Alibaba Cloud API docs. NOT `image_list`.
 - Max 5 mixed refs total (images + video clips + audio files combined)
 - `aspect_ratio: "9:16"` confirmed supported
@@ -531,27 +531,50 @@ Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Mod
 3. I2V character: One 3s call with character hero frame + prompt. QA identity retention and Shari'ah compliance.
 4. If all pass → route Kling Standard 3s draft passes to Wan 2.7 I2V. **Log actual cost.**
 5. **T2V (confirmed live):** Run one 5s T2V call to `alibaba/wan-2-7-t2v`, wide establishing prompt, no characters. Verify 9:16 output and actual billing (~$0.50). If passes → use for T2V establishing shots where Veo 3.1 Lite is unavailable.
-6. **R2V (STATUS: LIKELY LIVE — 2026-07-11):** AIMLAPI blog confirms all 4 Wan 2.7 modes live. Canary: `image_urls: [hero_frame_url_1, hero_frame_url_2]`, `aspect_ratio: "9:16"`, `duration: 5` (max is 10s for R2V — NOT 15), prompt referencing `Image1`. Note `image_urls` max 3 image-only refs (total refs ≤ 5 including video/audio). Verify face retention vs NBP Edit baseline and log actual AIMLAPI cost (~$0.50 expected at $0.10/sec). **R2V duration cap: 2-10 seconds (NOT 2-15 — that limit applies to I2V/T2V only).**
+6. **R2V (✓ CONFIRMED ON AIMLAPI — SC276 2026-08-19):** Model string `alibaba/wan-2-7-r2v` is live. Quality canary: `image_urls: [hero_frame_url_1, hero_frame_url_2]`, `aspect_ratio: "9:16"`, `duration: 5` (max is 10s for R2V — NOT 15), prompt referencing `Image1`. Note `image_urls` max 3 image-only refs (total refs ≤ 5 including video/audio). Verify InsightFace score ≥ 0.62 vs NBP Edit baseline and log actual AIMLAPI cost (~$0.50 expected at $0.10/sec). **R2V duration cap: 2-10 seconds (NOT 2-15 — that limit applies to I2V/T2V only).**
 
 **Do NOT use for character finals until R2V canary clears.** Kling Pro with Subject Binding 80-90 remains the final-pass standard.
 
 **Wan 2.6 pricing resolved (2026-05-15):** $0.07/sec is the **720p rate**; $0.13/sec is the **1080p rate**. Both figures were correct — they reflect resolution tiers, not conflicting data. AIMLAPI's listed $0.13 is for 1080p. Use 720p ($0.07/sec, $0.35/5s) for all B-roll and fallback use cases.
 
-### MiniMax H3 (Hailuo 3.0) — WATCH ITEM, NOT ON AIMLAPI (2026-08-18 SC269)
+### MiniMax H3 (Hailuo 3.0) — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19 recheck)
 
-**Released July 31, 2026.** Omni-modal 2K video model — T2V, I2V, R2V, video editing in one model. 15s max clip, 2560×1440 (2K), native stereo audio. Also known as Hailuo 3.0 / Hailuo 03. Model ID on MiniMax API: `MiniMax-H3`. OpenRouter slug: `minimax/hailuo-3`.
+**Released July 31, 2026. Open weights released Aug 3, 2026 (33B, HuggingFace/ModelScope).** Omni-modal 2K video model — T2V, I2V, R2V, video editing in one model. Accepts up to 9 reference images + 3 reference video clips + 3 audio clips. 15s max clip, 2560×1440 (2K), native stereo audio. Also known as Hailuo 3.0 / Hailuo 03. Model ID on MiniMax API: `MiniMax-H3`. OpenRouter slug: `minimax/hailuo-3`.
 
-**Pricing (MiniMax native API):**
-- 2K: $0.13/sec ($0.65/5s, $1.95/15s)
-- 768p: $0.08/sec ($0.40/5s) — closed beta as of 2026-08-18; when open, cheapest confirmed MiniMax tier
+**Pricing:**
+- 2K: $0.13/sec native ($0.65/5s, $1.95/15s); OpenRouter also $0.13/sec; AIHubMix $0.124/sec
+- 768p: $0.08/sec native ($0.40/5s) — confirm open vs closed beta on AIMLAPI launch
+- Reference images: first 5 free, then $0.04 each; reference audio free
 
-**Status on AIMLAPI:** NOT confirmed as of 2026-08-18. No AIMLAPI docs page or blog post found. Prior Hailuo models (Hailuo 2.3 Fast, Hailuo 02) were added to AIMLAPI weeks after MiniMax launch — expect `minimax/hailuo-h3` or `minimax/hailuo-3` model string when added.
+**Status on AIMLAPI:** NOT confirmed as of 2026-08-19 (SC276 recheck). No AIMLAPI docs page or blog post found. Available on OpenRouter, AIHubMix, Segmind, Luma Agents. Prior Hailuo models (Hailuo 2.3 Fast, Hailuo 02) were added to AIMLAPI weeks after MiniMax launch — expect `minimax/hailuo-h3` or `minimax/hailuo-3` model string when added.
 
 **Cost position vs current alternatives (5s clip, when/if on AIMLAPI at ~1.3× markup):**
 - 768p estimated: ~$0.104/sec → ~$0.52/5s — worse than Hailuo 2.3 Fast ($0.208/5s)
 - 2K estimated: ~$0.169/sec → ~$0.845/5s — not competitive for non-char shots
 
-**Why to watch:** R2V (character consistency) and 15-second max clip length could displace Hailuo 2.3 Fast in premium establishing shots. 768p tier at $0.08/sec native could drop to ~$0.104/sec on AIMLAPI — still 2.5× Hailuo 2.3 Fast but with better quality. Monitor AIMLAPI blog for launch announcement.
+**Why to watch:** 9-ref R2V (character consistency) could compete with Wan 2.7 R2V once on AIMLAPI. 15-second max clip length is the longest in the pipeline. Monitor AIMLAPI blog for launch announcement.
+
+---
+
+### FLUX 3 Video — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19)
+
+**Released July 23, 2026 (early access); GA August 4, 2026.** Black Forest Labs multimodal model — T2V, I2V, V2V, up to 20-second clips, native audio synchronized in single pass. 1080p GA (2K/4K/open weights coming). Up to 10 reference images accepted.
+
+**Pricing (BFL native API — audio included, cannot disable):**
+- Draft mode HD T2V/I2V: **$0.06/sec** (5s = $0.30, 20s = $1.20)
+- Draft mode HD V2V: $0.12/sec
+- Full Quality HD T2V/I2V: $0.17/sec
+- Full Quality Full HD T2V/I2V: $0.29/sec
+
+**Status on AIMLAPI:** NOT confirmed as of 2026-08-19. Available via BFL API directly and "select partners." No AIMLAPI docs page found.
+
+**⚠️ Audio cannot be disabled** — FLUX 3 Video always generates audio natively. For Shari'ah-compliant pipeline: audio strip via FFmpeg required before assembly (same workflow as Kling audio-on clips). This adds a post-processing step but is not a blocker.
+
+**Cost position (Draft $0.06/s, if/when on AIMLAPI — estimate ~$0.078/s with markup):**
+- At 5s: ~$0.39 — worse than Hailuo 2.3 Fast ($0.208) but comparable to Wan 2.7 I2V ($0.50)
+- Advantage: up to 20s clips and 10-ref identity lock in one call
+
+**Why to watch:** Draft mode at $0.06/s native (est. ~$0.078/s AIMLAPI) is the cheapest I2V option seen, beating Hailuo 2.3 Fast if confirmed at that rate. 10-ref identity lock in draft mode could replace NBP Edit + Kling Standard for character draft iterations at fraction of cost. Monitor AIMLAPI blog for `blackforestlabs/flux-3-i2v` string.
 
 ---
 
@@ -569,7 +592,7 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 
 ### LTXV 2 Fast (`ltxv/ltxv-2-fast`) — ❌ BROKEN since 2026-08-15, PRICING WAS $0.052/sec
 
-⚠️ **BROKEN — DO NOT CALL.** LTX-2 strings (`ltxv/ltxv-2-fast`, `ltxv/ltxv-2`) were removed by Lightricks on August 15, 2026 and NOW ERROR on AIMLAPI. **AIMLAPI has NOT added a replacement string (`ltxv/ltxv-2-3-fast`) as of 2026-08-18 (SC269 recheck — no AIMLAPI docs page found for LTX-2.3 or LTX-2.5).** Use Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) for all non-char I2V. Watch for `ltxv/ltxv-2-3-fast` or `ltxv/ltxv-2-5-fast` to appear on AIMLAPI.
+⚠️ **BROKEN — DO NOT CALL.** LTX-2 strings (`ltxv/ltxv-2-fast`, `ltxv/ltxv-2`) were removed by Lightricks on August 15, 2026 and NOW ERROR on AIMLAPI. **AIMLAPI has NOT added a replacement string as of 2026-08-19 (SC276 recheck — no AIMLAPI docs page found for LTX-2.3 or LTX-2.5).** Use Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) for all non-char I2V. Watch for `ltxv/ltxv-2-3-fast` or `ltxv/ltxv-2-5-fast` to appear on AIMLAPI.
 
 **LTX-2.5 (NEW — 2026-08-11):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. NOT on AIMLAPI as of 2026-08-18. When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast.
 
