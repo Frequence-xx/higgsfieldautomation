@@ -708,11 +708,12 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.512 (August 14, 2026 — current latest; no caption API changes in v4.0.510–4.0.512):**
+**Remotion v4.0.513 (August 18, 2026 — current latest; no caption API changes in v4.0.510–4.0.513):**
+- v4.0.513: `@remotion/media` audio sample-rate conversion fix (PR by @samohovets); `@remotion/effects` new `tile()` effect; `@remotion/mac-cursors` new package; Studio and web-renderer improvements. **No @remotion/captions or @remotion/install-whisper-cpp changes.**
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.512`.
+- `npm install remotion@4.0.513`.
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -789,7 +790,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.512 — confirmed current as of 2026-08-17; no caption API changes in 4.0.485–4.0.512)
+### Full API (v4.0.513 — confirmed current as of 2026-08-19; no caption API changes in 4.0.485–4.0.513)
 
 | Export | Purpose |
 |--------|---------|
