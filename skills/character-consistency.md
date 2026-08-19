@@ -289,7 +289,7 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 40 recheck, 2026-08-17). Previously v3.7.1 (July 5, 2026).
+FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 41 recheck, 2026-08-19 — still latest, no new version). Previously v3.7.1 (July 5, 2026).
 
 **⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
@@ -389,7 +389,7 @@ python facefusion.py headless-run \
 
 Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 
-**LaVieID — Future Watch (arXiv 2508.07603, ACM MM 2025, code released, pass 40 finding, 2026-08-17):** Local Autoregressive Diffusion Transformers for Identity-Preserving Video Creation. Code: github.com/ssugarwh/LaVieID. Key mechanisms: (1) **Local Router** — represents latent states as weighted combinations of fine-grained local facial structures, directly alleviating feature interference between identity cues and background/clothing content (the mechanism that causes our known identity drift under large head rotations); (2) **Temporal Autoregressive Module** — divides denoised latent tokens into temporal chunks and exploits long-range temporal dependencies to predict correction biases per chunk before video decoding, significantly improving inter-frame identity consistency over 5s clips. No AIMLAPI endpoint as of 2026-08-17. **Practical implication now:** The Local Router validates our 4-ref strategy — providing geometrically distinct face views gives the model distinct "local structures" to anchor against, reducing feature interference. The temporal chunk correction mechanism suggests that longer clips (10s+ at O3) benefit more from this architecture than short 5s clips; for our 5s standard, Kling O1 elements remain the correct choice until a LaVieID-based endpoint appears on AIMLAPI.
+**LaVieID — Future Watch (arXiv 2508.07603, ACM MM 2025, code released, pass 40 finding, 2026-08-17; code status confirmed pass 41, 2026-08-19):** Local Autoregressive Diffusion Transformers for Identity-Preserving Video Creation. Code: github.com/ssugarwh/LaVieID. **Code IS released** (4 commits as of 2026-08-19). Tested environment: Python 3.12.4, PyTorch 2.1.0+, CUDA 12.8 (Python 3.10 recommended if xformers/diffusers compatibility issues arise). No formal release tags — clone from master. Key mechanisms: (1) **Local Router** — represents latent states as weighted combinations of fine-grained local facial structures, directly alleviating feature interference between identity cues and background/clothing content (the mechanism that causes our known identity drift under large head rotations); (2) **Temporal Autoregressive Module** — divides denoised latent tokens into temporal chunks and exploits long-range temporal dependencies to predict correction biases per chunk before video decoding, significantly improving inter-frame identity consistency over 5s clips. No AIMLAPI endpoint as of 2026-08-19. **Practical implication now:** The Local Router validates our 4-ref strategy — providing geometrically distinct face views gives the model distinct "local structures" to anchor against, reducing feature interference. The temporal chunk correction mechanism suggests that longer clips (10s+ at O3) benefit more from this architecture than short 5s clips; for our 5s standard, Kling O1 elements remain the correct choice until a LaVieID-based endpoint appears on AIMLAPI.
 
 **Show and Polish — Future Watch (arXiv 2507.10293, MM 2025, July 2025):** Reference-Guided Identity Preservation in Face Video Restoration (IP-FVR). Accepted at ACM Multimedia 2025. Core mechanism: uses a high-quality reference face photo as a visual prompt injected via decoupled cross-attention during denoising, recovering identity-specific features in degraded/compressed face video. Also addresses intra-clip identity drift. **Practical implication for our pipeline (pass 38 finding, 2026-07-27):** Complements FaceFusion — where FaceFusion swaps/corrects identity post-generation, IP-FVR restores quality in degraded clips *while* using the reference to anchor identity. Useful when a clip passes InsightFace QA but has visible compression artifacts or low quality. No confirmed public code repo. Monitor for code release — if available as a REST endpoint, could replace the CodeFormer step in the FaceFusion pipeline for olive/brown-skin characters (CodeFormer can whiten skin; IP-FVR preserves reference appearance more faithfully).
 
@@ -410,6 +410,8 @@ Re-run InsightFace QA after FaceFusion. Score should be ≥ 0.65.
 **FaithfulFaces — Research Validation (arXiv 2605.04702, May 2026):** Pose-faithful facial identity preservation for T2V generation. Core finding: identity features and pose features are entangled in face embeddings — injecting a single face embedding carries both, and when the output clip involves a pose angle not shown in the reference, identity distorts. FaithfulFaces introduces a "pose-shared identity aligner" that maps facial views into a global pose representation via explicit Euler angle embeddings and a pose-variation / identity-invariance constraint, so the identity features become pose-agnostic. **Practical implication for our pipeline (pass 28 finding, 2026-07-09):** This is the academic explanation for why our 3-angle ref strategy (front + 3/4 + profile) works — covering the major pose variants ensures the model sees identity cues at every angle the output clip might use. It also validates the tight face crop as 4th ref: a tight crop isolates the identity-invariant features (eye shape, bone structure, skin tone) with minimal pose ambiguity. No public model or AIMLAPI endpoint — research only, validates existing pipeline.
 
 **Identity-Action Decoupling — IaD Framework (arXiv 2606.22347, June 2026):** Addresses a failure mode in inference-time identity injection (ConsisID, ID-Animator): injecting facial identity features also injects pose and expression info from the reference image, making the model generate monotonous or incorrect facial movements even when the prompt requests specific action. IaD introduces two loss functions — **Identity Decoupling Loss (L_ID)** separates identity features from pose/expression attributes; **Text Alignment Loss (L_TA)** ensures the decoupled action space follows the text prompt faithfully. Result: rich, controllable expressions and scene variations while maintaining cross-temporal identity consistency, without subject-specific fine-tuning. **Practical implication for our pipeline (pass 28 finding, 2026-07-09):** Provides the academic grounding for WHY our differential prompt rule (Step 3a) works — prompts that describe ONLY action + camera, letting references carry identity, avoid the identity/action entanglement problem IaD solves architecturally. When retrying a clip with wrong facial movement, check whether the motion prompt contains identity-descriptive words ("the friendly man", "the olive-skinned person") competing with the reference signal — strip these to action-only. No public code or AIMLAPI endpoint as of 2026-07-09 — research only.
+
+**IPT2V Spatial-Temporal Decoupling — Research Validation (arXiv 2507.04705, ACM MM 2025, Tencent YouTu Lab; pass 41 finding, 2026-08-19):** "Identity-Preserving Text-to-Video Generation Guided by Simple yet Effective Spatial-Temporal Decoupled Representations." Key finding: identity-preserving video generation suffers a spatial-temporal trade-off — optimizing for spatially coherent character identity (staying in character) competes with temporally smooth motion dynamics (natural movement). The framework decouples spatial representations (layout, character identity) from temporal representations (motion dynamics) using a two-stage generation paradigm: first generate a spatially coherent keyframe with identity locked, then generate temporal motion separately. **Practical implication for our pipeline:** Validates our prompt structure of separating identity (carried by reference images) from motion (described in text prompt only). Do NOT describe motion and identity attributes simultaneously in the same prompt — they compete in the embedding space. The differential prompt rule (Step 3a) is architecturally justified by this paper. No AIMLAPI endpoint — research only, validates existing pipeline.
 
 **Avatar V — Future Watch (arXiv 2606.13872, HeyGen, released April 8, 2026; pass 30 finding, 2026-07-13):** Video-reference avatar generation from HeyGen. Key mechanism: conditions on the **full token sequence of a reference VIDEO** (not just still images) at every transformer layer via Sparse Reference Attention (linear complexity vs reference length). Unlike our current still-image refs, Avatar V extracts "video-DNA" — talking rhythm, micro-expressions, gesture habits — from the reference clip. The identity-aware super-resolution refiner reuses the full reference conditioning for output upscaling. Available on HeyGen's API (`developers.heygen.com`). **NOT on AIMLAPI — AIMLAPI-only pipeline.** When Avatar V or equivalent appears on AIMLAPI, prioritize over still-image refs for characters.
 
@@ -693,19 +695,25 @@ Also attempt to set audio-disable param at API call (param name unconfirmed — 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "alibaba/happyhorse-1.1",   # model ID TBC — verify on canary
-    "prompt": "Image1 lifts a moving box and walks toward the front door, golden hour light, 9:16",
-    "reference_images": [               # param name TBC — check docs on canary
+    # Prompt syntax: reference images by [Image 1], [Image 2], ... (not @Image1 or Image1)
+    "prompt": "[Image 1] lifts a moving box and walks toward the front door, golden hour light, 9:16",
+    # Parameter name: "images_list" confirmed from Python wrapper (array of URLs, 1-9)
+    # AIMLAPI adapter may use different name — canary-test both "images_list" and "reference_images"
+    "images_list": [                    # confirmed param name from community wrapper; TBC on AIMLAPI
         "https://cdn.example.com/characters/crew_lead/front.png",
         "https://cdn.example.com/characters/crew_lead/three_quarter.png",
         "https://cdn.example.com/characters/crew_lead/profile.png",
         "https://cdn.example.com/characters/crew_lead/face_crop.png",
     ],
+    # Mode auto-detected from image count: 0=T2V, 1=I2V, 2-9=R2V (no explicit mode param)
     "aspect_ratio": "9:16",
     "resolution": "720p",
     "duration": 5,
-    # DO NOT trust audio param — always strip audio in FFmpeg post step
+    # NO confirmed audio-disable param — no "mute" option documented on AIMLAPI.
+    # FFmpeg strip is MANDATORY (not optional): ffmpeg -i output.mp4 -an -c:v copy muted.mp4
 }, headers=headers, timeout=120)
-# After receive: ffmpeg -i output.mp4 -an -c:v copy muted.mp4
+# MANDATORY post-step regardless of API params:
+# ffmpeg -i output.mp4 -an -c:v copy muted.mp4
 ```
 
 ## Kling 3.0 Turbo — Character Draft Iteration Model (on AIMLAPI as `v3-standard-turbo`)
@@ -733,7 +741,7 @@ Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character 
 
 **June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
 
-**O3 not on AIMLAPI as of 2026-08-16 (pass 39 recheck).** AIMLAPI docs show only Kling video v3-standard, v3-standard-turbo, and O1 reference-to-video. No O3-specific endpoint found. Per Farouq directive — AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
+**O3 not on AIMLAPI as of 2026-08-19 (pass 41 recheck).** AIMLAPI docs show only Kling video v3-standard, v3-standard-turbo, and O1 reference-to-video. No O3-specific endpoint found. O3 confirmed live on Atlas Cloud ($0.15/sec) and EvoLink ($0.1125/sec R2V) — irrelevant, AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
