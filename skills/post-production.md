@@ -777,9 +777,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | **v0.7.1 (2026-07-21)** | **NOW STABLE.** Replaces v0.7.0. All documented v0.7.1 features confirmed: `--expand` flag (use `split-video --expand`), `backend` kwarg, `expand_scenes_to_bounds()`. NEW: `VideoStreamConcat`, `VideoStream.decode_failures`, PyAV corrupt-frame tolerance (8 frames), PyAV PTS normalization. See §3d for full details. Install: `pip install scenedetect-headless`. |
 | SVT-AV1 | **v4.2.0 (2026-07-13)** | New: `--tune-vmaf` (~15% VMAF BD-rate gain for VOD/archive); CBR Kalman-filter rate control; ARM NEON/SVE2 kernels. Pipeline commands (§5h) unchanged — `-svtav1-params tune=0` (VQ) remains correct. See SC221 update. |
-| Remotion | **v4.0.512 (released 2026-08-14)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m), **`regionblur()`** (v4.0.507), **`exposure()`** **`whiteBalance()`** **`vibrance()`** **`levels()`** **`shadowsHighlights()`** (v4.0.508), **`colorCorrection()`** (v4.0.509) — all documented in §11n (SC263). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496–499 (2026-07-21–24):** Studio-only / opacity-leak fix / Zod upgrade — see SC249 note. **v4.0.507 (2026-08-07): `regionblur()` added to @remotion/effects.** **v4.0.508 (2026-08-11): `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()` added.** **v4.0.509 (2026-08-12): `colorCorrection()` added.** **v4.0.510 (2026-08-14): `@remotion/elements` introduced** — data visualization / UI components: animated line chart, vertical bar chart, animated pie chart, spinning text wheel, product discount callout. These are a NEW PACKAGE separate from `@remotion/effects` (visual filter effects). Install: `npm install @remotion/elements` (package name unconfirmed from available docs — verify with `npm view @remotion/elements version`). No new @remotion/effects in v4.0.510. v4.0.511 (2026-08-14): Interactivity regression fix from v4.0.510. v4.0.512 (2026-08-14): Republish of v4.0.511 to fix npm staging delays. **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.513 (released 2026-08-18)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m), **`regionblur()`** (v4.0.507), **`exposure()`** **`whiteBalance()`** **`vibrance()`** **`levels()`** **`shadowsHighlights()`** (v4.0.508), **`colorCorrection()`** (v4.0.509) — all documented in §11n (SC263). **`tile()`** (v4.0.513 — §11o, SC277). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). **New package: `@remotion/mac-cursors`** (v4.0.513 — macOS cursor animation; pipeline relevance: none for moving ads). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. **v4.0.513 `@remotion/media` audio fix:** non-standard sample rates (e.g., 22050 Hz source audio) now correctly resampled to 48000 Hz — previously caused distorted or sped-up audio in compositions mixing voiceover and SFX at different sample rates. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496–499 (2026-07-21–24):** Studio-only / opacity-leak fix / Zod upgrade — see SC249 note. **v4.0.507 (2026-08-07): `regionblur()` added to @remotion/effects.** **v4.0.508 (2026-08-11): `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()` added.** **v4.0.509 (2026-08-12): `colorCorrection()` added.** **v4.0.510 (2026-08-14): `@remotion/elements` introduced** — data visualization / UI components: animated line chart, vertical bar chart, animated pie chart, spinning text wheel, product discount callout. These are a NEW PACKAGE separate from `@remotion/effects` (visual filter effects). Install: `npm install @remotion/elements` (package name unconfirmed from available docs — verify with `npm view @remotion/elements version`). No new @remotion/effects in v4.0.510. v4.0.511 (2026-08-14): Interactivity regression fix from v4.0.510. v4.0.512 (2026-08-14): Republish of v4.0.511 to fix npm staging delays. **v4.0.513 (2026-08-18): `tile()` added to @remotion/effects; `@remotion/mac-cursors` new package; `@remotion/media` audio sample-rate conversion fix.** **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC277 update (2026-08-20):** **Remotion advanced to v4.0.513 (2026-08-18).** Three changes: (1) **`tile()` added to `@remotion/effects`** — WebGL2 effect that creates a repeated tile pattern from its child composition. Full parameters documented in new §11o. Pipeline relevance: title card pattern backgrounds, repeating brand-asset texture treatments — never on character or truck shots. (2) **`@remotion/mac-cursors` new package** — renders macOS-style animated cursor graphics; useful for screen recording/tutorial content. **Pipeline relevance for Snelverhuizen: none** — no screen recording in moving-ad briefs. Document only for future reference. (3) **`@remotion/media` audio sample-rate conversion fix** — compositions that mix audio files at different sample rates (e.g., a voiceover at 44100 Hz + SFX at 22050 Hz) previously produced distorted or sped-up audio; now correctly resampled to 48000 Hz inside the Remotion compositor. **Pipeline action:** If any Remotion composition mixes audio sources with different sample rates, upgrade to ≥ v4.0.513 and test playback. Our standard pipeline encodes all audio at 48000 Hz via system FFmpeg, so this fix only matters for audio embedded in Remotion `<Audio>` components. **All other tools confirmed unchanged (Aug 20 check):** FFmpeg 9.0.1 (no 9.0.2 or 9.1), SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary; AUR package confirms 20250112 is current), PySceneDetect v0.7.1 stable (no v0.7.2), Practical-RIFE v4.26 (no v4.27).
 
 **SC270 update (2026-08-18):** **SC263 PARTIAL CORRECTION — v4.0.510 added `@remotion/elements` data visualization package (missed in SC263).** SC263 stated "v4.0.510 Studio enhancements only — no new effects" — correct for `@remotion/effects`, but missed the new `@remotion/elements` package. GitHub release notes for v4.0.510 confirm: animated line chart, vertical bar chart, animated pie chart, spinning text wheel, and product discount callout components added. These are separate from `@remotion/effects` (visual filter effects) — standalone composable chart/UI elements. Exact npm package name not confirmable via available sources (remotion.dev blocked, no package.json found) — verify with `npm view @remotion/elements version` before use. **Pipeline relevance: LOW for current ads (no data viz in current briefs), but product discount callout potentially useful for promotional price-comparison moving ads.** **All other tools confirmed unchanged (Aug 18 check):** FFmpeg 9.0.1 (no 9.0.2), SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 stable (no v0.7.2), Practical-RIFE v4.26 (no v4.27, no GitHub releases page — models in repo as code).
 
@@ -1752,6 +1754,70 @@ All require WebGL2. Remotion renderer supports WebGL2 natively — no extra conf
 
 ---
 
+### 11o. `@remotion/effects` — `tile()` (v4.0.513, SC277)
+
+**`tile()`** (added v4.0.513, 2026-08-18) — WebGL2 effect that repeats its child composition as a tiled grid pattern across the frame. Creates a seamless mosaic/wallpaper treatment from any Remotion composition layer.
+
+Parameters:
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `columns` | `number` | `2` | Number of tile columns (horizontal repeat count) |
+| `rows` | `number` | `2` | Number of tile rows (vertical repeat count) |
+| `phase` | `[number, number]` | `[0, 0]` | UV offset for the tile grid — animate to scroll the pattern |
+| `flipAlternating` | `boolean` | `false` | Mirror every other tile — creates a symmetric reflect pattern; good for abstract brand treatments |
+
+**Practical uses for Snelverhuizen:**
+
+**1. Repeating logo/box pattern for title card backgrounds:**
+```tsx
+import { tile } from "@remotion/effects";
+
+// 4×6 tiled grid of the moving-box asset as a title card background
+// Set opacity low so it reads as texture behind the headline
+<AbsoluteFill style={{ filter: tile({ columns: 4, rows: 6 }), opacity: 0.12 }}>
+  <MovingBoxAsset />
+</AbsoluteFill>
+```
+
+**2. Animated scrolling brand tile (ambient drift on end cards):**
+```tsx
+import { tile } from "@remotion/effects";
+import { interpolate, useCurrentFrame } from "remotion";
+
+const frame = useCurrentFrame();
+// Slowly drift the tile grid — full scroll cycle over 90 frames
+const phaseX = interpolate(frame, [0, 90], [0, 1]);
+
+<AbsoluteFill style={{ filter: tile({ columns: 3, rows: 5, phase: [phaseX, 0] }), opacity: 0.08 }}>
+  <OrangeBrandPattern />  {/* solid #FC8434 or logo lockup */}
+</AbsoluteFill>
+```
+
+**3. Mirror-reflect tile for abstract end frame texture:**
+```tsx
+<AbsoluteFill style={{ filter: tile({ columns: 4, rows: 4, flipAlternating: true }), opacity: 0.10 }}>
+  <TruckSilhouette />
+</AbsoluteFill>
+```
+
+**When to use:**
+- Title cards, end frames, and interstitials with abstract brand texture
+- Low-opacity background layer only — never in the foreground
+- Brand pattern backgrounds replacing solid color fills
+
+**When NOT to use:**
+- Character shots (any face in frame)
+- Truck exterior or cargo shots
+- Any clip that will be animated — tile is designed for static composition layers used as background texture
+
+**Import:**
+```tsx
+import { tile } from "@remotion/effects";
+// Part of @remotion/effects — already installed with other effects
+```
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1779,6 +1845,7 @@ Before marking video as delivered:
 - [ ] Remotion Sequence opacity: if any `<Sequence>` wrapper uses `opacity` for fade-in/fade-out on caption overlays or branded layers, upgrade to ≥ v4.0.494 (fixed Sequence opacity preservation while active — prior versions did not maintain opacity correctly)
 - [ ] Remotion layer opacity leak (v4.0.499): if any composition stacks multiple layers with non-100% opacity (brand badge over video, caption over scrim), upgrade to ≥ v4.0.499 — v4.0.499 fixes opacity leaking between stacked layers in web-renderer
 - [ ] Remotion color correction (§11n, SC263): if clip is inside a Remotion composition and shows AI color cast → apply `colorCorrection()` in one WebGL2 pass instead of chaining multiple effects. Standard exterior Kling pass: exposure=0.3, contrast=1.05, pivot=0.45, blacks=-0.06, temperature=0.08, tint=-0.02, vibrance=0.15. Interior (dark hallway): exposure=0.4, shadows=0.20, highlights=-0.10, blacks=-0.05, temperature=0.05. Single adjustments: use standalone `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()`, or `regionblur()` (selective area blur, topLeft/bottomRight UV coords required)
+- [ ] Remotion tile pattern backgrounds (§11o, SC277, v4.0.513+): for title cards and end frames needing brand texture backgrounds, use `tile()` from `@remotion/effects` — apply at opacity 0.08–0.12 as a low background layer. Parameters: columns/rows (repeat count), phase ([x,y] offset, animate for slow drift), flipAlternating (mirror every other tile). **Never on character/truck shots.** Also: `@remotion/media` audio sample-rate fix in v4.0.513 — if any Remotion composition mixes audio at different sample rates (e.g., voiceover 44100 Hz + SFX 22050 Hz), upgrade to ≥ v4.0.513 to fix distorted/sped-up audio
 - [ ] Remotion Video muted prop (v4.0.492+): when embedding video clips in Remotion compositions, use `<Video muted>` to silence source audio when layering independent SFX/voiceover above
 - [ ] `getVideoMetadata()` deprecated (v4.0.498): if any pipeline script calls Remotion's `getVideoMetadata()`, flag for migration before upgrading past v4.0.497
 - [ ] Remotion compositions: if any `<Audio>` component used, add explicit `optimizeFor="accuracy"` — v5 will change default to `"speed"`, and v5 Automators tier will require mandatory telemetry (`licenseKey`) — see §11b (forward-compat guard, low priority until v5 releases)
