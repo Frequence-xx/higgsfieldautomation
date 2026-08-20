@@ -540,6 +540,8 @@ The native Kling API uses `shotType` (camelCase); AIMLAPI likely uses `shot_type
 ]
 ```
 
+**First-shot identity priority (ShotStream ECCV 2026, SC279):** Kling's multi-shot architecture is causal — each shot is conditioned on prior shots. The FIRST shot in `multi_prompt` has the strongest influence on character identity across the entire sequence. Practical rule: put the clearest `@Element1` mention and the strongest character identity cue in shot 1. If character identity drifts mid-sequence, the root cause is almost always a weak first-shot anchor, not the later shots.
+
 **Multi-shot negative prompt additions** (add to standard negative template):
 ```
 character drift between shots, tonal shift between cuts, lighting inconsistency across shots
@@ -762,19 +764,45 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 
 ---
 
-## Kling O3 — Future Watch (Not Yet on AIMLAPI)
+## Kling O3 — NOW ON AIMLAPI (CANARY REQUIRED, SC279 Aug 20, 2026)
 
-Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Confirmed NOT on AIMLAPI as of August 18, 2026** — confirmed absent from AIMLAPI docs index and AIMLAPI's own blog post listing live Kling models (which lists only Kling 2.6 Pro and Kling v3 Pro, not O3). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI. A `site:docs.aimlapi.com` search for Kling models shows no O3/Omni page as of August 18, 2026 (SC272 recheck; prior SC265 Aug 17, SC258 Aug 15). O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`; expected AIMLAPI string when added: `klingai/video-v3-omni`. Available on fal.ai, Replicate, PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API — but **NOT AIMLAPI**. A 4K O3 variant (`klingai/video-o3-4k`, Runware-confirmed) was announced June 12, 2026 — expect both O3 base and O3 4K to land on AIMLAPI together. Farouq AIMLAPI-only directive means O3 cannot be used until it appears there.
+Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Status updated SC279 Aug 20, 2026: Kling O3/Omni NOW CONFIRMED in the AIMLAPI model database.** Prior study cycles (SC265 Aug 17, SC272 Aug 18) found no dedicated docs page — the models appear in the model database listing but may not yet have individual docs pages. The June 17, 2026 Turbo launch did NOT include O3/Omni; they were added to AIMLAPI subsequently (exact date TBD — first confirmed SC279).
 
-**O3 advantages worth monitoring:**
+**Confirmed AIMLAPI model strings (SC279 Aug 20, 2026 — CANARY REQUIRED before production use):**
+- `klingai/video-v3-omni-720p-image-to-video`
+- `klingai/video-v3-omni-1080p-image-to-video`
+- `klingai/video-v3-omni-720p-text-to-video`
+- `klingai/video-v3-omni-1080p-text-to-video`
+
+**Expected AIMLAPI pricing (based on AIMLAPI ~2.6× markup over native rates — CANARY REQUIRED to confirm):**
+- 720p I2V (no audio): ~$1.09/5s (same price tier as v3 Standard, based on native $0.084/sec)
+- 1080p I2V (no audio): ~$1.46/5s (same price tier as v3 Pro, based on native $0.112/sec)
+- Native audio included adds ~33% surcharge at native rates — **ALWAYS pass `generate_audio: false`**
+
+O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`. Also available on PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API. Farouq AIMLAPI-only directive applies — now that O3 is on AIMLAPI, it may be used after canary confirmation.
+
+**O3 advantages over v3 Pro (now actionable — O3 is on AIMLAPI):**
 - Multi-image element building: up to **7 reference images** per call (vs. 3 for v3 Pro)
 - Combined input: up to **4 images + 1 reference video** in a single call (O3-exclusive)
 - Multi-character coreference (3+ characters)
-- **Voice binding from video element refs** — upload a clip to lock both the character's appearance AND voice tone; every time that character speaks, the voice stays consistent
+- **Voice binding from video element refs** — upload a clip to lock both the character's appearance AND voice tone; voice stays consistent across shots. **DO NOT USE in Snelverhuizen pipeline (Shari'ah compliance — no audio)**
 - 3D Spacetime Joint Attention for stronger physics and consistency
-- Native audio generation with lip-sync in 5 languages (EN, ZH, JA, KO, ES)
+- Native audio generation with lip-sync in 5 languages (EN, ZH, JA, KO, ES) — **ALWAYS suppress with `generate_audio: false`**
 
-If O3 becomes available on AIMLAPI, evaluate it for character-heavy clips where v3 Pro produces identity drift.
+**Evaluate O3 1080p I2V for character-heavy clips where v3 Pro produces identity drift.** At ~$1.46/5s (estimated), it offers more identity anchors (7 refs vs 3) at the same expected cost as v3 Pro. Run canary first.
+
+### O3 Canary Checklist (SC279 Aug 20, 2026)
+
+- [ ] Submit one 5s I2V call with `klingai/video-v3-omni-1080p-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
+- [ ] Strip audio immediately: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
+- [ ] Record actual AIMLAPI cost — confirm expected ~$1.46/5s (1080p)
+- [ ] Test element syntax: try `"elements"` first (AIMLAPI convention); if rejected, try `"kling_elements"` (native O3 name)
+- [ ] Test element reference syntax in prompt: try `@Element1` first (AIMLAPI convention); if identity fails, try `<<<element_1>>>` (native O3 syntax)
+- [ ] Confirm `generate_audio: false` suppresses audio (O3 defaults audio ON natively)
+- [ ] Run InsightFace buffalo_l cosine similarity vs v3 Pro baseline on same refs
+- [ ] If 7-ref elements confirm → run character shot with 4 angles + 3 expression refs (vs our current 3-ref limit)
+- [ ] Run brand binary checklist + Shari'ah compliance
+- [ ] If confirmed: update routing matrix for character shots requiring max identity lock
 
 **O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12; element syntax corrected SC149):**
 - `elements` array → replaced by `kling_elements` array (`name` + `description` + `element_input_urls` of 2–4 images)
