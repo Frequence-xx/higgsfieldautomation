@@ -128,6 +128,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Luma Ray Flash 2 I2V | `luma/ray-flash-2` | 720p (9:16 ✓) | **~$0.048/sec** (~$0.24/5s, AIMLAPI $0.002/M pixels) | No audio generation, no surcharge risk — CANARY REQUIRED. I2V + first+last frame. Max 9s. |
 | Grok Imagine Video 1.5 I2V/R2V | `xai/grok-imagine-video` | 720p (9:16 ✓) | **~$0.104/sec 480p** (~$0.52/5s); **~$0.182/sec 720p** (~$0.91/5s) — CORRECTED 2026-06-18. Audio always generated — strip required. WIDE RELEASE June 17. CANARY REQUIRED. |
 | Seedance 2.0 Fast | `bytedance/seedance-2-0-fast` | TBD | **$0.316/sec ($1.58/5s — CONFIRMED 2026-06-30)** | **DO NOT USE** — more expensive than Kling Pro ($1.46/5s) at corrected price. Standard = $0.394/sec ($1.97/5s), also DO NOT USE. Face content-policy block risk. |
+| MiniMax H3 (Hailuo 3.0) | `minimax/h3` | 2K (2560×1440) | **$0.169/sec** + $0.052/ref image (2K); 768p TBD | ✓ NOW ON AIMLAPI (SC283 2026-08-21). T2V/I2V/R2V/edit; 9-ref lock; 15s max. **DO NOT USE** for non-char shots — Hailuo 2.3 Fast wins at $0.0416/sec. Only viable for 2K or 15s requirements. CANARY REQUIRED (audio disable param unconfirmed). |
 | PixVerse V5.5 I2V | `pixverse/v5-5-image-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; audio optional via `generate_audio_switch: false`; CANARY REQUIRED |
 | PixVerse V5.5 T2V | `pixverse/v5-5-text-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; same price as I2V; CANARY REQUIRED |
 | Sora 2 Standard I2V | `openai/sora-2-i2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026. Audio ALWAYS generated — no disable param. DO NOT USE. |
@@ -537,22 +538,25 @@ Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Mod
 
 **Wan 2.6 pricing resolved (2026-05-15):** $0.07/sec is the **720p rate**; $0.13/sec is the **1080p rate**. Both figures were correct — they reflect resolution tiers, not conflicting data. AIMLAPI's listed $0.13 is for 1080p. Use 720p ($0.07/sec, $0.35/5s) for all B-roll and fallback use cases.
 
-### MiniMax H3 (Hailuo 3.0) — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19 recheck)
+### MiniMax H3 (Hailuo 3.0) — NOW ON AIMLAPI (SC283 2026-08-21)
 
-**Released July 31, 2026. Open weights released Aug 3, 2026 (33B, HuggingFace/ModelScope).** Omni-modal 2K video model — T2V, I2V, R2V, video editing in one model. Accepts up to 9 reference images + 3 reference video clips + 3 audio clips. 15s max clip, 2560×1440 (2K), native stereo audio. Also known as Hailuo 3.0 / Hailuo 03. Model ID on MiniMax API: `MiniMax-H3`. OpenRouter slug: `minimax/hailuo-3`.
+**Released July 31, 2026. Open weights released Aug 3, 2026 (33B, HuggingFace/ModelScope).** Omni-modal 2K video model — T2V, I2V, R2V, video editing in one model. Accepts up to 9 reference images + 3 reference video clips + 3 audio clips. 15s max clip, 2560×1440 (2K), native stereo audio. Also known as Hailuo 3.0 / Hailuo 03.
 
-**Pricing:**
-- 2K: $0.13/sec native ($0.65/5s, $1.95/15s); OpenRouter also $0.13/sec; AIHubMix $0.124/sec
-- 768p: $0.08/sec native ($0.40/5s) — confirm open vs closed beta on AIMLAPI launch
-- Reference images: first 5 free, then $0.04 each; reference audio free
+**Status on AIMLAPI: NOW CONFIRMED (SC283 2026-08-21).** Model string: `minimax/h3`. Was NOT on AIMLAPI as of 2026-08-19 (SC276); added sometime Aug 19-21. OpenRouter slug: `minimax/hailuo-3`.
 
-**Status on AIMLAPI:** NOT confirmed as of 2026-08-19 (SC276 recheck). No AIMLAPI docs page or blog post found. Available on OpenRouter, AIHubMix, Segmind, Luma Agents. Prior Hailuo models (Hailuo 2.3 Fast, Hailuo 02) were added to AIMLAPI weeks after MiniMax launch — expect `minimax/hailuo-h3` or `minimax/hailuo-3` model string when added.
+**Pricing (AIMLAPI confirmed — SC283 2026-08-21):**
+- 2K: **$0.169/sec on AIMLAPI** (5s = $0.845, 10s = $1.69); OpenRouter $0.13/sec; native MiniMax $0.13/sec; AIHubMix $0.124/sec — AIMLAPI adds ~30% markup
+- 768p: $0.08/sec native (confirm 768p availability on AIMLAPI; CANARY REQUIRED for 768p model string)
+- Reference images: **+$0.052 each on AIMLAPI** (first 5 free on some providers; verify AIMLAPI policy)
+- Reference audio: free
 
-**Cost position vs current alternatives (5s clip, when/if on AIMLAPI at ~1.3× markup):**
-- 768p estimated: ~$0.104/sec → ~$0.52/5s — worse than Hailuo 2.3 Fast ($0.208/5s)
-- 2K estimated: ~$0.169/sec → ~$0.845/5s — not competitive for non-char shots
+**Cost position vs current alternatives (5s clip, AIMLAPI pricing):**
+- Hailuo 2.3 Fast 5s: **$0.208** ($0.0416/sec) ← cheapest non-char I2V ✓
+- Wan 2.7 R2V 5s: **$0.50** ($0.10/sec, up to 5 mixed refs) — better character lock
+- MiniMax H3 2K 5s: **$0.845** + reference image cost — NOT competitive for non-char shots
+- **Verdict: DO NOT USE MiniMax H3 for non-character B-roll or establishing shots** — Hailuo 2.3 Fast wins by 4×. H3 is ONLY viable if 2K resolution or 15s max clip duration is specifically required.
 
-**Why to watch:** 9-ref R2V (character consistency) could compete with Wan 2.7 R2V once on AIMLAPI. 15-second max clip length is the longest in the pipeline. Monitor AIMLAPI blog for launch announcement.
+**Why to monitor:** 9-ref R2V (character consistency) is unique — H3 accepts more refs than Wan 2.7 R2V (3 image-only max). 15-second max clip length is longest in the pipeline. CANARY REQUIRED before any production use: verify (1) `minimax/h3` model string format, (2) actual per-second billing vs flat-rate, (3) audio disable param (native audio = Shari'ah concern — FFmpeg strip required if no disable param).
 
 ---
 
