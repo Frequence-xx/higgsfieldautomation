@@ -241,7 +241,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. v1.9.1 (June 19, 2026) — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). No DTW or timestamp changes. **v1.9.2 (August 4, 2026) is the current latest** — includes two meaningful fixes for our pipeline: (1) **"map token timestamps to original time when VAD is enabled" (PR #3910)** — when VAD is active (default in many whisper.cpp configs), token timestamps were previously relative to each VAD speech segment (restarting from zero per segment) rather than absolute positions in the original audio. This caused tokens to have wrong absolute timestamps whenever silence gaps preceded speech. For Dutch voiceovers with natural pauses ("Bel ons nu... [pause] ...085 3331133"), timestamps were shifted or incorrect. Now they map to original audio time — improved accuracy. (2) "Remove leading space from txt output" — affects `.txt` file format only, NOT JSON word timestamps; no impact on our Remotion/JSON pipeline. Upgrade is safe and recommended. Use `WHISPER_VERSION = '1.9.2'` for new installs.
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. v1.9.1 (June 19, 2026) — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). No DTW or timestamp changes. **v1.9.2 (August 4, 2026) is the current latest stable** — includes two meaningful fixes for our pipeline: (1) **"map token timestamps to original time when VAD is enabled" (PR #3910)** — when VAD is active (default in many whisper.cpp configs), token timestamps were previously relative to each VAD speech segment (restarting from zero per segment) rather than absolute positions in the original audio. This caused tokens to have wrong absolute timestamps whenever silence gaps preceded speech. For Dutch voiceovers with natural pauses ("Bel ons nu... [pause] ...085 3331133"), timestamps were shifted or incorrect. Now they map to original audio time — improved accuracy. (2) "Remove leading space from txt output" — affects `.txt` file format only, NOT JSON word timestamps; no impact on our Remotion/JSON pipeline. Upgrade is safe and recommended. Use `WHISPER_VERSION = '1.9.2'` for new installs. **v1.9.3 (August 20, 2026) is pre-release only** — ggml sync v0.20.2, CUDA/Metal/Vulkan backend optimizations, security fixes for heap-buffer-overflow in `log_mel_spectrogram` and stack-buffer-overflow on malformed model files (PR #3956, #3957). No DTW or timestamp changes. **Stay on v1.9.2 stable until v1.9.3 graduates to stable release.**
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest (Aug 4, 2026) — VAD token timestamp fix (PR #3910): maps timestamps to original audio time when VAD active; v1.8.5+ for PR #2279 silence-gap fix
+   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security fixes, no DTW changes) — stay on 1.9.2
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,12 +708,15 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.513 (August 18, 2026 — current latest; no caption API changes in v4.0.510–4.0.513):**
+**Remotion v4.0.514 (August 20, 2026 — current latest; caption API changes in v4.0.514):**
+- v4.0.514: **`@remotion/captions` — two meaningful changes:**
+  - **New `silenceGapMs` parameter on `createTikTokStyleCaptions()`** — optional `number`, default `undefined` (off). Triggers a new caption page when the gap between the end of one caption and the start of the next is ≥ `silenceGapMs` milliseconds. Useful for Dutch voiceovers with natural pauses (e.g. "Bel ons nu... [pause] ...085 3331133") — set `silenceGapMs: 400` to force a page break across the pause, preventing words from cramming into the same block. Backward compatible: omitting or leaving `undefined` gives byte-identical output to pre-4.0.514. **Snel Verhuizen recommendation: use `silenceGapMs: 400` alongside `combineTokensWithinMilliseconds: 700` for natural Dutch pacing.**
+  - **Bug fixes:** (1) Trailing whitespace: final page duration was stuck at `Infinity` when input ended with whitespace — now capped correctly. (2) Phantom whitespace captions: `ensureMaxCharactersPerLine()` emitted standalone space-only captions from unfiltered splits — now filtered with `.filter(Boolean)`. Both affected production caption outputs silently; upgrade to 4.0.514 to resolve.
 - v4.0.513: `@remotion/media` audio sample-rate conversion fix (PR by @samohovets); `@remotion/effects` new `tile()` effect; `@remotion/mac-cursors` new package; Studio and web-renderer improvements. **No @remotion/captions or @remotion/install-whisper-cpp changes.**
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.513`.
+- `npm install remotion@4.0.514`.
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -790,7 +793,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.513 — confirmed current as of 2026-08-19; no caption API changes in 4.0.485–4.0.513)
+### Full API (v4.0.514 — confirmed current as of 2026-08-21; caption API changes in 4.0.514 only)
 
 | Export | Purpose |
 |--------|---------|
@@ -927,6 +930,7 @@ import { createTikTokStyleCaptions } from '@remotion/captions';
 const { pages } = createTikTokStyleCaptions({
   captions,
   combineTokensWithinMilliseconds: 500, // word-by-word
+  // silenceGapMs: 400,  // NEW v4.0.514: force page break on ≥400ms silence gaps (recommended for Dutch voiceovers)
 });
 // Each page: { text: string, startMs: number, durationMs: number, tokens: TikTokToken[] }
 // durationMs is available from v4.0.261 — use it to advance pages:
@@ -984,14 +988,21 @@ Use this BEFORE `createTikTokStyleCaptions()` when you have long Dutch phrases t
 
 **Failure mode if missing:** Every word is appended to the FIRST page; `createTikTokStyleCaptions` never breaks; the orange highlight advances but the same block of text stays on screen for the entire voiceover.
 
-### Key Parameter: combineTokensWithinMilliseconds
+### Key Parameters: combineTokensWithinMilliseconds + silenceGapMs (new v4.0.514)
 
+**`combineTokensWithinMilliseconds`:**
 - `500` — Word-by-word (classic TikTok style, fastest pace)
 - `600`–`800` — **Premium pace for business/service ad content** (2-3 word chunks held 600–900ms — 2026 industry shift: premium short-form video is slowing down from rapid word-by-word toward more deliberate chunk timing; increases comprehension without losing energy)
 - `1200` — Phrase-by-phrase (calmer, educational content)
 - `2000` — Sentence-level (subtitle-style, matches parseSrt() input)
 
-**Snel Verhuizen recommendation:** Use `700` (or `combineTokensWithinMilliseconds: 700`) for voiceover captions. Dutch is spoken at moderate pace; 700ms gives 2-3 word chunks that feel cinematic without rushing. Use `500` only if voiceover is fast-paced (>160 wpm).
+**`silenceGapMs` (new in v4.0.514, optional, default: undefined/off):**
+Forces a page break when the gap between caption end and next caption start is ≥ N milliseconds. Complements `combineTokensWithinMilliseconds` — both can be set simultaneously:
+- `silenceGapMs: 400` — break on 400ms+ silence (natural Dutch speech pauses, phone number pauses)
+- `silenceGapMs: 300` — break on 300ms+ silence (fast-paced voiceover)
+- Omit → no silence-based breaks (pre-4.0.514 behavior, backward compatible)
+
+**Snel Verhuizen recommendation:** Use `combineTokensWithinMilliseconds: 700` + `silenceGapMs: 400` for voiceover captions. The 700ms grouping gives 2-3 word chunks; the 400ms silence gap cleanly separates natural Dutch speech pauses (e.g. between "Bel ons nu" and "085 3331133"). Use `combineTokensWithinMilliseconds: 500` only if voiceover is fast-paced (>160 wpm).
 
 ### Critical: whiteSpace: 'pre'
 
