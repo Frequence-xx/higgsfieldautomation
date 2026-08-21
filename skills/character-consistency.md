@@ -211,7 +211,7 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
-**InsightFace install (pass 10 finding, 2026-05-25):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
+**InsightFace install (pass 10 finding, 2026-05-25; pass 42 recheck, 2026-08-21 — v1.0.1 still latest):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
 
 ```python
 from insightface.app import FaceAnalysis
@@ -289,7 +289,7 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 41 recheck, 2026-08-19 — still latest, no new version). Previously v3.7.1 (July 5, 2026).
+FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 42 recheck, 2026-08-21 — still latest, no new version). Previously v3.7.1 (July 5, 2026).
 
 **⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
@@ -735,13 +735,20 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 
 **Unverified on AIMLAPI as of 2026-06-19:** `kling_elements` passthrough on v3-standard-turbo. Run one draft before relying on it for character binding. If elements are silently ignored, fall back to Kling O1 reference-to-video for drafts.
 
-## Kling O3 — Future Watch for Character Consistency (NOT on AIMLAPI as of 2026-07-20)
+## Kling O3 — Character Consistency Upgrade (AIMLAPI model database — CANARY REQUIRED)
 
-Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades. **O3 is NOT on AIMLAPI as of 2026-07-18 (pass 33 confirmed).** AIMLAPI still serves only `klingai/video-o1-reference-to-video`. O3 is confirmed live on: Runware (`klingai:kling-video@o3-4k`, since April 23, 2026) and fal.ai (`fal-ai/kling-video/o3`). Per Farouq directive, AIMLAPI-only pipeline — do not use Runware/fal.ai until O3 lands on AIMLAPI. Monitor AIMLAPI changelog.
+Kling O3 (= Kling Video 3.0 Omni, released Feb 2026) introduces major character consistency upgrades.
 
-**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged. Still NOT on AIMLAPI as of 2026-07-04.
+**⚠️ SC279 finding (2026-08-20): Kling O3 model strings NOW CONFIRMED in AIMLAPI model database** — `klingai/video-v3-omni-720p-image-to-video`, `klingai/video-v3-omni-1080p-image-to-video`, `klingai/video-v3-omni-720p-text-to-video`, `klingai/video-v3-omni-1080p-text-to-video` all found in the AIMLAPI model database. **No dedicated docs page yet.** Expected pricing: ~$1.09/5s (720p) / ~$1.46/5s (1080p) based on AIMLAPI's 2.6× markup over Kling list prices. **CANARY REQUIRED before production use** — `kling_elements` syntax and prompt reference syntax (`@element_name` vs `<<<element_1>>>`) unverified on this endpoint. Prior pass 41 recheck (2026-08-19) found nothing; SC279 (2026-08-20, Kling study) found model strings. O3 was previously confirmed live only on Atlas Cloud ($0.15/sec) and EvoLink ($0.1125/sec R2V).
 
-**O3 not on AIMLAPI as of 2026-08-19 (pass 41 recheck).** AIMLAPI docs show only Kling video v3-standard, v3-standard-turbo, and O1 reference-to-video. No O3-specific endpoint found. O3 confirmed live on Atlas Cloud ($0.15/sec) and EvoLink ($0.1125/sec R2V) — irrelevant, AIMLAPI-only pipeline. Continue using Kling O1 until O3 lands on AIMLAPI.
+**O3 canary checklist (run before production use):**
+1. Call `klingai/video-v3-omni-720p-image-to-video` with Karel `front.png`, single-element `kling_elements` array, 5s, `generate_audio: false`
+2. Confirm element syntax: try `@element_name` first; fall back to `<<<element_1>>>` if rejected
+3. Score InsightFace (PASS ≥ 0.62 for Karel/Mourad) across t=0, t=2.5, t=5
+4. Log cost per 5s clip — confirm pricing vs expected $1.09 (720p) or $1.46 (1080p)
+5. Do NOT use in production without owner-reviewed output passing brand binary checklist
+
+**June 17, 2026 Omni upgrade (pass 21 finding):** Kling 3.0 Omni received an editing pipeline extension — now supports 3–15s video input/output and 4K resolution for its video editing workflow. The reference-to-video character binding capabilities are unchanged.
 
 **O3 pricing on official Kling API (pass 16 finding, 2026-06-09):** O3 reference-to-video = **$0.1125/sec = $0.5625/5s** — 2.6× cheaper than current O1 at $1.46/5s. When O3 lands on AIMLAPI, expect AIMLAPI pricing to be slightly higher but still significantly under $1.46. This is a major cost reduction for character shots.
 
@@ -873,7 +880,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 - No `face_consistency: True` equivalent for occlusion recovery.
 - Single subject per reference — group photos cause identity merge failure.
 
-**Wan 2.7 R2V status on AIMLAPI (pass 39 recheck, 2026-08-16):** Status unchanged from pass 38. AIMLAPI blog confirms R2V availability but docs.aimlapi.com video models listing still shows only I2V for Wan 2.7 — no dedicated R2V docs page as of 2026-08-16. Model ID `alibaba/wan-2-7-r2v` listed as "Coming Soon" in model database. Status: **"AIMLAPI blog-confirmed available but docs-absent — canary-test is mandatory before any production use"**. If canary call to `alibaba/wan-2-7-r2v` returns 404/model-not-found, fall back to Wan 2.6 R2V or Kling O1. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed on AIMLAPI — use FFmpeg strip as mandatory safety step), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist.
+**Wan 2.7 R2V status on AIMLAPI (pass 42 recheck, 2026-08-21):** Status unchanged. Model ID `alibaba/wan-2-7-r2v` still listed as "Coming Soon" in AIMLAPI model database; no dedicated R2V docs page at docs.aimlapi.com. AIMLAPI blog confirms R2V availability in principle but endpoint not confirmed live. Status: **"AIMLAPI blog-confirmed available but docs-absent — canary-test is mandatory before any production use"**. If canary call to `alibaba/wan-2-7-r2v` returns 404/model-not-found, fall back to Wan 2.6 R2V or Kling O1. All third-party providers (Segmind, Replicate, Together AI, Kie.ai, EvoLink, inference.sh, WaveSpeedAI) have Wan 2.7 R2V confirmed live. Canary-test procedure: call `alibaba/wan-2-7-r2v` with Karel `front.png` in `reference_images`, 720p, strip audio in post (API audio param still unconfirmed on AIMLAPI — use FFmpeg strip as mandatory safety step), score with InsightFace (PASS ≥ 0.62). Do NOT promote to production without owner-reviewed output passing brand binary checklist.
 
 **Parameter naming (pass 31 finding, 2026-07-15):** Third-party wrappers (Segmind and equivalent AIMLAPI-style endpoints) use **`reference_images`** as the parameter name for static photo references — consistent with the code example above. The official upstream Alibaba API uses `images` instead. AIMLAPI adapter likely follows `reference_images` (matching Segmind convention). The code example above uses `reference_images` — this is the correct target for AIMLAPI canary testing.
 
@@ -926,6 +933,16 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 1. **Validates differential prompt rule architecturally:** AIPA's unidirectional design (identity flows reference→video only, not bidirectionally) is the architectural proof that text prompts should contain ONLY action+camera, not character attributes — attributes in the text compete with the unidirectional identity flow.
 2. **Handles full-body viewpoint transitions** — WildActor is explicitly designed for the failure mode (large viewpoint transitions, substantial body motion) where Kling O1 elements binding tends to drift. When a WildActor-based API endpoint appears, prioritize testing for wide-shot and walking-away shots of Karel/Mourad.
 3. **No AIMLAPI endpoint** as of 2026-07-20. Monitor for hosted API — backbone is not Wan2.1 (uses its own dataset/model), so AIMLAPI adoption timeline is uncertain.
+
+**Vera — Future Watch (arXiv 2607.20247, July 22, 2026, Kuaishou Technology + Tsinghua):** Unified human-centric subject-to-video (S2V) framework for single- and multi-person generation. From the same company as Kling — mechanisms may inform future Kling O3+ updates. Core problem addressed: identity-critical human details drift across frames, poses, and interactions; in multi-person scenarios, **incorrect identity-role binding** leads to subject confusion, attribute swapping, and excessive reference-image copying. Two key mechanisms:
+1. **Identity-Focal Masked Supervision (IFMS)** — spatially focused supervision strengthens identity-aware learning while reducing interference from irrelevant background/clothing artifacts. Validates our tight face crop as 4th ref (isolates identity signal from irrelevant scene content).
+2. **Reference-Aware Layer-wise Attention (RALA)** — regulates how video tokens interact with reference identity cues in the DiT backbone at each layer, preserving stable identity anchors and enhancing layer-aware identity readout. Validates the differential prompt rule: identity is injected via references, text only drives action.
+
+**Practical implication for our pipeline (pass 42 finding, 2026-08-21):** Vera's identity-role binding problem is exactly our known multi-character failure mode ("feature swapping when characters touch or overlap" — Step 3b). IFMS+RALA validate our two existing mitigations: (1) keep characters spatially separated in prompts, and (2) run InsightFace QA on BOTH characters after generation. Since Vera is from Kuaishou, its mechanisms may inform future Kling element-binding improvements. No AIMLAPI endpoint — research only.
+
+**ID-V2V — Future Watch (arXiv 2607.22830, July 24, 2026, Netflix + Eyeline Labs, SIGGRAPH Asia 2026, code released):** Identity-preserving video restylization. Code: github.com/Eyeline-Labs/ID-V2V. ComfyUI nodes available (ComfyUI-wiki confirmed July 29, 2026). Core mechanism: decouples source-grounded identity preservation from edit-driven video synthesis. Given a source clip + a stylized keyframe (+ optional text), generates a new clip matching the keyframe's scene/lighting/style while preserving the source subjects' **facial identity, expressions, eye gaze, and lip sync**. "Shoot first, restyle later" workflow — generate the character clip first, then apply a cinematic style via a keyframe.
+
+**Practical implication for our pipeline (pass 42 finding, 2026-08-21):** Potential post-production tool for consistent lighting grade across clips. When multiple Karel/Mourad clips need a unified golden-hour look, ID-V2V could apply the grade from a single keyframe across all clips without corrupting InsightFace identity scores (unlike per-clip color grading which can shift skin tone). **Prerequisite: clips must first pass InsightFace QA.** Apply ID-V2V as final grade step, then run QA again (facial expressions and identity should be invariant). Requires local ComfyUI install + Wan2.1-14B base weights (~40–50 GB VRAM). Not usable in cloud-API-only pipeline. Monitor for AIMLAPI endpoint — if it appears, could replace per-clip FFmpeg color grade for character shots.
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
