@@ -286,6 +286,9 @@ Use ONLY with owner Telegram approval before adding to any video.
 **Pixabay Islamic Nasheed category:** Pixabay (Tier 1b SFX library, §2) also has a dedicated Islamic nasheed music category — royalty-free, no attribution, commercial OK. Search `pixabay.com/music/search/islamic%20nasheed/`. Useful when Pixabay is already open for SFX and a light background track is needed. Always screen with nasheed_check.py (§9) before use.
 
 **yt-dlp to extract audio from NCN YouTube video (free, no API cost):**
+
+**yt-dlp version (SC281, Aug 21 2026):** `2026.08.19` is current stable. YouTube extractor now includes `web_embedded` client fallbacks (improves reliability when primary YouTube client is rejected) and adds `visionos` player client. `android_vr` removed from default clients — no impact on audio extraction commands. All audio flags (`-x`, `--audio-format`, `--audio-quality`) are unchanged.
+
 ```bash
 yt-dlp -x --audio-format mp3 --audio-quality 0 \
   -o "/opt/pipeline/sfx/nasheeds/%(title)s.%(ext)s" \
