@@ -777,9 +777,11 @@ All post-production tools confirmed as of study cycle 182 (2026-07-04):
 | TNTwise rife-ncnn-vulkan CLI | v20250112 (2025-01-12) | **Primary interpolation tool** — separate repo, NOT archived, unaffected by RVE archival. |
 | PySceneDetect | **v0.7.1 (2026-07-21)** | **NOW STABLE.** Replaces v0.7.0. All documented v0.7.1 features confirmed: `--expand` flag (use `split-video --expand`), `backend` kwarg, `expand_scenes_to_bounds()`. NEW: `VideoStreamConcat`, `VideoStream.decode_failures`, PyAV corrupt-frame tolerance (8 frames), PyAV PTS normalization. See §3d for full details. Install: `pip install scenedetect-headless`. |
 | SVT-AV1 | **v4.2.0 (2026-07-13)** | New: `--tune-vmaf` (~15% VMAF BD-rate gain for VOD/archive); CBR Kalman-filter rate control; ARM NEON/SVE2 kernels. Pipeline commands (§5h) unchanged — `-svtav1-params tune=0` (VQ) remains correct. See SC221 update. |
-| Remotion | **v4.0.513 (released 2026-08-18)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m), **`regionblur()`** (v4.0.507), **`exposure()`** **`whiteBalance()`** **`vibrance()`** **`levels()`** **`shadowsHighlights()`** (v4.0.508), **`colorCorrection()`** (v4.0.509) — all documented in §11n (SC263). **`tile()`** (v4.0.513 — §11o, SC277). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). **New package: `@remotion/mac-cursors`** (v4.0.513 — macOS cursor animation; pipeline relevance: none for moving ads). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. **v4.0.513 `@remotion/media` audio fix:** non-standard sample rates (e.g., 22050 Hz source audio) now correctly resampled to 48000 Hz — previously caused distorted or sped-up audio in compositions mixing voiceover and SFX at different sample rates. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496–499 (2026-07-21–24):** Studio-only / opacity-leak fix / Zod upgrade — see SC249 note. **v4.0.507 (2026-08-07): `regionblur()` added to @remotion/effects.** **v4.0.508 (2026-08-11): `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()` added.** **v4.0.509 (2026-08-12): `colorCorrection()` added.** **v4.0.510 (2026-08-14): `@remotion/elements` introduced** — data visualization / UI components: animated line chart, vertical bar chart, animated pie chart, spinning text wheel, product discount callout. These are a NEW PACKAGE separate from `@remotion/effects` (visual filter effects). Install: `npm install @remotion/elements` (package name unconfirmed from available docs — verify with `npm view @remotion/elements version`). No new @remotion/effects in v4.0.510. v4.0.511 (2026-08-14): Interactivity regression fix from v4.0.510. v4.0.512 (2026-08-14): Republish of v4.0.511 to fix npm staging delays. **v4.0.513 (2026-08-18): `tile()` added to @remotion/effects; `@remotion/mac-cursors` new package; `@remotion/media` audio sample-rate conversion fix.** **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
+| Remotion | **v4.0.515 (released 2026-08-21)** | `@remotion/effects` now has **60+ effects** since launch at v4.0.465 (May 22, 2026). Pipeline-documented: `colorKey()`, `linearProgressiveBlur()`, `checkerboard()`, `emboss()`, `gridlines()`, **`zoomBlur()`** (v4.0.481 — §11h), `radialProgressiveBlur()` (SC161 — §11a), `cornerPin()`, `lightTrail()` (§11c), `linearGradient()` (SC168 — §11d), `venetianBlinds()` (SC189 — §11f), `paper()`, `roughenEdges()` (SC195 — §11g), `thermalVision()`, `pixelate()` (v4.0.479 — §11i), `glow()`, `duotone()`, `dropShadow()`, `brightness()` (v4.0.466–468 — §11j), **`linearProgressivePixelate()`** (v4.0.490 — §11k), **`liquidContours()`**, **`skew()`** (v4.0.491 — §11l), **`wave()`**, **`noiseDisplacement()`** (SC235 — §11m), **`regionblur()`** (v4.0.507), **`exposure()`** **`whiteBalance()`** **`vibrance()`** **`levels()`** **`shadowsHighlights()`** (v4.0.508), **`colorCorrection()`** (v4.0.509) — all documented in §11n (SC263). **`tile()`** (v4.0.513 — §11o, SC277). **`outline()`** (v4.0.515 — §11p, SC284). New package: **`@remotion/rough-notation`** (v4.0.490 — sketch/annotation overlays). **New package: `@remotion/mac-cursors`** (v4.0.513 — macOS cursor animation; pipeline relevance: none for moving ads). `@remotion/media` now **stable**. ProRes support in `@remotion/media` (Mediabunny 1.50.8). NVENC H.264/H.265 encoding on Linux/Windows. **v4.0.513 `@remotion/media` audio fix:** non-standard sample rates (e.g., 22050 Hz source audio) now correctly resampled to 48000 Hz — previously caused distorted or sped-up audio in compositions mixing voiceover and SFX at different sample rates. v4.0.488 fixes looped audio dropout. **Bundled FFmpeg binary: `--enable-nonfree` removed** (libfdk_aac removed from Remotion's compositor binary — no pipeline impact, we use system FFmpeg). **v4.0.492:** `muted` prop on `<Video>`; negative sequence offset. **v4.0.494:** Sequence opacity preservation fix. **v4.0.496–499 (2026-07-21–24):** Studio-only / opacity-leak fix / Zod upgrade — see SC249 note. **v4.0.507 (2026-08-07): `regionblur()` added to @remotion/effects.** **v4.0.508 (2026-08-11): `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()` added.** **v4.0.509 (2026-08-12): `colorCorrection()` added.** **v4.0.510 (2026-08-14): `@remotion/elements` introduced** — data visualization / UI components: animated line chart, vertical bar chart, animated pie chart, spinning text wheel, product discount callout. These are a NEW PACKAGE separate from `@remotion/effects` (visual filter effects). Install: `npm install @remotion/elements` (package name unconfirmed from available docs — verify with `npm view @remotion/elements version`). No new @remotion/effects in v4.0.510. v4.0.511 (2026-08-14): Interactivity regression fix from v4.0.510. v4.0.512 (2026-08-14): Republish of v4.0.511 to fix npm staging delays. **v4.0.513 (2026-08-18): `tile()` added to @remotion/effects; `@remotion/mac-cursors` new package; `@remotion/media` audio sample-rate conversion fix.** **⚠️ v5.0 migration docs live but not yet released — see §11b.** |
 | Instagram safe zones | unchanged | 320px bottom (organic), 120px right, 108px top, 60px left — re-confirmed SC147 via multiple 2026 sources |
 | TikTok safe zones | unchanged from SC133 | ~184px right (164px base + ~20px Add to Playlist Jan 2026), 324px bottom, 130px top, 60px left — effective safe area 836×1466px |
+
+**SC284 update (2026-08-22):** **Remotion advanced to v4.0.515 (2026-08-21).** Two releases since SC277. (1) **v4.0.514 (2026-08-20, already documented in captions-and-titles.md SC280):** `@remotion/captions` — `silenceGapMs` parameter added to `createTikTokStyleCaptions()`, caption pagination edge-case fixes; Mediabunny upgraded to 1.55.1; no new `@remotion/effects`. (2) **v4.0.515 (2026-08-21):** **`outline()` added to `@remotion/effects`** (§11p — WebGL2 stroke/border effect around alpha channel; params: `width` default 8px, `color` default #ffffff, `opacity` default 1, `edgeSimplification` default 0, `outlineOnly` default false); `@remotion/captions` now exports ESM modules; backpressure applied during frame encoding (prevents buffer overflow on long renders); Lambda streams render chunks to disk instead of buffering in memory (lower peak memory for Lambda renders); video looping: silent tails now preserved, deadlock fix when loops begin with silence; SVG gradient strokes preserved during rendering; Lambda render cancellation support added. **All other tools confirmed unchanged (2026-08-22 check):** FFmpeg 9.0.1 (no 9.0.2), SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 stable (no v0.7.2), Practical-RIFE v4.26 (no v4.27).
 
 **SC277 update (2026-08-20):** **Remotion advanced to v4.0.513 (2026-08-18).** Three changes: (1) **`tile()` added to `@remotion/effects`** — WebGL2 effect that creates a repeated tile pattern from its child composition. Full parameters documented in new §11o. Pipeline relevance: title card pattern backgrounds, repeating brand-asset texture treatments — never on character or truck shots. (2) **`@remotion/mac-cursors` new package** — renders macOS-style animated cursor graphics; useful for screen recording/tutorial content. **Pipeline relevance for Snelverhuizen: none** — no screen recording in moving-ad briefs. Document only for future reference. (3) **`@remotion/media` audio sample-rate conversion fix** — compositions that mix audio files at different sample rates (e.g., a voiceover at 44100 Hz + SFX at 22050 Hz) previously produced distorted or sped-up audio; now correctly resampled to 48000 Hz inside the Remotion compositor. **Pipeline action:** If any Remotion composition mixes audio sources with different sample rates, upgrade to ≥ v4.0.513 and test playback. Our standard pipeline encodes all audio at 48000 Hz via system FFmpeg, so this fix only matters for audio embedded in Remotion `<Audio>` components. **All other tools confirmed unchanged (Aug 20 check):** FFmpeg 9.0.1 (no 9.0.2 or 9.1), SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary; AUR package confirms 20250112 is current), PySceneDetect v0.7.1 stable (no v0.7.2), Practical-RIFE v4.26 (no v4.27).
 
@@ -1818,6 +1820,65 @@ import { tile } from "@remotion/effects";
 
 ---
 
+### 11p. `@remotion/effects` — `outline()` (v4.0.515, SC284)
+
+**`outline()`** (added v4.0.515, 2026-08-21) — WebGL2 effect that renders a colored stroke/border around the alpha channel of its input layer. Detects transparent-to-opaque edges and draws a configurable outline around them. Backend: WebGL2.
+
+Parameters:
+| Parameter | Type | Default | Notes |
+|-----------|------|---------|-------|
+| `width` | `number` | `8` | Outline stroke width in pixels |
+| `edgeSimplification` | `number` | `0` | Pixel tolerance for simplifying the alpha contour into straight edges — higher = more blocky/geometric outline |
+| `color` | `string` | `'#ffffff'` | Outline color (hex or CSS color) |
+| `opacity` | `number` | `1` | Outline opacity 0–1 |
+| `outlineOnly` | `boolean` | `false` | When `true`, replaces source content with just the filled outline mask (removes interior, keeps only the stroke border) |
+
+**Practical uses for Snelverhuizen:**
+
+**1. Brand-orange outline on caption text (most useful — improves legibility on busy backgrounds):**
+```tsx
+import { outline } from "@remotion/effects";
+
+// Stack: video → text layer with orange outline → text layer (opaque white)
+<AbsoluteFill style={{ filter: outline({ width: 4, color: '#FC8434', opacity: 0.9 }) }}>
+  <CaptionTextLayer />  {/* white text, transparent background */}
+</AbsoluteFill>
+```
+
+**2. White outline around logo lockup on dark or mixed backgrounds:**
+```tsx
+<AbsoluteFill style={{ filter: outline({ width: 6, color: '#ffffff', opacity: 0.7 }) }}>
+  <SnelverhuizenLogoLayer />
+</AbsoluteFill>
+```
+
+**3. Silhouette border for decorative brand shape (outlineOnly=true):**
+```tsx
+// Creates just the stroke with transparent interior — for layered badge animations
+<AbsoluteFill style={{ filter: outline({ width: 12, color: '#FC8434', outlineOnly: true }) }}>
+  <TruckSilhouette />
+</AbsoluteFill>
+```
+
+**When to use:**
+- Caption text legibility on complex backgrounds — orange outline at `width` 3–6 is sharper than a text shadow
+- Logo or badge overlays needing clean separation from background
+- Decorative border animations on title cards and end frames
+
+**When NOT to use:**
+- As a substitute for `drawtext` `borderw` param — if it's a pure text-only FFmpeg overlay, `drawtext` is simpler and requires no Remotion
+- On character or face layers — outline on face shapes produces visible artifacts
+- On truck/vehicle shots
+
+**Comparison with `glow()` (§11j):** `glow()` creates a diffuse bloom around bright pixels; `outline()` creates a hard-edged stroke around the alpha boundary. For caption text: `outline()` is sharper and more legible; `glow()` is softer and more decorative. Use `outline()` for legibility; `glow()` for badge warmth.
+
+**Import:**
+```tsx
+import { outline } from "@remotion/effects";
+```
+
+---
+
 ## Post-Production Checklist
 
 Before marking video as delivered:
@@ -1845,6 +1906,7 @@ Before marking video as delivered:
 - [ ] Remotion Sequence opacity: if any `<Sequence>` wrapper uses `opacity` for fade-in/fade-out on caption overlays or branded layers, upgrade to ≥ v4.0.494 (fixed Sequence opacity preservation while active — prior versions did not maintain opacity correctly)
 - [ ] Remotion layer opacity leak (v4.0.499): if any composition stacks multiple layers with non-100% opacity (brand badge over video, caption over scrim), upgrade to ≥ v4.0.499 — v4.0.499 fixes opacity leaking between stacked layers in web-renderer
 - [ ] Remotion color correction (§11n, SC263): if clip is inside a Remotion composition and shows AI color cast → apply `colorCorrection()` in one WebGL2 pass instead of chaining multiple effects. Standard exterior Kling pass: exposure=0.3, contrast=1.05, pivot=0.45, blacks=-0.06, temperature=0.08, tint=-0.02, vibrance=0.15. Interior (dark hallway): exposure=0.4, shadows=0.20, highlights=-0.10, blacks=-0.05, temperature=0.05. Single adjustments: use standalone `exposure()`, `whiteBalance()`, `vibrance()`, `levels()`, `shadowsHighlights()`, or `regionblur()` (selective area blur, topLeft/bottomRight UV coords required)
+- [ ] Remotion outline effect (§11p, SC284, v4.0.515+): for caption text legibility on busy backgrounds, use `outline()` from `@remotion/effects` — stack a text layer with `filter: outline({ width: 4, color: '#FC8434', opacity: 0.9 })` below the opaque white text layer; also for logo overlays needing clean edge separation (`width` 4–8, `color` white or #FC8434); use `outlineOnly: true` for decorative silhouette border animations. **Never on character face layers or truck shots.**
 - [ ] Remotion tile pattern backgrounds (§11o, SC277, v4.0.513+): for title cards and end frames needing brand texture backgrounds, use `tile()` from `@remotion/effects` — apply at opacity 0.08–0.12 as a low background layer. Parameters: columns/rows (repeat count), phase ([x,y] offset, animate for slow drift), flipAlternating (mirror every other tile). **Never on character/truck shots.** Also: `@remotion/media` audio sample-rate fix in v4.0.513 — if any Remotion composition mixes audio at different sample rates (e.g., voiceover 44100 Hz + SFX 22050 Hz), upgrade to ≥ v4.0.513 to fix distorted/sped-up audio
 - [ ] Remotion Video muted prop (v4.0.492+): when embedding video clips in Remotion compositions, use `<Video muted>` to silence source audio when layering independent SFX/voiceover above
 - [ ] `getVideoMetadata()` deprecated (v4.0.498): if any pipeline script calls Remotion's `getVideoMetadata()`, flag for migration before upgrading past v4.0.497
