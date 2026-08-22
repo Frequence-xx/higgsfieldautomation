@@ -778,6 +778,7 @@ Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro
 - 720p I2V (no audio): ~$1.09/5s (same price tier as v3 Standard, based on native $0.084/sec)
 - 1080p I2V (no audio): ~$1.46/5s (same price tier as v3 Pro, based on native $0.112/sec)
 - Native audio included adds ~33% surcharge at native rates — **ALWAYS pass `generate_audio: false`**
+- **⚠️ Reference video input DOUBLES cost** (SC286 Aug 22, 2026): In O3 Omni mode, providing a reference video (`video_reference` mode) pushes the 1080p rate from 8 credits/sec to 16 credits/sec — i.e., ~2× the standard I2V rate. **NEVER use reference video input for Snelverhuizen character shots.** Use `refs` with image URLs only.
 
 O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`. Also available on PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API. Farouq AIMLAPI-only directive applies — now that O3 is on AIMLAPI, it may be used after canary confirmation.
 
@@ -791,31 +792,75 @@ O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/
 
 **Evaluate O3 1080p I2V for character-heavy clips where v3 Pro produces identity drift.** At ~$1.46/5s (estimated), it offers more identity anchors (7 refs vs 3) at the same expected cost as v3 Pro. Run canary first.
 
-### O3 Canary Checklist (SC279 Aug 20, 2026)
+### O3 Canary Checklist (updated SC286 Aug 22, 2026)
 
-- [ ] Submit one 5s I2V call with `klingai/video-v3-omni-1080p-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false`
+- [ ] Submit one 5s I2V call with `klingai/video-v3-omni-1080p-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false` (snake_case — AIMLAPI standard)
+- [ ] **If snake_case params rejected**: retry with camelCase native params: `aspectRatio: "9:16"`, `generateAudio: false`, `resolution: "1080P"` — O3 native API uses camelCase (SC286)
 - [ ] Strip audio immediately: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
-- [ ] Record actual AIMLAPI cost — confirm expected ~$1.46/5s (1080p)
-- [ ] Test element syntax: try `"elements"` first (AIMLAPI convention); if rejected, try `"kling_elements"` (native O3 name)
-- [ ] Test element reference syntax in prompt: try `@Element1` first (AIMLAPI convention); if identity fails, try `<<<element_1>>>` (native O3 syntax)
-- [ ] Confirm `generate_audio: false` suppresses audio (O3 defaults audio ON natively)
+- [ ] Record actual AIMLAPI cost — confirm expected ~$1.46/5s (1080p). Note: native O3 "Fast" tier is $0.0896/sec but this may be a cheaper sub-tier; do NOT use reference video mode (doubles cost to ~$2.92/5s)
+- [ ] Test element syntax order: (1) try `"elements"` array (AIMLAPI snake_case); (2) try `"refs"` array (native O3 name, SC286); (3) do NOT use `"kling_elements"` unless both prior fail
+- [ ] Test element reference syntax in prompt: (1) try `@Element1` (AIMLAPI positional); (2) try `@name-value` e.g. `@ZhangWei` (native O3 by-name syntax, SC286); (3) try `<<<element_1>>>` only as last resort
+- [ ] Test `cfg_scale` and `negative_prompt`: include them in first call; if AIMLAPI rejects or ignores, remove and document
+- [ ] Confirm `generate_audio: false` (or `generateAudio: false`) suppresses audio — O3 defaults audio ON
 - [ ] Run InsightFace buffalo_l cosine similarity vs v3 Pro baseline on same refs
-- [ ] If 7-ref elements confirm → run character shot with 4 angles + 3 expression refs (vs our current 3-ref limit)
+- [ ] If refs confirm max 7 → run character shot with 4 angles + 3 expression refs
+- [ ] **Do NOT pass reference video** in any Snelverhuizen O3 call — doubles cost and is never needed for our character shots
 - [ ] Run brand binary checklist + Shari'ah compliance
 - [ ] If confirmed: update routing matrix for character shots requiring max identity lock
 
-**O3 API structure changes (confirmed across fal.ai/Runware/Atlas/Freepik/PiAPI — character-consistency.md pass 12; element syntax corrected SC149):**
-- `elements` array → replaced by `kling_elements` array (`name` + `description` + `element_input_urls` of 2–4 images)
-- **Element reference syntax (corrected SC149):** Native Kling API uses `<<<element_1>>>`, `<<<element_2>>>` triple-bracket syntax in prompt text. Third-party wrappers (fal.ai) use `@Element1` positional syntax. `@name` (name-value based) is web UI only — NOT valid at the raw API level. When O3 lands on AIMLAPI, canary-test which syntax the wrapper accepts before production use.
+**O3 native API structure (SC286 Aug 22, 2026 — CORRECTS earlier `kling_elements` assumption):**
+
+The native Kling O3 API uses a `refs` array (NOT `kling_elements`, `elements`, or `element_input_urls`):
+
+```json
+{
+  "prompt": "string",
+  "refs": [
+    {
+      "type": "image",
+      "name": "ZhangWei",
+      "image": "https://cdn.example.com/crew_front.png",
+      "order": 1,
+      "avatarId": "optional-kling-avatar-id"
+    }
+  ],
+  "imageMeta": [
+    {
+      "url": "https://cdn.example.com/style_ref.png",
+      "order": 1,
+      "name": "StyleRef"
+    }
+  ],
+  "duration": 5,
+  "aspectRatio": "9:16",
+  "resolution": "1080P",
+  "generateAudio": false,
+  "videoNum": 1
+}
+```
+
+**Two distinct reference mechanisms in O3 (SC286):**
+- `refs` array — for persistent character identity (elements). Reference in prompt as `@ZhangWei` (by `name` field) or `@element_1` (positional)
+- `imageMeta` array — for general style/scene reference images. Reference in prompt as `@image_1` through `@image_7`
+- Combined cap: 7 total across both (image_urls + refs)
+- `avatarId` field in refs: links to a pre-built Kling Avatar (web-UI concept); omit if not using Kling avatars
+
+**⚠️ Camelcase params in native O3 API (SC286):** `aspectRatio`, `generateAudio`, `resolution` — all camelCase. AIMLAPI's v3 Pro wrapper uses snake_case (`aspect_ratio`, `generate_audio`). AIMLAPI's O3 wrapper behavior is UNKNOWN — CANARY REQUIRED. Try snake_case first (AIMLAPI standard) before trying camelCase.
+
+**⚠️ `kling_elements` and `element_input_urls` documentation from SC149 appears to describe a third-party wrapper abstraction (fal.ai/Freepik) rather than the native O3 API.** The native API uses `refs` with `image` field per entry (single image per ref, not an array). AIMLAPI wrapper for O3 likely uses its own abstraction — must canary before any production call.
+
+**O3 API structure changes vs v3 Pro:**
+- `refs` replaces `elements` (native O3 name is `refs`, not `kling_elements`)
+- **Element reference syntax options (SC286):** Native uses `@name` (by `name` field value); some wrappers use `@element_1` positional; `<<<element_1>>>` triple-bracket may be older syntax. AIMLAPI likely uses `@Element1` (its standard convention). Canary-test which works.
+- `imageMeta` is new (O3-only) — separate general reference images from character refs
+- `resolution` is an explicit string parameter: `"720P"` or `"1080P"` (vs v3 Pro which infers resolution from model string)
 - `multi_shot: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored) — NOTE: singular (`multi_shot`), not `multi_shots`
-- `generate_audio` defaults **ON** in O3 — ALWAYS set `False` explicitly
-- `cfg_scale` and `negative_prompt` are **STILL PRESENT** — do NOT remove them when switching to O3
-- `start_image_url` → renamed to `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
-- `end_image_url` for end frame (NOT `tail_image_url` or `image_tail`) — O3-specific naming on fal.ai; confirm on AIMLAPI when O3 lands
+- `generate_audio` / `generateAudio` defaults **ON** in O3 — ALWAYS set `False` explicitly
+- `cfg_scale` and `negative_prompt` status: UNKNOWN for native O3 (not visible in native API structure above). CANARY: include them in first O3 call; if rejected, omit. **Do NOT assume they are present until confirmed.**
+- `start_image_url` → `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
+- `end_image_url` for end frame — O3-specific naming on fal.ai; confirm on AIMLAPI when O3 lands
 
-**O3 June 17, 2026 upgrade:** Kling extended O3's *editing* pipeline (Omni Edit) to support 3–15s video input/output and 4K resolution. This is a V2V editing capability upgrade — the I2V reference-to-video character parameters are unchanged. O3 is still NOT on AIMLAPI as of July 3, 2026.
-
-See `character-consistency.md` O3 section for the complete `kling_elements` call template.
+**O3 June 17, 2026 upgrade:** Kling extended O3's *editing* pipeline (Omni Edit) to support 3–15s video input/output and 4K resolution. This is a V2V editing capability upgrade — the I2V reference-to-video character parameters are unchanged.
 
 **Voice control in v3 T2V (AIMLAPI, confirmed June 2026 — DO NOT USE in our pipeline):** AIMLAPI v3 Standard T2V now supports `voice_list` parameter for character dialogue ($0.154/sec surcharge). Voice references in prompts use `<<<voice_1>>>` triple-angle-bracket syntax (distinct from element `@Element1` syntax). **Our pipeline never uses audio (Shari'ah compliance) — always set `generate_audio: false`. This feature is documented for awareness only.**
 
