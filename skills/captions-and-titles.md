@@ -708,7 +708,11 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.514 (August 20, 2026 — current latest; caption API changes in v4.0.514):**
+**Remotion v4.0.515 (August 21, 2026 — current latest):**
+- `@remotion/captions` — **ESM export added** (PR #10674 by @JonnyBurger). Package now exposes a proper ESM build alongside CJS. Practical impact: (1) Node.js scripts with `"type": "module"` can `import { createTikTokStyleCaptions } from '@remotion/captions'` without workarounds; (2) bundlers (Vite, esbuild) can tree-shake unused exports (drop `parseSrt`/`serializeSrt` when only `createTikTokStyleCaptions` is used). No API changes — non-breaking upgrade. `npm install remotion@4.0.515`.
+- Other v4.0.515 changes: `@remotion/effects` `outline()` added; Lambda backpressure during frame encoding; video loop silent-tail fix; Studio timeline improvements. No other `@remotion/captions` or `@remotion/install-whisper-cpp` changes.
+
+**Remotion v4.0.514 (August 20, 2026; caption API changes in v4.0.514):**
 - v4.0.514: **`@remotion/captions` — two meaningful changes:**
   - **New `silenceGapMs` parameter on `createTikTokStyleCaptions()`** — optional `number`, default `undefined` (off). Triggers a new caption page when the gap between the end of one caption and the start of the next is ≥ `silenceGapMs` milliseconds. Useful for Dutch voiceovers with natural pauses (e.g. "Bel ons nu... [pause] ...085 3331133") — set `silenceGapMs: 400` to force a page break across the pause, preventing words from cramming into the same block. Backward compatible: omitting or leaving `undefined` gives byte-identical output to pre-4.0.514. **Snel Verhuizen recommendation: use `silenceGapMs: 400` alongside `combineTokensWithinMilliseconds: 700` for natural Dutch pacing.**
   - **Bug fixes:** (1) Trailing whitespace: final page duration was stuck at `Infinity` when input ended with whitespace — now capped correctly. (2) Phantom whitespace captions: `ensureMaxCharactersPerLine()` emitted standalone space-only captions from unfiltered splits — now filtered with `.filter(Boolean)`. Both affected production caption outputs silently; upgrade to 4.0.514 to resolve.
@@ -716,7 +720,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.514`.
+- `npm install remotion@4.0.515`. *(4.0.514 was the prior caption-API-change version — 4.0.515 is now current)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -793,7 +797,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.514 — confirmed current as of 2026-08-21; caption API changes in 4.0.514 only)
+### Full API (v4.0.515 — confirmed current as of 2026-08-22; caption API changes in 4.0.514; v4.0.515 adds ESM export only)
 
 | Export | Purpose |
 |--------|---------|
@@ -930,7 +934,7 @@ import { createTikTokStyleCaptions } from '@remotion/captions';
 const { pages } = createTikTokStyleCaptions({
   captions,
   combineTokensWithinMilliseconds: 500, // word-by-word
-  // silenceGapMs: 400,  // NEW v4.0.514: force page break on ≥400ms silence gaps (recommended for Dutch voiceovers)
+  // silenceGapMs: 400,  // v4.0.514+: force page break on ≥400ms silence gaps (recommended for Dutch voiceovers)
 });
 // Each page: { text: string, startMs: number, durationMs: number, tokens: TikTokToken[] }
 // durationMs is available from v4.0.261 — use it to advance pages:
