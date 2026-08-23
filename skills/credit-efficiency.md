@@ -109,8 +109,9 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720p (9:16) | **$1.09** ($0.218/sec) | **$0.65** |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
 | Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | 1080p (9:16) | **$1.46** ($0.291/sec) | $0.87 |
-| Veo 3.1 Lite T2V 720p | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.33** ($0.065/sec, 5s equiv) | ~$0.26 (4s) |
-| Veo 3.1 Lite T2V 1080p | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.83** ($0.104/sec × 8s) | — |
+| Veo 3.1 Lite T2V 720p (audio OFF — always use) | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.234** (~$0.039/sec AIMLAPI est.; $0.03/sec native CONFIRMED SC290 — OpenRouter + costgoat + MaxVideoAI + buildfastwithai converge) | ~$0.156 (4s), ~$0.312 (8s) |
+| Veo 3.1 Lite T2V 720p (audio ON — reference only) | same | 720p | ~$0.39 ($0.065/sec AIMLAPI est.) | — NEVER USE (audio defaults ON = Shari'ah risk) |
+| Veo 3.1 Lite T2V 1080p (audio OFF est.) | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.52** (~$0.065/sec AIMLAPI est. × 8s; audio-off 1080p native ~$0.05/sec unconfirmed) | — |
 | Veo 3.1 I2V | `google/veo-3.1-i2v` | 720p/1080p | **~$1.00** ($0.20/sec × 5s) | ~$0.60 (3s) |
 | Veo 3.1 Fast I2V (canary) | `google/veo-3.1-i2v-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | ~$0.39 (3s) |
 | Veo 3.1 First+Last Fast (canary) | `google/veo-3.1-first-last-image-to-video-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | — |
@@ -131,7 +132,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | MiniMax H3 (Hailuo 3.0) | `minimax/h3` | 2K (2560×1440) | **$0.169/sec** + $0.052/ref image (2K); 768p TBD | ✓ NOW ON AIMLAPI (SC283 2026-08-21). T2V/I2V/R2V/edit; 9-ref lock; 15s max. **DO NOT USE** for non-char shots — Hailuo 2.3 Fast wins at $0.0416/sec. Only viable for 2K or 15s requirements. CANARY REQUIRED (audio disable param unconfirmed). |
 | PixVerse V5.5 I2V | `pixverse/v5-5-image-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; audio optional via `generate_audio_switch: false`; CANARY REQUIRED |
 | PixVerse V5.5 T2V | `pixverse/v5-5-text-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; same price as I2V; CANARY REQUIRED |
-| Sora 2 Standard I2V | `openai/sora-2-i2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026. Audio ALWAYS generated — no disable param. DO NOT USE. |
+| Sora 2 Standard I2V | `openai/sora-2-i2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026 (32 days from SC290 Aug 23 — confirmed by OpenAI). Audio ALWAYS generated — no disable param. DO NOT USE. |
 | Sora 2 Standard T2V | `openai/sora-2-t2v` | 720p | **~$0.13/sec est.** (~$0.65/5s) | ⚠️ SUNSET Sept 24 2026. Audio ALWAYS generated. DO NOT USE. |
 
 **Non-character video routing (CORRECTED SC126, 2026-06-14 — Hailuo 2.3 Fast is I2V only, NOT T2V):**
@@ -145,7 +146,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 **LTXV 2 Fast — ❌ BROKEN as of 2026-08-15 (SC262):** `ltxv/ltxv-2-fast` NOW ERRORS on AIMLAPI. Lightricks removed LTX-2 strings on Aug 15, 2026 as announced. AIMLAPI did not add `ltxv/ltxv-2-3-fast` before the deadline. Do NOT call this string — it will fail. Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) is the confirmed fallback for all non-character I2V 5s+ clips. When AIMLAPI adds the replacement string (expected: `ltxv/ltxv-2-3-fast`), run a canary to confirm. **Note:** LTX-2.5 released 2026-08-11 (22B, 4K, 50fps, native audio, I2V in 6.8s on GB200 superchips). NOT on AIMLAPI yet. Third-party unconfirmed prices: $0.09/s 720p, $0.15/s 1080p. Watch for AIMLAPI model string (likely `ltxv/ltxv-2-5-fast`).
 
-**Veo 3.1 Lite pricing update (2026-05-06, updated SC213 2026-07-15):** Resolution-tiered pricing confirmed. 720p WITH audio: $0.05/sec (Vertex) → ~$0.065/sec on AIMLAPI. 1080p: $0.08/sec (Vertex) → ~$0.104/sec on AIMLAPI (production-verified ✓). **PRICING REVISION — 720p WITHOUT audio (SC213):** Multiple July 2026 third-party sources (costgoat, MaxVideoAI, buildfastwithai) now cite **$0.03–$0.04/sec** for Veo 3.1 Lite 720p without audio at Vertex (audio-off pricing tier, separate from the $0.05/sec audio-on rate). With AIMLAPI ~1.3× markup → **~$0.039–$0.052/sec on AIMLAPI = ~$0.195–$0.26 per 5s** if confirmed. This would cut documented B-roll cost by ~40%. **Do NOT change routing budget math until AIMLAPI billing is canary-verified.** Log actual cost on next production canary use — this is the highest-value pricing confirmation needed. Duration valid values: **4, 6, or 8 seconds ONLY** — 5 is invalid. 1080p requires duration=8. Use 720p for B-roll drafts.
+**Veo 3.1 Lite pricing update (2026-05-06, updated SC213 2026-07-15, SC290 2026-08-23):** Resolution-tiered pricing confirmed. 720p WITH audio: $0.05/sec (Vertex) → ~$0.065/sec on AIMLAPI. 1080p: $0.08/sec (Vertex) → ~$0.104/sec on AIMLAPI (production-verified ✓). **PRICING UPGRADE — 720p WITHOUT audio (SC290 HIGH CONFIDENCE):** $0.03/sec confirmed by OpenRouter ($0.03/sec direct proxy of Vertex pricing) + costgoat ($0.03/sec), MaxVideoAI ($0.04/sec, likely markup), buildfastwithai, and the official Veo 3.1 Lite model page — all Aug 2026 sources converge on **$0.03/sec at 720p audio-off** (vs $0.05/sec audio-on). Audio-off pricing tier is a Vertex billing split: `generateAudio: false` routes to the cheaper tier. With AIMLAPI ~1.3× markup → **~$0.039/sec on AIMLAPI est. = ~$0.234/6s** (vs previously documented $0.39/6s audio-on rate). **This cuts all B-roll T2V cost by ~40%.** Since we always send `generateAudio: false`, ALL Veo 3.1 Lite clips should hit this cheaper tier. **AIMLAPI billing canary urgently needed** to confirm AIMLAPI splits the audio-off/audio-on tiers identically to Vertex — if confirmed, update budget math. Duration valid values: **4, 6, or 8 seconds ONLY** — 5 is invalid. 1080p requires duration=8. Use 720p for B-roll drafts.
 
 **Veo 3.1 I2V (NEW — 2026-05-06):** `google/veo-3.1-i2v` at $0.20/sec = $1.00/5s — 32% cheaper than Kling v3 Pro ($1.46/5s). No Subject Binding, no character-locking. Suitable for truck/product shots and wide establishing shots where face identity lock is NOT required. DO NOT use for character face close-ups. Canary required before production use.
 
@@ -299,7 +300,8 @@ for i in range(30):
 | Character shot (final) | $0.195 | $1.46 (Pro 5s) | **$1.66** |
 | Character shot (draft 3s) | $0.195 | $0.65 (Std 3s) | **$0.85** |
 | Character shot (draft 5s) | $0.195 | $1.09 (Std 5s) | **$1.29** |
-| Establishing/B-roll (Veo 720p 6s) | $0.13 | ~$0.39 (Lite 720p 6s) | **~$0.52** |
+| Establishing/B-roll (Veo 720p 6s, audio OFF est.) | $0.13 | **~$0.234** est. (Lite 720p 6s, $0.039/sec AIMLAPI est. — pending canary) | **~$0.36** est. |
+| Establishing/B-roll (Veo 720p 6s, audio ON documented) | $0.13 | ~$0.39 (Lite 720p 6s, $0.065/sec) | **~$0.52** (reference) |
 | Establishing/B-roll (Veo 1080p 8s) | $0.13 | ~$0.83 (Lite 1080p 8s) | **~$0.96** |
 | Truck shot (final) | $0.195 | $1.46 (Pro 5s) | **$1.66** |
 
@@ -311,7 +313,7 @@ for i in range(30):
 |-------|-------|------|
 | Hero frames (4×$0.195 avg) | 4 | $0.78 |
 | Character: 2 Standard 3s drafts + 1 Pro 5s final | 3 | $2.76 |
-| 2 Establishing shots (Veo Lite 720p 6s, 1 pass each) | 2 | ~$0.78 |
+| 2 Establishing shots (Veo Lite 720p 6s, 1 pass each) | 2 | ~$0.78 (audio-on rate) |
 | Truck: 2 Standard 3s drafts + 1 Pro 5s final | 3 | $2.76 |
 | **Total** | | **~$7.08** |
 
@@ -321,9 +323,9 @@ for i in range(30):
 |-------|-------|------|
 | Hero frames (4×$0.195 avg) | 4 | $0.78 |
 | Character: 2 Standard 3s drafts + 1 Pro 5s final | 3 | $2.76 |
-| 2 Establishing shots (Veo 3.1 Lite 720p 6s T2V, 1 pass each) | 2 | **~$0.78** |
+| 2 Establishing shots (Veo 3.1 Lite 720p 6s T2V, audio-off est.) | 2 | **~$0.47 est.** (~$0.234×2 est., pending AIMLAPI canary; was $0.78 audio-on) |
 | Truck: 2 Kling Std 3s drafts + 1 Kling Pro 5s final | 3 | $2.76 |
-| **Total** | | **~$7.08** |
+| **Total (audio-off canary pending)** | | **~$6.77 est.** (was ~$7.08) |
 
 *Note: If establishing shots have an anchor reference image, use Hailuo 2.3 Fast I2V ($0.25/6s × 2 = $0.50) instead of Veo 3.1 Lite — saves $0.28. Hailuo 2.3 Fast CANNOT do pure T2V (no image). For truck shots with a hero frame, Hailuo 2.3 Fast I2V is also viable at $0.208/5s vs Kling Std $0.65/3s.*
 
@@ -560,25 +562,25 @@ Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Mod
 
 ---
 
-### FLUX 3 Video — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19)
+### FLUX 3 Video — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19; SC290 pass 2 recheck 2026-08-23)
 
-**Released July 23, 2026 (early access); GA August 4, 2026.** Black Forest Labs multimodal model — T2V, I2V, V2V, up to 20-second clips, native audio synchronized in single pass. 1080p GA (2K/4K/open weights coming). Up to 10 reference images accepted.
+**Released July 23, 2026 (early access); GA August 5, 2026.** Black Forest Labs multimodal model — T2V, I2V, V2V, up to 20-second clips, native audio synchronized in single pass. 1080p GA (2K/4K/open weights coming). Up to 10 reference images accepted. Claims to beat Seedance 2.0.
 
-**Pricing (BFL native API — audio included, cannot disable):**
+**Pricing (BFL native API and OpenRouter — audio always included):**
 - Draft mode HD T2V/I2V: **$0.06/sec** (5s = $0.30, 20s = $1.20)
 - Draft mode HD V2V: $0.12/sec
-- Full Quality HD T2V/I2V: $0.17/sec
+- Full Quality HD T2V/I2V: $0.17/sec (OpenRouter confirmed $0.17/sec at 720p)
 - Full Quality Full HD T2V/I2V: $0.29/sec
 
-**Status on AIMLAPI:** NOT confirmed as of 2026-08-19. Available via BFL API directly and "select partners." No AIMLAPI docs page found.
+**Status on AIMLAPI (SC290 Aug 23, 2026):** NOT on AIMLAPI — pass 2 recheck confirms still not available. Available via BFL native API + fal.ai (`blackforestlabs/flux-3` on fal). Monitor AIMLAPI blog for `blackforestlabs/flux-3-i2v` or `blackforestlabs/flux-3-t2v`.
 
-**⚠️ Audio cannot be disabled** — FLUX 3 Video always generates audio natively. For Shari'ah-compliant pipeline: audio strip via FFmpeg required before assembly (same workflow as Kling audio-on clips). This adds a post-processing step but is not a blocker.
+**⚠️ Audio always generated — cannot disable at generation time.** Audio is an integral part of the model's unified backbone; no `generate_audio: false` equivalent. Production workflow: FFmpeg strip audio immediately after generation (`-an` flag). Extra step but manageable. Price includes audio whether wanted or not — no surcharge per se, just audio generation cost baked in. Monitor whether BFL adds an audio-off pricing tier.
 
 **Cost position (Draft $0.06/s, if/when on AIMLAPI — estimate ~$0.078/s with markup):**
 - At 5s: ~$0.39 — worse than Hailuo 2.3 Fast ($0.208) but comparable to Wan 2.7 I2V ($0.50)
 - Advantage: up to 20s clips and 10-ref identity lock in one call
 
-**Why to watch:** Draft mode at $0.06/s native (est. ~$0.078/s AIMLAPI) is the cheapest I2V option seen, beating Hailuo 2.3 Fast if confirmed at that rate. 10-ref identity lock in draft mode could replace NBP Edit + Kling Standard for character draft iterations at fraction of cost. Monitor AIMLAPI blog for `blackforestlabs/flux-3-i2v` string.
+**Why to watch:** Draft mode at $0.06/s native (est. ~$0.078/s AIMLAPI) could be cheapest I2V option if confirmed. 10-ref identity lock in draft mode could replace NBP Edit + Kling Standard for character draft iterations. Do NOT assume audio strip removes cost — generation cost is the same with or without audio disable.
 
 ---
 
@@ -598,7 +600,7 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 
 ⚠️ **BROKEN — DO NOT CALL.** LTX-2 strings (`ltxv/ltxv-2-fast`, `ltxv/ltxv-2`) were removed by Lightricks on August 15, 2026 and NOW ERROR on AIMLAPI. **AIMLAPI has NOT added a replacement string as of 2026-08-19 (SC276 recheck — no AIMLAPI docs page found for LTX-2.3 or LTX-2.5).** Use Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) for all non-char I2V. Watch for `ltxv/ltxv-2-3-fast` or `ltxv/ltxv-2-5-fast` to appear on AIMLAPI.
 
-**LTX-2.5 (NEW — 2026-08-11):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. NOT on AIMLAPI as of 2026-08-18. When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast.
+**LTX-2.5 (NEW — 2026-08-11; SC290 pass 40 recheck 2026-08-23):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. **NOT on AIMLAPI as of 2026-08-23 (SC290 pass 40 recheck — no AIMLAPI docs page or model database entry found).** When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast. Features: multi-shot scene consistency, synchronized audio generation (I2V in 6.8s on GB200), supports T2V + I2V + audio-to-video. Generate audio is off by default at LTX native API. Watch for AIMLAPI string.
 
 **LTX-2.3 (intermediate — 2026-07-15 to 2026-08-11):** LTX-2 strings auto-routed to LTX-2.3 during the grace period. LTX-2.3 itself is superseded by LTX-2.5. Expected AIMLAPI strings: `ltxv/ltxv-2-3-fast`, `ltxv/ltxv-2-3` — neither confirmed on AIMLAPI as of 2026-08-18.
 
