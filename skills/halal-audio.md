@@ -287,7 +287,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 **yt-dlp to extract audio from NCN YouTube video (free, no API cost):**
 
-**yt-dlp version (SC281, Aug 21 2026):** `2026.08.19` is current stable. YouTube extractor now includes `web_embedded` client fallbacks (improves reliability when primary YouTube client is rejected) and adds `visionos` player client. `android_vr` removed from default clients — no impact on audio extraction commands. All audio flags (`-x`, `--audio-format`, `--audio-quality`) are unchanged.
+**yt-dlp version (SC288 recheck Aug 23 2026):** `2026.08.19` is still current stable — no new stable release since SC281. YouTube extractor now includes `web_embedded` client fallbacks (improves reliability when primary YouTube client is rejected) and adds `visionos` player client. `android_vr` removed from default clients — no impact on audio extraction commands. All audio flags (`-x`, `--audio-format`, `--audio-quality`) are unchanged.
 
 ```bash
 yt-dlp -x --audio-format mp3 --audio-quality 0 \
@@ -1187,6 +1187,8 @@ ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA
 - **v2.64.0 (August 14):** `extra_setup_config` parameter for on-premises deployment messaging — no audio pipeline changes.
 
 All TTS, SFX v2, VoiceSettings, AllowedOutputFormats, and batch Scribe v2 API calls in this skill file are confirmed valid on v2.64.0.
+
+**SC288 recheck (Aug 23, 2026):** v2.64.0 still current — no v2.65.0. ElevenLabs Aug 3/10/17 changelogs reviewed: all changes are Agents Platform, Dubbing v2, or RAG — no impact on `text_to_speech.convert()`, `text_to_sound_effects.convert()`, or `speech_to_text.convert()` batch calls. One noteworthy Agent change: Aug 17 changelog flips `enable_phoneme_tags` default from `false` → `true` in Agent voice config (Agents Platform only — not relevant to standard TTS REST API calls in this pipeline).
 
 **SDK v2.58.0 (July 13, 2026) — Complete Multi WebSocket response types confirmed:**
 
