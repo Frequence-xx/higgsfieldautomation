@@ -287,7 +287,7 @@ Use ONLY with owner Telegram approval before adding to any video.
 
 **yt-dlp to extract audio from NCN YouTube video (free, no API cost):**
 
-**yt-dlp version (SC288 recheck Aug 23 2026):** `2026.08.19` is still current stable — no new stable release since SC281. YouTube extractor now includes `web_embedded` client fallbacks (improves reliability when primary YouTube client is rejected) and adds `visionos` player client. `android_vr` removed from default clients — no impact on audio extraction commands. All audio flags (`-x`, `--audio-format`, `--audio-quality`) are unchanged.
+**yt-dlp version (SC295 recheck Aug 24 2026):** `2026.08.19` is still current stable — no new stable release since SC281 (confirmed Aug 24 recheck — unchanged from SC288). YouTube extractor now includes `web_embedded` client fallbacks (improves reliability when primary YouTube client is rejected) and adds `visionos` player client. `android_vr` removed from default clients — no impact on audio extraction commands. All audio flags (`-x`, `--audio-format`, `--audio-quality`) are unchanged. **Note (Aug 24 2026):** yt-dlp is raising minimum recommended Python to 3.11 ahead of Python 3.10 EOL (October 2026) — no impact on bash-only yt-dlp usage in this pipeline (commands are standalone binary calls, not Python imports).
 
 ```bash
 yt-dlp -x --audio-format mp3 --audio-quality 0 \
@@ -1189,6 +1189,8 @@ ElevenLabs launched a dedicated Text to Dialogue endpoint alongside eleven_v3 GA
 All TTS, SFX v2, VoiceSettings, AllowedOutputFormats, and batch Scribe v2 API calls in this skill file are confirmed valid on v2.64.0.
 
 **SC288 recheck (Aug 23, 2026):** v2.64.0 still current — no v2.65.0. ElevenLabs Aug 3/10/17 changelogs reviewed: all changes are Agents Platform, Dubbing v2, or RAG — no impact on `text_to_speech.convert()`, `text_to_sound_effects.convert()`, or `speech_to_text.convert()` batch calls. One noteworthy Agent change: Aug 17 changelog flips `enable_phoneme_tags` default from `false` → `true` in Agent voice config (Agents Platform only — not relevant to standard TTS REST API calls in this pipeline).
+
+**SC295 recheck (Aug 24, 2026):** v2.64.0 still current — no v2.65.0 released (confirmed via GitHub releases + PyPI). ElevenLabs Aug 22 changelog referenced in search results but elevenlabs.io proxy-blocked; based on SDK unchanged at v2.64.0 and elevenlabs-mcp releases showing only version bumps (v0.12.1/v0.12.2 on Aug 3/4 — chore bumps only), the Aug 22 entry is likely MCP/Agents Platform only — no impact on TTS/SFX/Scribe batch API. ffmpeg-normalize v1.41.1 still current (confirmed PyPI, no new release since July 10). yt-dlp 2026.08.19 still current stable. All batch API calls in this skill confirmed valid.
 
 **SDK v2.58.0 (July 13, 2026) — Complete Multi WebSocket response types confirmed:**
 
