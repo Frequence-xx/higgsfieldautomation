@@ -142,7 +142,7 @@ A production-tested mnemonic for building complete prompts before writing them:
 
 **Active-verb physics triggering (July 2026):** Kling 3.0's physics engine responds to verbs that imply causality. "A glass falls off the table and shatters" triggers physics simulation; "a broken glass on the floor" does not. For motion prompts: use causal action chains ("lifts box → pivots right → places firmly → eases to rest") rather than static state descriptions. This applies both to desired motion AND stationarity (physics-framing the truck as "parking brake engaged, wheels locked and chocked, dead weight at rest" is a physics-engine instruction, not just prose).
 
-**Front-load the camera instruction (July 2026):** Write the camera motion FIRST in the prompt text, even within the CSAT spine. "Slow dolly push forward" at the start outperforms the same phrase buried mid-sentence. The model weighs earlier tokens more heavily — camera sets the spatial frame before action is read.
+**Front-load the camera instruction (July 2026):** Write the camera motion FIRST in the prompt text, even within the CSAT spine. "Slow dolly push forward" at the start outperforms the same phrase buried mid-sentence. The model weighs earlier tokens more heavily — camera sets the spatial frame before action is read. **Place the camera verb within the first 8-10 words** (SC293 Aug 24, 2026 — multi-source convergence; most reliable execution occurs at this position, not just "somewhere near the start").
 
 **Alternative Scene-first ordering (July 2026 community alternative):** Some guides use Scene → Characters → Action → Camera → Audio & Style, arguing that grounding the model in the environment before camera prevents spatial confusion. Both orderings work in practice. Our default remains Camera-first (confirmed stronger by multiple sources) — Scene-first is a valid fallback if Camera-first generates compositional drift.
 
@@ -800,7 +800,8 @@ O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/
 - [ ] Record actual AIMLAPI cost — confirm expected ~$1.46/5s (1080p). Note: native O3 "Fast" tier is $0.0896/sec but this may be a cheaper sub-tier; do NOT use reference video mode (doubles cost to ~$2.92/5s)
 - [ ] Test element syntax order: (1) try `"elements"` array (AIMLAPI snake_case); (2) try `"refs"` array (native O3 name, SC286); (3) do NOT use `"kling_elements"` unless both prior fail
 - [ ] Test element reference syntax in prompt: (1) try `@Element1` (AIMLAPI positional); (2) try `@name-value` e.g. `@ZhangWei` (native O3 by-name syntax, SC286); (3) try `<<<element_1>>>` only as last resort
-- [ ] Test `cfg_scale` and `negative_prompt`: include them in first call; if AIMLAPI rejects or ignores, remove and document
+- [ ] Test `negative_prompt`: **PLAUSIBLE in native O3 API** (SC293 — confirmed in Magnific/Apiframe/MaasUnion docs with default "blur, distort, and low quality"). Include as standalone field in first AIMLAPI call; if rejected, fall back to embedding negatives in main prompt: `"... negative: blur, distort, low quality, jittery, ..."`. Either way: document whether AIMLAPI accepts it as a separate key.
+- [ ] Test `cfg_scale`: UNKNOWN in native O3. Include in first call; if rejected, remove — O3 adherence may be driven by reference quality + face_consistency instead.
 - [ ] Confirm `generate_audio: false` (or `generateAudio: false`) suppresses audio — O3 defaults audio ON
 - [ ] Run InsightFace buffalo_l cosine similarity vs v3 Pro baseline on same refs
 - [ ] If refs confirm max 7 → run character shot with 4 angles + 3 expression refs
@@ -856,7 +857,8 @@ The native Kling O3 API uses a `refs` array (NOT `kling_elements`, `elements`, o
 - `resolution` is an explicit string parameter: `"720P"` or `"1080P"` (vs v3 Pro which infers resolution from model string)
 - `multi_shot: True` required to activate `multi_prompt` (without it, multi_prompt is silently ignored) — NOTE: singular (`multi_shot`), not `multi_shots`
 - `generate_audio` / `generateAudio` defaults **ON** in O3 — ALWAYS set `False` explicitly
-- `cfg_scale` and `negative_prompt` status: UNKNOWN for native O3 (not visible in native API structure above). CANARY: include them in first O3 call; if rejected, omit. **Do NOT assume they are present until confirmed.**
+- `negative_prompt` status: **PLAUSIBLE for native O3** (SC293 Aug 24, 2026 — confirmed across multiple third-party API mirrors that directly expose native API structure: Magnific, Apiframe, MaasUnion all document `negative_prompt` with default "blur, distort, and low quality", max 2500 chars). These wrapper docs derive from the native Kling O3 API spec. **CANARY REQUIRED on AIMLAPI specifically** — AIMLAPI wrapper may or may not expose it as a separate field. If AIMLAPI rejects it, incorporate negative guidance into the main prompt field as `"... negative: blur, distort, low quality, jittery, flickering, ..."`.
+- `cfg_scale` status: UNKNOWN for native O3 (not confirmed in any wrapper docs surveyed SC293). CANARY: include in first O3 call; if rejected, omit. Some guides suggest O3 prompt adherence is controlled via reference image quality + face_consistency rather than cfg_scale. **Do NOT assume cfg_scale is present until canary-confirmed.**
 - `start_image_url` → `image_url` (same as v3 Pro on AIMLAPI — no change needed for our pipeline)
 - `end_image_url` for end frame — O3-specific naming on fal.ai; confirm on AIMLAPI when O3 lands
 
