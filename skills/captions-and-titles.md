@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security fixes, no DTW changes) — stay on 1.9.2
+   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security + backend fixes, no DTW/timestamp changes — SC294 recheck Aug 24: still pre-release) — stay on 1.9.2
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,8 +708,14 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.515 (August 21, 2026 — current latest):**
-- `@remotion/captions` — **ESM export added** (PR #10674 by @JonnyBurger). Package now exposes a proper ESM build alongside CJS. Practical impact: (1) Node.js scripts with `"type": "module"` can `import { createTikTokStyleCaptions } from '@remotion/captions'` without workarounds; (2) bundlers (Vite, esbuild) can tree-shake unused exports (drop `parseSrt`/`serializeSrt` when only `createTikTokStyleCaptions` is used). No API changes — non-breaking upgrade. `npm install remotion@4.0.515`.
+**Remotion v4.0.516 (August 24, 2026 — current latest):**
+- Studio: Rulers/guides toolbar button, canvas drag improvements, inspector refinements, timeline optimizations.
+- `@remotion/media`: Fixed 5.1 audio downmixing; ImageBitmap memory management fix.
+- `@remotion/bundler`: Reduced Studio Fast Refresh latency; schema inference from default props.
+- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected. `npm install remotion@4.0.516`.
+
+**Remotion v4.0.515 (August 21, 2026):**
+- `@remotion/captions` — **ESM export added** (PR #10674 by @JonnyBurger). Package now exposes a proper ESM build alongside CJS. Practical impact: (1) Node.js scripts with `"type": "module"` can `import { createTikTokStyleCaptions } from '@remotion/captions'` without workarounds; (2) bundlers (Vite, esbuild) can tree-shake unused exports (drop `parseSrt`/`serializeSrt` when only `createTikTokStyleCaptions` is used). No API changes — non-breaking upgrade.
 - Other v4.0.515 changes: `@remotion/effects` `outline()` added; Lambda backpressure during frame encoding; video loop silent-tail fix; Studio timeline improvements. No other `@remotion/captions` or `@remotion/install-whisper-cpp` changes.
 
 **Remotion v4.0.514 (August 20, 2026; caption API changes in v4.0.514):**
@@ -720,7 +726,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.515`. *(4.0.514 was the prior caption-API-change version — 4.0.515 is now current)*
+- `npm install remotion@4.0.516`. *(4.0.514 was the last caption-API-change version; 4.0.515 added ESM export; 4.0.516 is now current)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -797,7 +803,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.515 — confirmed current as of 2026-08-22; caption API changes in 4.0.514; v4.0.515 adds ESM export only)
+### Full API (v4.0.516 — confirmed current as of 2026-08-24; caption API changes in 4.0.514; 4.0.515 adds ESM export; 4.0.516 no caption changes)
 
 | Export | Purpose |
 |--------|---------|
