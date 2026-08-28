@@ -241,7 +241,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **Version requirements for large-v3-turbo:** Remotion v4.0.229+ AND whisper.cpp v1.8.x+. Do NOT use `version: '1.5.5'` with turbo — it silently fails.
 
-   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. v1.9.1 (June 19, 2026) — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). No DTW or timestamp changes. **v1.9.2 (August 4, 2026) is the current latest stable** — includes two meaningful fixes for our pipeline: (1) **"map token timestamps to original time when VAD is enabled" (PR #3910)** — when VAD is active (default in many whisper.cpp configs), token timestamps were previously relative to each VAD speech segment (restarting from zero per segment) rather than absolute positions in the original audio. This caused tokens to have wrong absolute timestamps whenever silence gaps preceded speech. For Dutch voiceovers with natural pauses ("Bel ons nu... [pause] ...085 3331133"), timestamps were shifted or incorrect. Now they map to original audio time — improved accuracy. (2) "Remove leading space from txt output" — affects `.txt` file format only, NOT JSON word timestamps; no impact on our Remotion/JSON pipeline. Upgrade is safe and recommended. Use `WHISPER_VERSION = '1.9.2'` for new installs. **v1.9.3 (August 20, 2026) is pre-release only** — ggml sync v0.20.2, CUDA/Metal/Vulkan backend optimizations, security fixes for heap-buffer-overflow in `log_mel_spectrogram` and stack-buffer-overflow on malformed model files (PR #3956, #3957). No DTW or timestamp changes. **Stay on v1.9.2 stable until v1.9.3 graduates to stable release.**
+   **⚠️ Minimum recommended: whisper.cpp v1.8.5.** v1.8.5 (May 29, 2026) includes PR #2279 — fixes incorrect segment-start timestamps near silence gaps. Root cause: the model produces extra consecutive timestamp tokens between segments that the library was ignoring; when there is a pause between phrases, the next segment's `startMs` was placed at the end of the previous segment instead of after the actual gap. For Dutch voiceovers with natural pauses between phrases ("Bel ons nu... 085 3331133"), this caused captions to appear mid-silence before the word was spoken. v1.8.6 (June 2, 2026) adds no timestamp changes. v1.8.7 (June 16, 2026) — maintenance only: library path fixes, UTF-8 token merge in server, C++ exception handling in `whisper_init`, CoreML quantize/ANE fixes, `--version` CLI flag. No DTW or timestamp changes. v1.9.0 (June 17, 2026) — adds NVIDIA Parakeet model support (new architecture, separate from Whisper models) and Ruby bindings for Parakeet. No DTW or timestamp changes. v1.9.1 (June 19, 2026) — CI build fixes for Windows BLAS only (GGML_NATIVE=OFF, GGML_BMI2=OFF). No DTW or timestamp changes. **v1.9.2 (August 4, 2026) is the current latest stable** — includes two meaningful fixes for our pipeline: (1) **"map token timestamps to original time when VAD is enabled" (PR #3910)** — when VAD is active (default in many whisper.cpp configs), token timestamps were previously relative to each VAD speech segment (restarting from zero per segment) rather than absolute positions in the original audio. This caused tokens to have wrong absolute timestamps whenever silence gaps preceded speech. For Dutch voiceovers with natural pauses ("Bel ons nu... [pause] ...085 3331133"), timestamps were shifted or incorrect. Now they map to original audio time — improved accuracy. (2) "Remove leading space from txt output" — affects `.txt` file format only, NOT JSON word timestamps; no impact on our Remotion/JSON pipeline. Upgrade is safe and recommended. Use `WHISPER_VERSION = '1.9.2'` for new installs. **v1.9.3 (August 20, 2026) is pre-release only** — ggml sync v0.20.2, CUDA/Metal/Vulkan backend optimizations, security fixes for heap-buffer-overflow in `log_mel_spectrogram` and stack-buffer-overflow on malformed model files (PR #3956, #3957). No DTW or timestamp changes. **SC301 recheck August 28, 2026: v1.9.3 still pre-release, no changes since Aug 20 — stay on v1.9.2 stable.**
 
    **⚠️ REQUIRED PARAMETERS (confirmed from source, v4.0.469):** Both `installWhisperCpp()` and `transcribe()` have mandatory parameters that must be supplied explicitly — there are no defaults:
    - `installWhisperCpp()` requires `to: string` — the directory where whisper.cpp will be installed
@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security + backend fixes, no DTW/timestamp changes — SC294 recheck Aug 24: still pre-release) — stay on 1.9.2
+   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security + backend fixes, no DTW/timestamp changes — SC294 recheck Aug 24, SC301 recheck Aug 28: still pre-release) — stay on 1.9.2
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,11 +708,37 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.516 (August 24, 2026 — current latest):**
+**Remotion v4.0.518 (August 26, 2026 — current latest):**
+- `@remotion/captions` — **`lineBreakAfter?: boolean` added to `Caption` type** (PR #10805 by @JonnyBurger). When set to `true` on a caption, forces a new page to start after that word in `createTikTokStyleCaptions()`. Also threads through `ensureMaxCharactersPerLine()` and `serializeSrt()`. Studio adds a per-caption "Line break after" checkbox in the caption inspector.
+  - **Use case for Dutch voiceovers:** Force a page break between "Bel ons nu" and "085 3331133" by setting `lineBreakAfter: true` on the "nu" caption — cleaner than relying on `silenceGapMs` when the gap is short or the natural pause was missed.
+  - **How to use:** Add `lineBreakAfter: true` to any `Caption` object in the array before calling `createTikTokStyleCaptions()`. Backward-compatible — existing code without this field is unchanged.
+  ```typescript
+  // Force break between phrase and phone number
+  const captions: Caption[] = [
+    { text: "Bel", startMs: 0, endMs: 200, timestampMs: 100, confidence: 1 },
+    { text: " ons", startMs: 220, endMs: 380, timestampMs: 300, confidence: 1 },
+    { text: " nu", startMs: 400, endMs: 650, timestampMs: 525, confidence: 1, lineBreakAfter: true }, // ← page break here
+    { text: "085", startMs: 900, endMs: 1100, timestampMs: 1000, confidence: 1 },
+    // ...
+  ];
+  const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 700 });
+  // → "Bel ons nu" on page 1, "085 3331133" on page 2
+  ```
+  - **Complements `silenceGapMs`:** Use `silenceGapMs: 400` for automatic silence detection + `lineBreakAfter` for programmatic overrides on specific words. Both can coexist.
+- `@remotion/whisper-webgpu`: New browser-only package. **NOT for this pipeline** — browser WASM only, small models, no large-v3-turbo. Same limitations as Option D.
+- `@remotion/studio`: WebMCP tools integrated.
+- `npm install remotion@4.0.518`.
+
+**Remotion v4.0.517 (August 25, 2026):**
+- `@remotion/gsap`: New package for GSAP animation integration.
+- `@remotion/studio`: `Config.addElementLibrary()` now accepts objects; Studio ruler alignment, inspector styling.
+- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected.
+
+**Remotion v4.0.516 (August 24, 2026):**
 - Studio: Rulers/guides toolbar button, canvas drag improvements, inspector refinements, timeline optimizations.
 - `@remotion/media`: Fixed 5.1 audio downmixing; ImageBitmap memory management fix.
 - `@remotion/bundler`: Reduced Studio Fast Refresh latency; schema inference from default props.
-- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected. `npm install remotion@4.0.516`.
+- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected.
 
 **Remotion v4.0.515 (August 21, 2026):**
 - `@remotion/captions` — **ESM export added** (PR #10674 by @JonnyBurger). Package now exposes a proper ESM build alongside CJS. Practical impact: (1) Node.js scripts with `"type": "module"` can `import { createTikTokStyleCaptions } from '@remotion/captions'` without workarounds; (2) bundlers (Vite, esbuild) can tree-shake unused exports (drop `parseSrt`/`serializeSrt` when only `createTikTokStyleCaptions` is used). No API changes — non-breaking upgrade.
@@ -726,7 +752,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.516`. *(4.0.514 was the last caption-API-change version; 4.0.515 added ESM export; 4.0.516 is now current)*
+- `npm install remotion@4.0.518`. *(4.0.514 added silenceGapMs; 4.0.515 added ESM export; 4.0.518 added lineBreakAfter — SC301 Aug 28 2026)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -803,7 +829,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.516 — confirmed current as of 2026-08-24; caption API changes in 4.0.514; 4.0.515 adds ESM export; 4.0.516 no caption changes)
+### Full API (v4.0.518 — confirmed current as of 2026-08-28; caption API changes in 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter]; 4.0.516/517 no caption changes)
 
 | Export | Purpose |
 |--------|---------|
@@ -811,7 +837,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps** |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
-| `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null }` |
+| `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null, lineBreakAfter?: boolean }` — `lineBreakAfter` added v4.0.518 |
 | `TikTokPage` | Type: `{ text, startMs, durationMs, tokens: TikTokToken[] }` — `durationMs` added v4.0.261 |
 | `TikTokToken` | Type: `{ text, fromMs, toMs }` — named export for TypeScript typing |
 | `EnsureMaxCharactersPerLineInput` | Direct named type export (TypeScript only) — input type for `CaptionsInternals.ensureMaxCharactersPerLine` |
