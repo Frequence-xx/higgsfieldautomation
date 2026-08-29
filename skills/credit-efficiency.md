@@ -167,6 +167,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 | Model | AIMLAPI String | Cost/gen | Best For |
 |-------|---------------|---------|--------|
+| Meta Muse Image (DRAFT — HIGH PRIORITY CANARY) | `meta/muse-image` (est.) | **~$0.013 AIMLAPI est.** ($0.01 native Meta API) | Multi-ref character composition, precise text, iterative refinement — 93% cheaper than NBP Edit; see section below |
 | Seedream 5.0 Lite (DRAFT) | `bytedance/seedream-5-0-lite-preview` | **~$0.035** | Cheapest image draft with 14 refs; char identity CANARY REQUIRED — see gen-image.md |
 | NB2 Lite (DRAFT) | `google/gemini-3.1-flash-lite-image` | **~$0.044 AIMLAPI** | Non-char T2I/I2I layout drafts — 1K ONLY, 5-ref max, CANARY for param names |
 | GPT Image 2 (DRAFT) | `openai/gpt-image-2` | **$0.053** (medium) | Character drafts, text-heavy frames — CANARY REQUIRED |
@@ -178,6 +179,8 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | **$0.10** | Money shots / CTA |
 | Wan 2.7 Image Pro (DRAFT) | `alibaba/wan-2-7-image-pro` | **~$0.06** | Draft hero frames, multi-ref identity test — CANARY REQUIRED |
 | Wan 2.7 Image (DRAFT) | `alibaba/wan-2-7-image` | **~$0.03** est. | Ultra-cheap T2I draft stills — CANARY REQUIRED |
+
+*Meta Muse Image (HIGH PRIORITY CANARY — SC304 2026-08-29): Released July 7, 2026 by Meta Superintelligence Labs. Native Meta API: **$0.01/image** → AIMLAPI est. **~$0.013/image** (1.3× markup). AIMLAPI availability: **likely on AIMLAPI** — GitHub commit `aimlapi/api-docs` Aug 28, 2026 added "Meta's Muse image models (generation and editing)" to model database; exact model string unconfirmed (expected `meta/muse-image` or `meta/muse-image-edit`) — **CANARY REQUIRED.** Capabilities: T2I + I2I + multi-reference composition; identity/character consistency when iterating on the same image; multi-ref composition (people, objects, clothing, styles, environments); precise text rendering within images; iterative reasoning (plans layout before drawing; anchored composition); agentic refinement via code/web tools. Cost position: **93% cheaper than NBP Edit ($0.195 → ~$0.013)** — if character consistency quality passes, this becomes the primary character DRAFT model. **Identity consistency note:** Muse Image is designed for "preserve subjects across edits" but uses a different mechanism than NBP Edit Subject Binding; no documented 0-100 strength slider. **Canary test:** (1) confirm AIMLAPI model string from docs; (2) submit 1 call with character ref + 9:16 aspect_ratio + simple pose prompt; (3) check actual AIMLAPI billing (~$0.013 expected); (4) compare face cosine similarity vs NBP Edit baseline via InsightFace (PASS ≥ 0.62); (5) verify no audio generation risk (image model — no audio). If canary passes, route ALL character draft iterations here (save ~$0.18/iteration vs NBP Edit). Finals stay on NBP Edit until Muse Image identity lock is proven at production quality.*
 
 *Wan 2.7 Image Pro (NEW — 2026-06-09): AIMLAPI model string `alibaba/wan-2-7-image-pro`. ~$0.06/image on AIMLAPI (example in AIMLAPI docs: 120k credits = $0.06); Segmind lists $0.037/image. Reference image parameter: `image_urls` (array, up to 9 refs). Character Locking feature locks facial geometry and clothing across batch generations — up to 9 input refs, up to 12 consistent outputs in one run. 4K native output. **Limitation:** No Subject Binding slider equivalent. Identity lock is architectural (multi-ref embedding), not parametric (no 0-100 strength dial). NOT a replacement for NBP Edit on finals — use for cheap draft iterations only. 69% cheaper than NBP Edit ($0.195 → ~$0.06). Canary: call with one character ref + 9:16 aspect_ratio. Verify actual AIMLAPI cost and compare face consistency vs NBP Edit baseline.*
 
@@ -563,6 +566,18 @@ Set `image_url` = truck hero frame AND `last_image` = same truck hero frame. Mod
 
 ---
 
+### Pruna P-Video — WATCH ITEM, NOT ON AIMLAPI (SC304 2026-08-29)
+
+**Released Feb 2026 by Pruna AI.** Available on Segmind ($0.005/generation), Replicate, fal.ai. **NOT on AIMLAPI as of 2026-08-29 — no AIMLAPI docs page or GitHub api-docs commit found.** Since pipeline is AIMLAPI-only (Farouq directive 2026-04-16), cannot use. Watch for AIMLAPI adoption.
+
+**Pricing (native Pruna / Segmind):** $0.02/sec 720p, $0.04/sec 1080p; Segmind: $0.005/generation flat. At 5s 720p: $0.10 — cheapest T2V+I2V found at any provider. Draft mode 4× faster (lower cost).
+
+**Key specs:** T2V + I2V (image_url) + audio-to-video input. Duration 3-15s. Aspect ratios: 9:16, 16:9, 1:1, 4:3, 3:4, 3:2, 2:3. Native audio generation + lip sync — **audio MUST be disabled for Shari'ah compliance** (verify disable param when AIMLAPI adds it). 720p in ~10s on GPU.
+
+**If AIMLAPI adds:** Canary immediately — at ~$0.026/sec est. (AIMLAPI markup on $0.02/sec), 5s = ~$0.13 vs Hailuo 2.3 Fast $0.208. Would become cheapest non-char T2V (beating Veo 3.1 Lite ~$0.234/5s) and cheapest non-char I2V (beating Hailuo 2.3 Fast $0.208). Do NOT use character shots without Subject Binding equivalent validation.
+
+---
+
 ### FLUX 3 Video — WATCH ITEM, NOT ON AIMLAPI (SC276 2026-08-19; SC290 pass 2 recheck 2026-08-23)
 
 **Released July 23, 2026 (early access); GA August 5, 2026.** Black Forest Labs multimodal model — T2V, I2V, V2V, up to 20-second clips, native audio synchronized in single pass. 1080p GA (2K/4K/open weights coming). Up to 10 reference images accepted. Claims to beat Seedance 2.0.
@@ -601,7 +616,7 @@ Older model at **~$0.091/sec ($0.46/5s)** — 58% cheaper than Kling v3 Standard
 
 ⚠️ **BROKEN — DO NOT CALL.** LTX-2 strings (`ltxv/ltxv-2-fast`, `ltxv/ltxv-2`) were removed by Lightricks on August 15, 2026 and NOW ERROR on AIMLAPI. **AIMLAPI has NOT added a replacement string as of 2026-08-19 (SC276 recheck — no AIMLAPI docs page found for LTX-2.3 or LTX-2.5).** Use Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) for all non-char I2V. Watch for `ltxv/ltxv-2-3-fast` or `ltxv/ltxv-2-5-fast` to appear on AIMLAPI.
 
-**LTX-2.5 (NEW — 2026-08-11; SC290 pass 40 recheck 2026-08-23):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. **NOT on AIMLAPI as of 2026-08-23 (SC290 pass 40 recheck — no AIMLAPI docs page or model database entry found).** When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast. Features: multi-shot scene consistency, synchronized audio generation (I2V in 6.8s on GB200), supports T2V + I2V + audio-to-video. Generate audio is off by default at LTX native API. Watch for AIMLAPI string.
+**LTX-2.5 (NEW — 2026-08-11; SC304 pass 39 recheck 2026-08-29):** Open weights + LTX native API. Native pricing: **$0.09/sec (720p), $0.15/sec (1080p), $0.19/sec (2K), $0.37/sec (4K).** Model IDs on LTX native API: `ltx-2-5-fast`, `ltx-2-5-pro`. **NOT on AIMLAPI as of 2026-08-29 (SC304 pass 39 recheck — LTX's own docs listed LTX-2.3 as last AIMLAPI model as of Aug 18; no AIMLAPI docs page or model database entry found for LTX-2.5).** When/if added, expected AIMLAPI string: `ltxv/ltxv-2-5-fast` (CANARY REQUIRED). At native 720p ($0.09/s): 5s = $0.45 — more expensive than Hailuo 2.3 Fast ($0.208/5s). No cost advantage at 720p vs Hailuo 2.3 Fast. Features: multi-shot scene consistency, synchronized audio generation (I2V in 6.8s on GB200), supports T2V + I2V + audio-to-video. Generate audio is off by default at LTX native API. Watch for AIMLAPI string.
 
 **LTX-2.3 (intermediate — 2026-07-15 to 2026-08-11):** LTX-2 strings auto-routed to LTX-2.3 during the grace period. LTX-2.3 itself is superseded by LTX-2.5. Expected AIMLAPI strings: `ltxv/ltxv-2-3-fast`, `ltxv/ltxv-2-3` — neither confirmed on AIMLAPI as of 2026-08-18.
 
