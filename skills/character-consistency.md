@@ -211,7 +211,7 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
-**InsightFace install (pass 10 finding, 2026-05-25; pass 45 recheck, 2026-08-29 — v1.0.1 still latest on PyPI):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
+**InsightFace install (pass 10 finding, 2026-05-25; SC310 recheck, 2026-08-31 — v1.0.1 still latest on PyPI, no v1.0.2 or v1.1 found):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
 
 ```python
 from insightface.app import FaceAnalysis
@@ -289,7 +289,7 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.2** is the current stable release (August 10, 2026; pass 45 recheck, 2026-08-29 — still latest, no new version, no v3.9 exists). Previously v3.7.1 (July 5, 2026).
+FaceFusion **v3.8.2** is the current stable release (August 10, 2026; SC310 recheck, 2026-08-31 — still latest, no new version, no v3.9 exists; GitHub releases page confirmed). Previously v3.7.1 (July 5, 2026).
 
 **⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
@@ -666,9 +666,9 @@ No AIMLAPI endpoint — research only, validates existing QA step.
 - **4× more expensive** than Kling v3 Pro, no evidence of superior identity lock
 - **DO NOT use for character shots.** Kling O1 reference-to-video remains correct model.
 
-## Happy Horse 1.1 — High-Ref Character Video (AIMLAPI blog-confirmed, canary required)
+## Happy Horse 1.1 — High-Ref Character Video (CONFIRMED ON AIMLAPI as `alibaba/happyhorse-1.1`)
 
-Alibaba ATH/Taotian Group model that generates character-consistent video from up to **9 reference images** in one call — the highest reference count of any model currently accessible. AIMLAPI has published a blog guide; docs.aimlapi.com page not confirmed as of 2026-08-17.
+Alibaba ATH/Taotian Group model (released June 22, 2026) that generates character-consistent video from up to **9 reference images** in one call — the highest reference count of any model currently accessible. AIMLAPI model string **`alibaba/happyhorse-1.1` CONFIRMED** via AIMLAPI blog guide and docs.aimlapi.com model database (SC310, 2026-08-31).
 
 **Key specs:**
 - References: up to 9 images (images, video clips, or audio — mixed). Prompt binding: `Image1`, `Image2`, `Video1` (positional, no @ prefix)
@@ -695,8 +695,9 @@ Also attempt to set audio-disable param at API call (param name unconfirmed — 
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "alibaba/happyhorse-1.1",   # model ID TBC — verify on canary
-    # Prompt syntax: reference images by [Image 1], [Image 2], ... (not @Image1 or Image1)
-    "prompt": "[Image 1] lifts a moving box and walks toward the front door, golden hour light, 9:16",
+    # Prompt syntax: reference images by character1, character2, ... (lowercase, matches array order)
+    # ⚠️ CORRECTION (SC310, 2026-08-31): NOT "[Image 1]" — confirmed binding syntax is "character1"/"character2"
+    "prompt": "character1 lifts a moving box and walks toward the front door, golden hour light, 9:16",
     # Parameter name: "images_list" confirmed from Python wrapper (array of URLs, 1-9)
     # AIMLAPI adapter may use different name — canary-test both "images_list" and "reference_images"
     "images_list": [                    # confirmed param name from community wrapper; TBC on AIMLAPI
@@ -947,6 +948,10 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 **ID-V2V — Future Watch (arXiv 2607.22830, July 24, 2026, Netflix + Eyeline Labs, SIGGRAPH Asia 2026, code released):** Identity-preserving video restylization. Code: github.com/Eyeline-Labs/ID-V2V. ComfyUI nodes available (ComfyUI-wiki confirmed July 29, 2026). Core mechanism: decouples source-grounded identity preservation from edit-driven video synthesis. Given a source clip + a stylized keyframe (+ optional text), generates a new clip matching the keyframe's scene/lighting/style while preserving the source subjects' **facial identity, expressions, eye gaze, and lip sync**. "Shoot first, restyle later" workflow — generate the character clip first, then apply a cinematic style via a keyframe.
 
 **Practical implication for our pipeline (pass 42 finding, 2026-08-21):** Potential post-production tool for consistent lighting grade across clips. When multiple Karel/Mourad clips need a unified golden-hour look, ID-V2V could apply the grade from a single keyframe across all clips without corrupting InsightFace identity scores (unlike per-clip color grading which can shift skin tone). **Prerequisite: clips must first pass InsightFace QA.** Apply ID-V2V as final grade step, then run QA again (facial expressions and identity should be invariant). Requires local ComfyUI install + Wan2.1-14B base weights (~40–50 GB VRAM). Not usable in cloud-API-only pipeline. Monitor for AIMLAPI endpoint — if it appears, could replace per-clip FFmpeg color grade for character shots.
+
+**KeyID — Research Validation (arXiv 2608.16154, ACM MM 2026, SC310 finding, 2026-08-31):** Decoupled Drafting and Keyframe Editing for Identity-Preserving Video Generation. Authors: Jianjie Luo et al. Runner-up in IPVG 2026 Challenge Track 2 (Sequential Action); scores Face-Cur 0.633, Face-Arc 0.630 — +28.7% / +33.2% over the strongest baseline. Two-stage mechanism: (1) **Reference-Aware Video Generation** — produces a motion-faithful draft aligned with references but not yet identity-locked; (2) **Identity-Preserved Keyframe Editing** — injects the target identity at sparse keyframes via correction, then propagates via motion interpolation. Key insight: sparse keyframe-level identity injection avoids the "capacity conflict" where dense frame-level injection competes with the motion prompt and degrades both motion quality and identity fidelity. Modular design allows multi-subject extension without retraining. No public code or AIMLAPI endpoint — research only.
+
+**Practical implication for our pipeline:** KeyID architecturally validates our sequential workflow: (a) generate a motion-faithful draft (I2V from hero frame), then (b) if identity fails, correct with FaceFusion at the clip level rather than re-prompting the whole generation. The "sparse keyframe correction" concept also explains why FaceFusion face_enhancer applied at post-processing (not at generation time) preserves motion dynamics — identity correction is decoupled from motion synthesis, exactly as KeyID proposes. When retrying a clip for identity failure, fix at QA time with FaceFusion rather than regenerating the full clip and accepting a new motion result.
 
 **MiniMax H3 — Future Watch (commercial API, SC303 finding, 2026-08-29):** New video generation model by Shengshu Tech with native Ref2VA (Reference-to-Video-and-Audio) supporting up to **9 image references + 3 audio + 3 video** in one call. Uses Qwen3-VL for multi-modal encoding.
 
