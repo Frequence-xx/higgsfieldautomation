@@ -953,25 +953,100 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 
 **Practical implication for our pipeline:** KeyID architecturally validates our sequential workflow: (a) generate a motion-faithful draft (I2V from hero frame), then (b) if identity fails, correct with FaceFusion at the clip level rather than re-prompting the whole generation. The "sparse keyframe correction" concept also explains why FaceFusion face_enhancer applied at post-processing (not at generation time) preserves motion dynamics — identity correction is decoupled from motion synthesis, exactly as KeyID proposes. When retrying a clip for identity failure, fix at QA time with FaceFusion rather than regenerating the full clip and accepting a new motion result.
 
-**MiniMax H3 — Future Watch (commercial API, SC303 finding, 2026-08-29):** New video generation model by Shengshu Tech with native Ref2VA (Reference-to-Video-and-Audio) supporting up to **9 image references + 3 audio + 3 video** in one call. Uses Qwen3-VL for multi-modal encoding.
+**MiniMax H3 — CONFIRMED ON AIMLAPI as `minimax/h3` (SC314 finding, 2026-09-01):** MiniMax's Ref2VA (Reference-to-Video-and-Audio) model. **`minimax/h3` is live on AIMLAPI** — confirmed from AIMLAPI model listing at $0.169/sec. Supports up to **9 image references + 3 audio + 3 video** in one call. Uses Qwen3-VL for multi-modal encoding. (SC303 finding 2026-08-29 — previously "NOT on AIMLAPI"; upgraded to CONFIRMED this cycle.)
+
+**CONFIRMED API parameters for `minimax/h3` on AIMLAPI (from api-docs GitHub h3.json, SC314):**
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "minimax/h3",
+    "prompt": "character1 lifts a moving box toward the front door, golden hour light",
+    # ⚠️ Prompt binding syntax UNVERIFIED on AIMLAPI — canary-test "Image1", "character1" and
+    # positional forms; official MiniMax uses positional (Image1, Image2, ...)
+    "reference_image_urls": [           # confirmed param name (NOT "reference_images")
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+        "https://cdn.example.com/characters/crew_lead/profile.png",
+        "https://cdn.example.com/characters/crew_lead/face_crop.png",
+    ],                                  # max 9 items
+    # "video_urls": [...],              # max 3 items (motion reference clips) — omit unless needed
+    # "audio_urls": [...],              # max 3 items (voice cloning) — DO NOT USE (Shari'ah)
+    "ratio": "9:16",                    # ⚠️ "ratio" NOT "aspect_ratio" — different from Kling/Wan
+    "resolution": "2K",                 # "2K" only on H3 base (no 480p/768p option)
+    "duration": 5,                      # 4-15 seconds; default 6
+    # NO confirmed audio-disable param — mandatory FFmpeg strip (see below)
+}, headers=headers, timeout=120)
+# MANDATORY post-step regardless of API params:
+# ffmpeg -i minimax_h3_output.mp4 -an -c:v copy minimax_h3_muted.mp4
+```
+
+**AIMLAPI pricing for H3 base: $0.169/sec → $0.845/5s at 2K.** This is cheaper than Kling v3 Pro ($1.46/5s) and similar to Kling Standard ($1.09/5s), with 9 refs vs Kling O1's 4. Canary priority HIGH — if InsightFace ≥ 0.62 for Karel/Mourad, this could replace Kling O1 for final character clips.
 
 **Key specs:**
-- References: up to 9 image refs (highest alongside Happy Horse 1.1); positional binding (Image1, Image2, ...)
-- Output: 768P at $0.09 yuan/sec (~$0.012/sec → ~$0.06/5s) or 2K at $0.15 yuan/sec (~$0.021/sec → ~$0.105/5s) — **12–24× cheaper than Kling O1 on official pricing if AIMLAPI carries similar**
-- Local model: 137.65 GiB (requires dual RTX 4090 — local deployment not practical for pipeline)
+- References: up to 9 image refs (highest alongside Happy Horse 1.1) — covers all 4 angles + face crop + 4 extras
+- Output: **2K native** (short-side resolution)
+- `ratio`: `"9:16"` (NOT `aspect_ratio` — critical difference from all other AIMLAPI models)
 - Audio generation on by default: must mute post (same Shari'ah risk as Happy Horse 1.1)
-- ComfyUI nodes available via LocalVideoGen and MiniMax-H3-Director-Cut-Studio repos
-- **NOT on AIMLAPI as of SC303, 2026-08-29** — no model ID found
-- API protocol: OpenAI-compatible (enables easy integration when it appears)
-
-**Why it matters:** 9 image refs at $0.06/5s (if AIMLAPI pricing matches) would displace all current draft models including Kling v3 Standard Turbo ($0.55/5s). The 9-ref cap matches Happy Horse 1.1's count but with a documented commercial API. **Canary priority HIGH when endpoint appears on AIMLAPI.** Run InsightFace QA on Karel/Mourad output (PASS ≥ 0.62) before any production use.
+- `image_url` (singular): first frame control (optional)
+- `last_image_url`: last frame control (optional)
+- API protocol: standard AIMLAPI v2 async (POST submit → GET poll)
 
 **⚠️ MANDATORY audio mute** — like Happy Horse 1.1, strip audio in post regardless of API params:
 ```bash
 ffmpeg -i minimax_h3_output.mp4 -an -c:v copy minimax_h3_muted.mp4
 ```
 
-**Cross-note:** MiniMax H3 uses same 9-ref cap as Happy Horse 1.1. When both are available on AIMLAPI, canary-test both and choose based on InsightFace identity scores for olive/brown-skin characters (Karel, Mourad).
+**Canary procedure (H3 base):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `ratio: "9:16"`, `resolution: "2K"`, `duration: 5`, strip audio, InsightFace score ≥ 0.62. Confirm prompt binding syntax. Log cost per 5s clip.
+
+---
+
+**MiniMax H3-Max — NEWLY ADDED TO AIMLAPI as `minimax/h3-max` (SC314 finding, 2026-09-01; docs commit #518, 2026-08-31):** Post-trained variant of H3, jointly released with fal.ai. Added to AIMLAPI documentation August 31. Lower resolution (768p max) but dramatically cheaper — draft tier only.
+
+**CONFIRMED API parameters for `minimax/h3-max` on AIMLAPI (from api-docs GitHub h3-max.json, SC314):**
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "minimax/h3-max",
+    "prompt": "character1 lifts a moving box toward the front door, golden hour light",
+    "reference_image_urls": [           # confirmed param name; max 9 items (same as H3 base)
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+        "https://cdn.example.com/characters/crew_lead/profile.png",
+        "https://cdn.example.com/characters/crew_lead/face_crop.png",
+    ],
+    # "video_urls": [...],              # max 3 items — omit unless needed
+    # "audio_urls": [...],              # max 3 items — DO NOT USE (Shari'ah)
+    "ratio": "9:16",                    # same "ratio" param (NOT "aspect_ratio")
+    "resolution": "768p",               # "480p" or "768p" — NO 2K on H3-Max
+    "duration": 5,                      # 5-15 seconds
+    "prompt_expansion_mode": "balanced",  # "balanced" (~1s overhead) or "quality" (~30s)
+    # "image_url": "...",               # optional first-frame anchor
+    # "last_image_url": "...",          # optional last-frame anchor
+    # NO confirmed audio-disable param — mandatory FFmpeg strip (see below)
+}, headers=headers, timeout=120)
+# MANDATORY post-step:
+# ffmpeg -i minimax_h3max_output.mp4 -an -c:v copy minimax_h3max_muted.mp4
+```
+
+**AIMLAPI pricing for H3-Max: ~$0.01/sec → ~$0.05/5s at 768p** (from 120,000 credits = $0.06 for 6s clip in docs example). This is 11× cheaper than Kling Standard Turbo ($0.55/5s) and 29× cheaper than Kling Pro ($1.46/5s). If identity lock holds at ≥ 0.62, replaces Kling Standard Turbo as cheapest draft model for character shots with multi-ref.
+
+**H3-Max vs H3 base:**
+| | H3 base | H3-Max |
+|--|---------|---------|
+| AIMLAPI model | `minimax/h3` | `minimax/h3-max` |
+| Resolution | 2K | 480p / 768p |
+| Cost/5s | ~$0.845 | ~$0.05 |
+| Prompt limit | 7,000 chars | 50,000 chars |
+| Use case | Final delivery | Draft iteration |
+| `prompt_expansion_mode` | not available | "balanced"/"quality" |
+
+**Canary procedure (H3-Max):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `ratio: "9:16"`, `resolution: "768p"`, `duration: 5`, `prompt_expansion_mode: "balanced"`, strip audio, InsightFace score ≥ 0.62. If identity holds → promotes to cheapest draft model for character shots. Run before Happy Horse 1.1 canary (cheaper).
+
+**Cross-note:** MiniMax H3/H3-Max use same 9-ref cap as Happy Horse 1.1. When comparing all three:
+- H3-Max (~$0.05/5s) vs Happy Horse 1.1 720P (~$0.70/5s): H3-Max dramatically cheaper for drafts
+- H3 base (~$0.845/5s) vs Kling O1 ($1.46/5s): H3 cheaper with more refs for finals
+- Priority: canary H3-Max first (highest cost savings); H3 base second; Happy Horse 1.1 third
+- All three require mandatory FFmpeg audio strip and InsightFace QA before production use
 
 ## Shari'ah-Specific Character Rules
 - Male crew: long trousers, covered 'awrah, modest work clothing
