@@ -289,15 +289,19 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.2** is the current stable release (August 10, 2026; SC310 recheck, 2026-08-31 — still latest, no new version, no v3.9 exists; GitHub releases page confirmed). Previously v3.7.1 (July 5, 2026).
+FaceFusion **v3.8.3** is the current stable release (September 1, 2026; SC321 recheck, 2026-09-03). Previously v3.8.2 (August 10, 2026).
 
-**⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.2 before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
+**⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.3 (latest) before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
 **3.8.0 changes (pass 39 finding, 2026-08-16):**
 - `--workflow-strategy` argument: `memory` (faster, higher RAM use) or `disk` (slower, RAM-efficient). Add `--workflow-strategy memory` for speed on high-RAM machines; use `disk` if OOM errors occur during batch processing.
 - `--workflow-mode` argument: aligns with upcoming architecture changes (no production-visible effect yet).
 - **AV1 support** via FFmpeg decoding and encoding. Use `--output-video-encoder libsvtav1` for better compression if needed (our default stays `libx264rgb` for skin-tone fidelity — do not change).
 - `--temp-pixel-format`: alpha channel support for compositing workflows. Not relevant to our face-swap pipeline.
+
+**3.8.3 fixes (SC321 finding, 2026-09-03):**
+- Reads `avg_frame_rate` in addition to `r_frame_rate` to detect correct FPS. Fixes mismatch between output duration and modified FPS — relevant when processing source clips with VFR (variable frame rate) or ambiguous FFmpeg metadata.
+- No breaking changes; drop-in upgrade from 3.8.2.
 
 **3.8.2 fixes (pass 39 finding, 2026-08-16):**
 - **Fixed broken pipeline with FFmpeg 9 after `-vsync` removal** — the primary reason to upgrade immediately.
@@ -318,8 +322,8 @@ FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `h
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion
-# IMPORTANT: use v3.8.2+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
-git checkout 3.8.2
+# IMPORTANT: use v3.8.3+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
+git checkout 3.8.3
 # v3.7.0+: --onnxruntime is now positional (no flag name needed)
 python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
@@ -960,9 +964,11 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "minimax/h3",
-    "prompt": "character1 lifts a moving box toward the front door, golden hour light",
-    # ⚠️ Prompt binding syntax UNVERIFIED on AIMLAPI — canary-test "Image1", "character1" and
-    # positional forms; official MiniMax uses positional (Image1, Image2, ...)
+    "prompt": "@image1 lifts a moving box toward the front door, golden hour light",
+    # ✅ Prompt binding syntax CONFIRMED (SC321, 2026-09-03): @image1, @image2, @image3 (with @
+    # prefix, lowercase, matching array position). Official MiniMax examples and community
+    # library consistently use "@image1" / "@ image1" (space before number also accepted).
+    # "character1" and plain "Image1" are NOT the H3 binding convention — use @image1.
     "reference_image_urls": [           # confirmed param name (NOT "reference_images")
         "https://cdn.example.com/characters/crew_lead/front.png",
         "https://cdn.example.com/characters/crew_lead/three_quarter.png",
@@ -996,7 +1002,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 ffmpeg -i minimax_h3_output.mp4 -an -c:v copy minimax_h3_muted.mp4
 ```
 
-**Canary procedure (H3 base):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `ratio: "9:16"`, `resolution: "2K"`, `duration: 5`, strip audio, InsightFace score ≥ 0.62. Confirm prompt binding syntax. Log cost per 5s clip.
+**Canary procedure (H3 base):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `ratio: "9:16"`, `resolution: "2K"`, `duration: 5`, use `@image1` binding in prompt (confirmed SC321), strip audio, InsightFace score ≥ 0.62. Log cost per 5s clip.
 
 ---
 
@@ -1007,7 +1013,8 @@ ffmpeg -i minimax_h3_output.mp4 -an -c:v copy minimax_h3_muted.mp4
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "minimax/h3-max",
-    "prompt": "character1 lifts a moving box toward the front door, golden hour light",
+    "prompt": "@image1 lifts a moving box toward the front door, golden hour light",
+    # ✅ Use @image1 / @image2 syntax (SC321, 2026-09-03) — same as H3 base
     "reference_image_urls": [           # confirmed param name; max 9 items (same as H3 base)
         "https://cdn.example.com/characters/crew_lead/front.png",
         "https://cdn.example.com/characters/crew_lead/three_quarter.png",
