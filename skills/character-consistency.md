@@ -289,9 +289,15 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.8.3** is the current stable release (September 1, 2026; SC321 recheck, 2026-09-03). Previously v3.8.2 (August 10, 2026).
+FaceFusion **v3.9.0** is the current stable release (September 3, 2026; SC328 finding, 2026-09-05). Previously v3.8.3 (September 1, 2026).
 
-**⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.8.3 (latest) before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
+**3.9.0 changes (SC328 finding, 2026-09-05):**
+- **New face swapper model: `alphaface_256`** — additional option alongside existing `inswapper_128_fp16` and `hyperswap_1a_256`. Not yet evaluated for olive/brown-skin fidelity. Continue using `inswapper_128_fp16` until calibrated.
+- **New face landmarker model: `hrffa`** — HRFFA (High-Resolution Facial Feature Analysis) provides higher-resolution landmark detection. Potential improvement for precise lip-sync alignment and expression restoration on smaller or partially occluded faces. Drop-in upgrade — no parameter changes required; the face_landmarker model is selected automatically unless overridden.
+- No breaking changes; drop-in upgrade from v3.8.3.
+- **Upgrade immediately:** `git checkout 3.9.0` in the facefusion directory.
+
+**⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.9.0 (latest) before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
 **3.8.0 changes (pass 39 finding, 2026-08-16):**
 - `--workflow-strategy` argument: `memory` (faster, higher RAM use) or `disk` (slower, RAM-efficient). Add `--workflow-strategy memory` for speed on high-RAM machines; use `disk` if OOM errors occur during batch processing.
@@ -322,8 +328,8 @@ FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `h
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion
-# IMPORTANT: use v3.8.3+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
-git checkout 3.8.3
+# IMPORTANT: use v3.9.0+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
+git checkout 3.9.0
 # v3.7.0+: --onnxruntime is now positional (no flag name needed)
 python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
