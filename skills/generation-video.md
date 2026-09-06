@@ -464,6 +464,19 @@ After defining elements, you **must** reference them in the prompt using `@Eleme
 - Lighting: even, no harsh shadows — shadow on face degrades facial geometry
 - Expression: neutral base image required; expression variants are optional additions
 - **Clothing texture: solid colors and simple fabrics prevent outfit morphing during motion.** Patterned or printed clothing in reference images increases the risk of fabric "morphing" or color drift mid-clip. For the Snelverhuizen crew (black crewneck + orange logo), solid colors are ideal — this is already the correct uniform design.
+
+**4-slot optimal reference structure (SC332 Sept 6, 2026 — multi-source confirmed):**
+
+| Slot | Image | Purpose |
+|------|-------|---------|
+| `frontal_image_url` | Hero portrait, dead-on frontal | Primary identity anchor — model weighs this most |
+| `reference_image_urls[0]` | 45° three-quarter angle | Teaches face geometry when character turns away from camera |
+| `reference_image_urls[1]` | **Wardrobe close-up** (chest/logo detail) | Prevents outfit color/texture drift — critical for orange logo identity |
+| `reference_image_urls[2]` | **Frame from previous clip** (multi-shot) | Preserves lighting continuity across multi-shot sequences |
+
+Use slots 1–3 (frontal + 45° + wardrobe) as the baseline for every Snelverhuizen crew element. Add slot 4 (prior-clip frame) only in multi-shot sequences for lighting lock.
+
+**Distinctive identifier anchoring (SC332 Sept 6, 2026):** The model uses 1-2 unusual visual specifics as "re-identification hooks" across frames — a unique feature stabilizes identity better than generic adjectives. For Snelverhuizen crew: the **orange logo on left chest** is the strongest available anchor (high contrast, specific location, brand color). Add explicitly to the prompt: `"@Element1, man with orange Snelverhuizen logo on left chest"`. This applies even when the hero frame already shows it — reinforcing in prompt text improves per-frame re-ID.
 - **Max 3 elements per I2V call** (not 4 — confirmed across multiple sources). **⚠️ fal.ai wrapper limitation:** fal.ai's Kling v3 I2V wrapper limits elements to 1 per call (wrapper limitation, NOT the native API limit). Native Kling API and AIMLAPI both allow up to 3. Do NOT copy `elements` code from fal.ai examples — their wrapper silently drops elements 2 and 3. (SC237, July 21, 2026)
 - **reference_image_urls are STRONGLY RECOMMENDED, not optional** — multiple sources (May 2026) indicate that passing frontal_image_url alone without reference_image_urls may trigger a model error. Minimum 2 total images per element (frontal + at least 1 reference angle).
 - **More refs ≠ better**: 2-4 focused images optimal. More than 4 confuses the model and weakens binding
@@ -588,13 +601,15 @@ Direct motion to specific image regions. Up to 6 mask groups per call. Each regi
 
 Separate from I2V. Kling v3 Motion Control animates a character image to match the motion in a reference video (e.g., a royalty-free walking clip). Useful for complex walking or action shots where you have a motion reference.
 
-**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). SC216, SC223, SC237 (July 21), SC244 (July 24), SC251 (July 26, 2026), SC258 (August 15, 2026), SC265 (August 17, 2026), and SC272 (August 18, 2026) searches found no AIMLAPI-sourced v3 Motion Control docs — docs index still only shows v2.6 motion control. Status: **POSSIBLE but NOT confirmed as of August 18, 2026**. Kling v3 Motion Control is confirmed live on Replicate (`kwaivgi/kling-v3-motion-control`), Eachlabs, ModelsLab, Kie AI, OpenArt, MindStudio, Media.io, and Artlist as of July 2026 — broad third-party availability increases likelihood it will land on AIMLAPI soon. Check AIMLAPI docs index before next walking-shot production. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
+**AIMLAPI availability:** Only v2.6 confirmed by dedicated docs page (`klingai/video-v2-6-pro-motion-control`). SC216, SC223, SC237 (July 21), SC244 (July 24), SC251 (July 26, 2026), SC258 (August 15, 2026), SC265 (August 17, 2026), SC272 (August 18, 2026), and SC332 (Sept 6, 2026) searches found no AIMLAPI-sourced v3 Motion Control docs — docs index still only shows v2.6 motion control. Status: **POSSIBLE but NOT confirmed as of September 6, 2026**. Zero Kling commits in AIMLAPI api-docs repo Sept 4-6, 2026 (GitHub audit SC332). Kling v3 Motion Control is confirmed live on Replicate (`kwaivgi/kling-v3-motion-control`), Eachlabs, ModelsLab, Kie AI, OpenArt, MindStudio, Media.io, and Artlist as of July 2026 — broad third-party availability increases likelihood it will land on AIMLAPI soon. Check AIMLAPI docs index before next walking-shot production. Kling v3 Motion Control is confirmed on WaveSpeedAI (`kwaivgi/kling-v3.0-pro/motion-control`), Replicate (`kwaivgi/kling-v3-motion-control`), fal.ai (`fal-ai/kling-video/v3/pro/motion-control`), Kie AI, ModelsLab, MindStudio, EachLabs, and Media.io. Expected AIMLAPI model strings: `klingai/video-v3-standard-motion-control` and `klingai/video-v3-pro-motion-control`. **CANARY REQUIRED before production use** — try the expected string on a 3s reference clip; if it returns 404, fall back to v2.6. Farouq AIMLAPI-only directive means attempting a canary is acceptable.
 
 **Key parameter:** `character_orientation`
 - `"video"` — output character follows orientation from reference video (better for complex multi-directional motion, max 30s output on v2.6; see v3 duration limits below)
 - `"image"` — output character keeps orientation from source image (better for camera-led shots, max 10s)
 
 **`background_source` parameter (v3 Motion Control, SC230 July 19, 2026):** New parameter confirmed in v3 Motion Control API calls. Value `"input_video"` uses the driving video as background source. CANARY REQUIRED — exact AIMLAPI parameter name may differ.
+
+**`keep_original_sound` parameter (v3 Motion Control, SC332 Sept 6, 2026 — CONFIRMED from multi-platform docs):** Native v3 Motion Control uses `keep_original_sound` (boolean) to carry the reference video's audio into the output. **NOT** `keep_audio` or `keep_original_audio` (those were v2.6 wrapper names). **ALWAYS set `keep_original_sound: false`** — Shari'ah compliance forbids carrying any reference audio. CANARY REQUIRED on AIMLAPI to confirm exact parameter name (AIMLAPI may use snake_case variant). Strip audio as precaution: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`.
 
 **v3 Motion Control duration limits (community-confirmed, kling3.pro, SC230 July 19, 2026):**
 - Curve Dolly or Camera Shake feature: **10s max** (v3), **15s max** (O3)
