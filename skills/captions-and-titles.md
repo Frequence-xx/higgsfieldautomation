@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, security + backend fixes, no DTW/timestamp changes — SC294 recheck Aug 24, SC301 recheck Aug 31: still pre-release) — stay on 1.9.2
+   const WHISPER_VERSION = '1.9.2';        // v1.9.2 is current latest STABLE (Aug 4, 2026) — VAD token timestamp fix (PR #3910); v1.9.3 is pre-release only (Aug 20, 2026, ggml sync + backend opts, no DTW/timestamp changes — SC294 Aug 24, SC301 Aug 31, SC333 Sep 6: still pre-release) — stay on 1.9.2
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -708,11 +708,15 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.520 (September 1, 2026 — current latest):**
+**Remotion v4.0.521 (September 5, 2026 — current latest):**
+- `@remotion/install-whisper-cpp`: **Fixed path handling for Windows paths containing spaces.** If `whisperPath` or `modelFolder` include a directory name with a space (e.g. `C:\Users\My Documents\whisper-cpp`), prior versions silently failed or passed a truncated path to the whisper.cpp binary. Now properly quoted. **No impact on Linux/macOS pipeline or paths without spaces — but worth noting for any Windows CI/dev machines.** `npm install remotion@4.0.521`.
+- **No changes to `@remotion/captions` API.** SC333 Sep 6, 2026 recheck.
+
+**Remotion v4.0.520 (September 1, 2026):**
 - `remotion`: Replaced imperative playing ref with `playbackStore` and `usePlaying()`.
 - `@remotion/media`: Mediabunny upgraded to 1.55.5; preview pitch shifting added.
 - `@remotion/studio`: FPS counter, zoom button, WebMCP tools, waveform fidelity improvements.
-- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected. SC319 Sep 2 recheck. SC326 Sep 4 recheck: v4.0.520 still latest — no new releases.
+- **No changes to `@remotion/captions` or `@remotion/install-whisper-cpp`.** Caption pipeline unaffected. SC319 Sep 2 recheck. SC326 Sep 4 recheck.
 
 **Remotion v4.0.519 (August 31, 2026):**
 - `@remotion/studio`: Studio UI refinements, three-dimensional rotation improvements, error overlay redesign.
@@ -762,7 +766,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.520`. *(4.0.514 added silenceGapMs; 4.0.515 added ESM export; 4.0.518 added lineBreakAfter; 4.0.520 is current — SC319 recheck Sep 2, SC326 recheck Sep 4 2026)*
+- `npm install remotion@4.0.521`. *(4.0.514 added silenceGapMs; 4.0.515 added ESM export; 4.0.518 added lineBreakAfter; 4.0.521 is current — Windows path fix in install-whisper-cpp; SC333 Sep 6 2026)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -839,7 +843,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.520 — confirmed current as of 2026-09-04; caption API changes in 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter]; 4.0.516/517/519/520 no caption changes; SC326 Sep 4 recheck: no new releases)
+### Full API (v4.0.521 — confirmed current as of 2026-09-06; caption API changes in 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter]; 4.0.519/520/521 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC333 Sep 6 recheck)
 
 | Export | Purpose |
 |--------|---------|
