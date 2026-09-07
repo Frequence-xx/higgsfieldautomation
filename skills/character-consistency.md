@@ -963,6 +963,16 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 
 **Practical implication for our pipeline:** KeyID architecturally validates our sequential workflow: (a) generate a motion-faithful draft (I2V from hero frame), then (b) if identity fails, correct with FaceFusion at the clip level rather than re-prompting the whole generation. The "sparse keyframe correction" concept also explains why FaceFusion face_enhancer applied at post-processing (not at generation time) preserves motion dynamics — identity correction is decoupled from motion synthesis, exactly as KeyID proposes. When retrying a clip for identity failure, fix at QA time with FaceFusion rather than regenerating the full clip and accepting a new motion result.
 
+**AESR — Research Validation (arXiv 2608.20749, August 2026, ACM MM 2026 IPVG Challenge Track 1 winner; SC335 finding, 2026-09-07):** "Identity-Preserving Text-to-Video Generation via Agentic Enhancement and Semantic Repair." MIPL_Video ranked first in the ACM MM 2026 Identity-Preserving Video Generation Challenge Track 1 (single-subject). Two mechanisms:
+
+1. **Agentic Prompt Enhancement** — an agentic loop that learns model-specific prompting formats from official documentation, accumulates identity-preserving generation experience from test results into a reusable playbook, and improves prompt construction before generation. Addresses the root cause (poor prompt structure) rather than patching outputs.
+
+2. **VLM-based Visual Semantic Repair** — after generation, a VLM (vision-language model) locates erroneous video segments where identity drifted or visual details are wrong, then designs targeted repair instructions. The selected frames are edited into explicit visual references that guide a video editing model to fix only the identified segments — not the full clip.
+
+No public code. No AIMLAPI endpoint. Research only.
+
+**Practical implication for our pipeline (SC335 finding, 2026-09-07):** The VLM-based repair loop validates a targeted fix workflow as an alternative to full-clip retry. When a clip fails InsightFace QA on only 1 of 3 sampled frames (e.g., t=2.5 scores 0.45 while t=0 and t=5 pass), the current policy is full retry. AESR suggests a faster path: use a VLM to identify which frames/segments are worst, extract them as stills, apply Flux Kontext Max to fix identity in those frames, and use FFmpeg to blend corrected frames back into the clip. This is essentially what FaceFusion does frame-by-frame, but with VLM triage to target effort. **Immediate action for our pipeline:** when InsightFace fails on isolated frames (not all three), prefer FaceFusion targeted repair over full-clip regeneration — saves $1.09–$1.46 per avoided retry.
+
 **MiniMax H3 — CONFIRMED ON AIMLAPI as `minimax/h3` (SC314 finding, 2026-09-01):** MiniMax's Ref2VA (Reference-to-Video-and-Audio) model. **`minimax/h3` is live on AIMLAPI** — confirmed from AIMLAPI model listing at $0.169/sec. Supports up to **9 image references + 3 audio + 3 video** in one call. Uses Qwen3-VL for multi-modal encoding. (SC303 finding 2026-08-29 — previously "NOT on AIMLAPI"; upgraded to CONFIRMED this cycle.)
 
 **CONFIRMED API parameters for `minimax/h3` on AIMLAPI (from api-docs GitHub h3.json, SC314):**
