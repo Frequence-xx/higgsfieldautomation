@@ -211,7 +211,12 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
-**InsightFace install (pass 10 finding, 2026-05-25; SC310 recheck, 2026-08-31 — v1.0.1 still latest on PyPI, no v1.0.2 or v1.1 found):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
+**InsightFace install (pass 10 finding, 2026-05-25; SC342 update, 2026-09-09 — v2.0 released Sept 8, 2026):** InsightFace **2.0** released September 8, 2026 (major version bump from 1.0.1). **No breaking changes to our FaceAnalysis/buffalo_l QA pipeline** — `from insightface.app import FaceAnalysis` and `FaceAnalysis(name='buffalo_l')` work identically. Key v2.0 additions:
+- **raccoon_s / raccoon_l** — new manifest-backed model packages with automatic provider selection. Benchmarks not yet publicly documented in model zoo README. Monitor for accuracy table; if raccoon_l surpasses buffalo_l on IJB-C, it becomes the upgrade candidate.
+- **Auto CoreML/CUDA/CPU provider selection** — v2.0 auto-selects best available ONNX Runtime provider (CoreML → CUDA → CPU). Our `ctx_id=-1` still forces CPU on CPU-only environments; on CUDA-capable machines, omitting explicit providers now automatically uses GPU without code changes.
+- **Dual-resolution SCRFD** face detection (128×128 + 640×640) — enhanced detection accuracy. Our `det_size=(640, 640)` remains valid.
+- Liveness detection and PrivateFrame video blur — not relevant to our QA pipeline.
+- InsightFace 1.0.1 (released May 23, 2026) had removed `face3d` C++ extension from default install. Standard `pip install insightface` still works without a C++ compiler in v2.0.
 
 ```python
 from insightface.app import FaceAnalysis
@@ -595,6 +600,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | 900 FPS | Batch QA; identical accuracy |
 | buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | — | Edge/mobile only |
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
+| raccoon_s | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0 (Sept 8, 2026); benchmarks not yet published |
+| raccoon_l | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0; auto provider selection; monitor for IJB-C scores |
 
 **InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
