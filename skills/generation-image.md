@@ -62,6 +62,8 @@ Google retired both Gemini image preview models on **June 25, 2026**:
 | FLUX.2 Max Edit | `blackforestlabs/flux-2-max-edit`⊕ | Highest-quality I2I editing; upgrade from Pro Edit for money-shot inpainting; 3 refs; `image_size`: named presets (`portrait_16_9`=576×1024 for 9:16) or custom px multiples of 32 — CANARY REQUIRED (no dedicated docs page yet) | 3 | ~$0.10 | `portrait_16_9` or custom |
 | FLUX.2 Max | `blackforestlabs/flux-2-max`⁑ | Highest quality T2I/I2I; up to 8 refs via API (10 in playground) — when Kontext Max 2-ref limit is insufficient | 8 | ~$0.09 | native |
 | GPT Image 1.5 | `openai/gpt-image-1.5`✩ | Step-up from GPT Image 1; supports text-to-image, editing, and variations; better instruction following than GPT Image 1; 20% cheaper per-image I/O vs GPT Image 1 | 16 | ~$0.04-0.28 | 1K–2K |
+| GPT Image 2.5 Flare | `openai/gpt-image-2.5-flare` | Fast everyday generation; 50% lower latency vs GPT Image 2; CTA + text-heavy stills; same token pricing as GPT Image 2; CANARY REQUIRED | 16 est | ~$0.07-0.35 est | 1K–2K–4K est |
+| GPT Image 2.5 Sunburst | `openai/gpt-image-2.5-sunburst` | Precision editing tier; best for inpainting and surgical edits where accuracy matters over speed; same token pricing as Flare; CANARY REQUIRED | 16 est | ~$0.07-0.35 est | 1K–2K–4K est |
 | GPT Image 2 | `openai/gpt-image-2` | CTA cards requiring pixel-perfect Dutch text; 99% text accuracy, 2K; up to 16 refs | 16‡ | ~$0.07-0.35§ | 1K–2K–4K |
 | Flux Pro v1.1 | `flux-pro/v1.1` | High detail hero shots | — | ~$0.05 | TBD |
 | Flux Pro v1.1 Ultra | `flux-pro/v1.1-ultra` | Money shots, CTA cards | — | ~$0.10 | TBD |
