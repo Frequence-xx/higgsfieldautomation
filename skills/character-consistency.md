@@ -211,7 +211,12 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
-**InsightFace install (pass 10 finding, 2026-05-25; SC310 recheck, 2026-08-31 — v1.0.1 still latest on PyPI, no v1.0.2 or v1.1 found):** InsightFace 1.0.1 (released May 23, 2026) no longer builds the `face3d` Cython/C++ extension by default. Standard `pip install insightface` now works without a C++ compiler. Our QA pipeline uses only `FaceAnalysis` (detection + recognition) — no `face3d` needed. If face3d is ever required, opt in explicitly: `pip install "insightface[face3d]"` or set `INSIGHTFACE_WITH_FACE3D=1`.
+**InsightFace install (pass 10 finding, 2026-05-25; SC342 update, 2026-09-09 — v2.0 released Sept 8, 2026):** InsightFace **2.0** released September 8, 2026 (major version bump from 1.0.1). **No breaking changes to our FaceAnalysis/buffalo_l QA pipeline** — `from insightface.app import FaceAnalysis` and `FaceAnalysis(name='buffalo_l')` work identically. Key v2.0 additions:
+- **raccoon_s / raccoon_l** — new manifest-backed model packages with automatic provider selection. Benchmarks not yet publicly documented in model zoo README. Monitor for accuracy table; if raccoon_l surpasses buffalo_l on IJB-C, it becomes the upgrade candidate.
+- **Auto CoreML/CUDA/CPU provider selection** — v2.0 auto-selects best available ONNX Runtime provider (CoreML → CUDA → CPU). Our `ctx_id=-1` still forces CPU on CPU-only environments; on CUDA-capable machines, omitting explicit providers now automatically uses GPU without code changes.
+- **Dual-resolution SCRFD** face detection (128×128 + 640×640) — enhanced detection accuracy. Our `det_size=(640, 640)` remains valid.
+- Liveness detection and PrivateFrame video blur — not relevant to our QA pipeline.
+- InsightFace 1.0.1 (released May 23, 2026) had removed `face3d` C++ extension from default install. Standard `pip install insightface` still works without a C++ compiler in v2.0.
 
 ```python
 from insightface.app import FaceAnalysis
@@ -595,6 +600,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | 900 FPS | Batch QA; identical accuracy |
 | buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | — | Edge/mobile only |
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
+| raccoon_s | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0 (Sept 8, 2026); benchmarks not yet published |
+| raccoon_l | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0; auto provider selection; monitor for IJB-C scores |
 
 **InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
@@ -907,6 +914,66 @@ ffmpeg -i wan_r2v_output.mp4 -an -c:v copy wan_r2v_muted.mp4
 
 Add this FFmpeg strip as a non-negotiable post-step in any Wan 2.7 R2V generation script — do NOT rely on an unverified API parameter to silence audio. Generating haram music is a Shari'ah production gate failure. When R2V docs appear on AIMLAPI, test and document the audio param name, then update this entry.
 
+## Wan 3.0 — High-Ref Character Video (on AIMLAPI as `alibaba/wan3.0-video` — CANARY REQUIRED)
+
+Released August 6, 2026. Key upgrade over Wan 2.7: up to **20 reference assets** per call (vs 5 in Wan 2.7). Available on AIMLAPI — model ID `alibaba/wan3.0-video` confirmed from AIMLAPI model index search result (`aimlapi.com/models/alibaba-wan3-0-video`); no dedicated docs page confirmed as of 2026-09-11. AIMLAPI pricing TBC via canary. (SC349, 2026-09-11)
+
+**Key specs for character shots:**
+- References: up to **10 images + 5 videos + 5 audio clips** (20 assets total) in one call
+- Parameter names: `reference_image_urls` (array), `reference_video_urls` (array), `reference_audio_urls` (array)
+- Prompt binding: **"Image 1", "Image 2"** (positional, no @ prefix — differs from Kling's `@element_name` and MiniMax's `@image1`)
+- Resolution: 480p / 720p / 1080p; Duration: 2–30s (native 30s support vs Kling's 5–10s max)
+- Pricing (Alibaba direct): $0.05/sec (480P), $0.10/sec (720P), $0.20/sec (1080P) → **~$0.50/5s at 720P**. Promo pricing until Sept 24, 2026: $0.035/sec (480P), $0.07/sec (720P). **AIMLAPI pricing may differ — log cost on canary.**
+- Joint audio generation by default — **MANDATORY audio strip post-step** (Shari'ah)
+- No confirmed audio-disable parameter — FFmpeg strip is the safety net regardless
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "alibaba/wan3.0-video",   # AIMLAPI model ID TBC — confirm on canary
+    "prompt": "Image 1 lifts a moving box from the truck, pivots left 30 degrees, eases to stop at doorway, golden hour",
+    "reference_image_urls": [
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+        "https://cdn.example.com/characters/crew_lead/profile.png",
+        "https://cdn.example.com/characters/crew_lead/face_crop.png",
+    ],
+    "aspect_ratio": "9:16",   # confirm param name — may be "ratio" like H3 or different
+    "resolution": "720p",
+    "duration": 5,
+    # NO confirmed audio-disable param — FFmpeg strip is MANDATORY
+}, headers=headers, timeout=120)
+# MANDATORY post-step:
+# ffmpeg -i wan3_output.mp4 -an -c:v copy wan3_muted.mp4
+```
+
+**⚠️ MANDATORY audio mute** — strip audio in post regardless of API param state:
+```bash
+ffmpeg -i wan3_output.mp4 -an -c:v copy wan3_muted.mp4
+```
+
+**Wan 3.0 vs existing models:**
+
+| Model | AIMLAPI ID | Refs (images) | Cost/5s (720P est.) | Status |
+|-------|------------|--------------|---------------------|--------|
+| Kling O1 | `klingai/video-o1-reference-to-video` | 4 | $1.46 | Production |
+| MiniMax H3 | `minimax/h3` | 9 | $0.845 | Canary |
+| Happy Horse 1.1 | `alibaba/happyhorse-1.1` | 9 | ~$0.70 | Canary |
+| MiniMax H3-Max | `minimax/h3-max` | 9 | ~$0.05 | Canary (draft) |
+| Wan 3.0 | `alibaba/wan3.0-video` | 10 (+ 5 vid) | ~$0.50 | Canary |
+| Wan 2.7 | `alibaba/wan-2-7-r2v` | 5 | ~$0.625 | Canary |
+
+**Canary priority:** H3-Max first (cheapest draft), Wan 3.0 second (most refs, competitive cost), Happy Horse 1.1 third.
+
+**Canary procedure (Wan 3.0):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `aspect_ratio: "9:16"` (confirm param name), `resolution: "720p"`, `duration: 5`, `"Image 1"` binding in prompt, strip audio, InsightFace score ≥ 0.62. If identity holds → promotes to draft model for character shots ($0.50 vs Kling O1's $1.46). Do NOT use in production without owner-reviewed output passing brand binary checklist.
+
+**Critical limitations vs Kling O1:**
+- No `face_consistency: True` occlusion recovery equivalent
+- No explicit face adherence parameter (Subject Binding)
+- Character identity quality for olive/brown-skin characters (Karel, Mourad) **UNVERIFIED** — InsightFace QA mandatory
+- Audio strip is post-step only (no confirmed API parameter for silence)
+
+---
+
 ## Kling Image O3 — Future Watch for Hero Frames (NOT on AIMLAPI as of 2026-06-27)
 
 Kling Image O3 (released Feb 2026, available on Runware) is a significant upgrade from Image O1 for character hero frame generation. Not yet on AIMLAPI.
@@ -972,6 +1039,8 @@ Key mechanism: **Asymmetric Identity-Preserving Attention (AIPA)** — video tok
 No public code. No AIMLAPI endpoint. Research only.
 
 **Practical implication for our pipeline (SC335 finding, 2026-09-07):** The VLM-based repair loop validates a targeted fix workflow as an alternative to full-clip retry. When a clip fails InsightFace QA on only 1 of 3 sampled frames (e.g., t=2.5 scores 0.45 while t=0 and t=5 pass), the current policy is full retry. AESR suggests a faster path: use a VLM to identify which frames/segments are worst, extract them as stills, apply Flux Kontext Max to fix identity in those frames, and use FFmpeg to blend corrected frames back into the clip. This is essentially what FaceFusion does frame-by-frame, but with VLM triage to target effort. **Immediate action for our pipeline:** when InsightFace fails on isolated frames (not all three), prefer FaceFusion targeted repair over full-clip regeneration — saves $1.09–$1.46 per avoided retry.
+
+**LiveAvatar — Future Watch (ECCV 2026 Spotlight, arXiv 2512.04677, code released: github.com/Alibaba-Quark/LiveAvatar; SC349 finding, 2026-09-11):** Alibaba-Quark's streaming, real-time, infinite-length audio-driven avatar generation. 14B-parameter diffusion model; achieves 45 FPS on multi-card H800 GPUs with 4-step sampling. Supports 10,000+ second streaming via Block-wise Autoregressive processing. A two-stage pipeline distills a bidirectional diffusion model into a causal few-step streaming model; Timestep-forcing Pipeline Parallelism (TPP) assigns each GPU a fixed denoising timestep, converting the sequential diffusion chain into an asynchronous pipeline for simultaneous throughput and temporal consistency. "Long-horizon strategies" eliminate identity drift over very long autoregressive sequences. Open-source; no AIMLAPI endpoint — local multi-GPU only (H800 required for real-time). **Practical implication for our pipeline:** Most relevant as a future replacement for FaceFusion lip_syncer + OmniHuman for Dutch voiceover + crew character talking-head shots — combines audio-driven animation with architectural identity drift prevention. The identity drift elimination over long sequences validates our policy of re-anchoring every clip from original approved reference photos rather than chaining from prior clip output.
 
 **MiniMax H3 — CONFIRMED ON AIMLAPI as `minimax/h3` (SC314 finding, 2026-09-01):** MiniMax's Ref2VA (Reference-to-Video-and-Audio) model. **`minimax/h3` is live on AIMLAPI** — confirmed from AIMLAPI model listing at $0.169/sec. Supports up to **9 image references + 3 audio + 3 video** in one call. Uses Qwen3-VL for multi-modal encoding. (SC303 finding 2026-08-29 — previously "NOT on AIMLAPI"; upgraded to CONFIRMED this cycle.)
 
