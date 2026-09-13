@@ -304,6 +304,13 @@ FaceFusion **v3.9.0** is the current stable release (September 3, 2026; SC328 fi
 
 **⚠️ CRITICAL — FFmpeg 9 Compatibility (pass 39 finding, 2026-08-16):** FFmpeg 9.0 (released Aug 4, 2026) **removed the `-vsync` flag** (use `-fps_mode` instead). FaceFusion 3.7.x and earlier use `-vsync` internally — **any FaceFusion version < 3.8.2 is broken with FFmpeg 9.0.1**, which is our pipeline's current FFmpeg version (documented SC256). **Upgrade to FaceFusion 3.9.0 (latest) before running any FaceFusion jobs.** Failure mode: silent pipeline error or crash at the FFmpeg compositing step.
 
+**3.8.1 changes (SC356 finding, 2026-09-13):**
+- **CUDA 12 and 13 installer options** — `python install.py cuda@12` and `python install.py cuda@13` now supported alongside existing `cuda@11`; use the option matching your CUDA driver.
+- **Improved onnxruntime package removal** — installer now correctly removes previously installed conflicting onnxruntime packages before fresh install, preventing version collisions.
+- **CoreML fp16 fix** — resolved slow image-to-image processing under CoreML when using fp16 models (was falling back to CPU unintentionally). Not relevant to our CPU-only pipeline but eliminates silent performance degradation on Apple Silicon.
+- **VRAM leak fix** — fixed a VRAM leak in the inference pool for the latest onnxruntime. **Relevant for batch QA sessions:** running many FaceFusion jobs sequentially was accumulating VRAM and slowing later calls. If running FaceFusion for 3+ clips in a session, upgrade to at least v3.8.1.
+- No breaking changes; drop-in upgrade from v3.8.0.
+
 **3.8.0 changes (pass 39 finding, 2026-08-16):**
 - `--workflow-strategy` argument: `memory` (faster, higher RAM use) or `disk` (slower, RAM-efficient). Add `--workflow-strategy memory` for speed on high-RAM machines; use `disk` if OOM errors occur during batch processing.
 - `--workflow-mode` argument: aligns with upcoming architecture changes (no production-visible effect yet).
@@ -600,8 +607,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | 900 FPS | Batch QA; identical accuracy |
 | buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | — | Edge/mobile only |
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
-| raccoon_s | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0 (Sept 8, 2026); benchmarks not yet published |
-| raccoon_l | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0; auto provider selection; monitor for IJB-C scores |
+| raccoon_s | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0 (Sept 8, 2026); benchmarks not in model_zoo.md as of SC356 (2026-09-13) |
+| raccoon_l | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0; benchmarks not in model_zoo.md as of SC356; monitor for IJB-C scores |
 
 **InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
@@ -752,6 +759,16 @@ Kling 3.0 Turbo officially launched June 17, 2026 as Kuaishou's speed-and-cost-o
 - Once prompt is locked on Turbo, regenerate final with Kling v3 Pro I2V at $1.46/5s
 
 **Unverified on AIMLAPI as of 2026-06-19:** `kling_elements` passthrough on v3-standard-turbo. Run one draft before relying on it for character binding. If elements are silently ignored, fall back to Kling O1 reference-to-video for drafts.
+
+## Kling Sept 15, 2026 Retirement — PIPELINE UNAFFECTED (SC356 finding, 2026-09-13)
+
+Kuaishou is retiring 10 models, one entire API version, and 119 video effect templates on **September 15, 2026**. Confirmed retired models include **kling-v2 image generation** (removed from Kling Image Generation model selector ahead of the date). The API being shut down is Kling's older API v1/v2 tier, not the v3 API endpoints our AIMLAPI pipeline uses.
+
+**Our pipeline uses:** `klingai/kling-video-v3-pro-image-to-video`, `klingai/kling-video-v3-standard-image-to-video`, `klingai/video-o1-reference-to-video` — all are **v3 API tier and are NOT part of this retirement.** No action required for AIMLAPI pipeline. (SC353 "3-day retirement countdown" referred to the v1/v2 tier, not v3 Pro.)
+
+**Kling 4.0 status (SC356, 2026-09-13):** Still not released. Q3 2026 deadline (Sept 30) is slipping — no announcement or release date set. All third-party platforms (kling4.co, etc.) currently fall back to Kling 3.0 under the hood. Do not count on Kling 4.0 for near-term production planning.
+
+---
 
 ## Kling O3 — Character Consistency Upgrade (AIMLAPI model database — CANARY REQUIRED)
 
