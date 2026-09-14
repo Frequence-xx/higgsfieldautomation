@@ -41,18 +41,18 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 
 | Shot Type | Image Model | Video Model | Cost/clip | Notes |
 |-----------|------------|------------|-----------|-------|
-| Character close-up | NBP Edit ($0.195) | Kling v3 Pro I2V ($1.46) | **~$1.66** | Subject Binding 80-90, I2V from hero frame |
-| Character — draft/iteration | NBP Edit ($0.195) | Kling v3 Standard I2V ($1.09) | **~$1.29** | Use Standard until prompt is dialed in, Pro for final only |
+| Character close-up | NBP Edit ($0.195) | Kling v3 Pro I2V ($0.728) | **~$0.92** | Subject Binding 80-90, I2V from hero frame |
+| Character — draft/iteration | NBP Edit ($0.195) | Kling v3 Standard I2V ($0.546) | **~$0.74** | Use Standard until prompt is dialed in, Pro for final only |
 | Wide establishing (no character, T2V — cheapest canary) | NBP (T2I, $0.13) | Krea WAN 14B T2V ($0.033/sec, ~$0.165/5s) | **~$0.295** | CANARY REQUIRED — cheapest T2V on AIMLAPI if quality passes |
 | Wide establishing (no character, draft) | NBP (T2I, $0.13) | Veo 3.1 Lite T2V 720p ($0.26/4s) | **~$0.39** | Draft at 720p 4s — cheapest confirmed B-roll |
 | Wide establishing (no character, final) | NBP (T2I, $0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | CANARY REQUIRED — 1080p, no char, 9:16 confirmed |
 | B-roll / texture (no character) | NBP ($0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | No audio param needed — no surcharge risk |
 | Truck/product (no char, draft) | NBP Edit ($0.195) | Veo 3.1 Fast I2V (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-i2v-fast`, camelCase params |
 | Truck/product (ghost-driving lock) | NBP Edit ($0.195) | Veo 3.1 First+Last Fast (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-first-last-image-to-video-fast`, same first+last frame = stationary truck |
-| Truck/product hero | NBP Edit ($0.195) | Kling v3 Pro I2V ($1.46) | **~$1.66** | cfg_scale 0.7, ghost-driving locks |
+| Truck/product hero | NBP Edit ($0.195) | Kling v3 Pro I2V ($0.728) | **~$0.92** | cfg_scale 0.7, ghost-driving locks |
 | Brand color still (#FC8434) | FLUX.2 Pro ($0.07) | — | $0.07 | HEX matching; T2I only |
 | Typography/text still | Flux Kontext Max ($0.10) | — | $0.10 | Best text rendering |
-| Money shot / CTA | Flux Pro v1.1 Ultra ($0.10) | Kling v3 Pro I2V ($1.46) | **~$1.56** | Highest quality |
+| Money shot / CTA | Flux Pro v1.1 Ultra ($0.10) | Kling v3 Pro I2V ($0.728) | **~$0.83** | Highest quality |
 
 **CRITICAL: Always use I2V (image-to-video) for character shots — I2V preserves hero frame composition.**
 **CRITICAL: Veo 3.1 Lite is T2V only (no character). Its `image_url` parameter behavior on AIMLAPI is UNVERIFIED — do NOT use for character or hero-frame animation until tested.**
@@ -63,10 +63,10 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 
 Use this funnel for every character or truck shot to minimize cost:
 
-1. **Draft iterations:** Kling v3 Standard I2V (`klingai/video-v3-standard-image-to-video`) at $1.09/5sec — **use 3s clips for drafts (see below)**
-2. **Final output:** Kling v3 Pro I2V (`klingai/video-v3-pro-image-to-video`) at $1.46/5sec — ONLY after prompt is approved by owner
-3. **Savings (5s drafts):** Two Standard drafts + one Pro final = $3.64 vs three Pro passes = $4.38 — saves $0.74/clip (17%)
-4. **Savings (3s drafts):** Two 3s Standard drafts + one Pro final = $2.76 vs three Pro passes = $4.38 — saves $1.62/clip (37%)
+1. **Draft iterations:** Kling v3 Standard I2V (`klingai/video-v3-standard-image-to-video`) at $0.546/5sec — **use 3s clips for drafts (see below)**
+2. **Final output:** Kling v3 Pro I2V (`klingai/video-v3-pro-image-to-video`) at $0.728/5sec — ONLY after prompt is approved by owner
+3. **Savings (5s drafts):** Two Standard drafts + one Pro final = $1.82 vs three Pro passes = $2.18 — saves $0.36/clip (17%)
+4. **Savings (3s drafts):** Two 3s Standard drafts + one Pro final = $1.39 vs three Pro passes = $2.18 — saves $0.79/clip (36%)
 
 For Veo 3.1 Lite (B-roll/establishing): no tiering needed. Lite IS the final model — quality is sufficient at $0.52/5sec.
 
@@ -74,7 +74,7 @@ For Veo 3.1 Lite (B-roll/establishing): no tiering needed. Lite IS the final mod
 
 **Use 3-second clips for ALL Standard draft iterations. Use 5s only for Pro finals.**
 
-- Standard 3s clip cost: $0.218/sec × 3s = **$0.65** (vs $1.09 at 5s — saves $0.44/draft)
+- Standard 3s clip cost: $0.1092/sec × 3s = **$0.33** (vs $0.546 at 5s — saves $0.22/draft)
 - 3 seconds is sufficient to evaluate: motion type, composition validity, identity drift, ghost-driving presence
 - 3s clips reveal all failure modes that would cause a retry — no need to pay for 5 full seconds of drift
 - After 2 Standard drafts confirm the prompt works → generate one 5s Pro final
@@ -83,9 +83,9 @@ For Veo 3.1 Lite (B-roll/establishing): no tiering needed. Lite IS the final mod
 
 | Pass | Model | Duration | Cost | Purpose |
 |------|-------|----------|------|--------|
-| Draft 1 | Standard | **3s** | $0.65 | Evaluate motion direction and identity lock |
-| Draft 2 (if needed) | Standard | **3s** | $0.65 | Confirm prompt fix worked |
-| Final | Pro | **5s** | $1.46 | Owner delivery |
+| Draft 1 | Standard | **3s** | $0.33 | Evaluate motion direction and identity lock |
+| Draft 2 (if needed) | Standard | **3s** | $0.33 | Confirm prompt fix worked |
+| Final | Pro | **5s** | $0.728 | Owner delivery |
 
 **Kling `duration` parameter accepts int 3-15 (seconds). Linear cost scaling confirmed.**
 
@@ -101,7 +101,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 |-------|---------------|-----------|---------------------|----------|
 | Kling v3 Std Turbo I2V (canary) | `klingai/video-v3-standard-turbo-image-to-video` | 720p (9:16) | **$0.73** ($0.146/sec est.) | **$0.44** — Last frame OPTIONAL (confirmed June 2026). ✓ SILENT VIDEO by default in single-clip mode (audio only enabled in multi-shot mode). No audio strip needed. CANARY before routing drafts here. |
 | Kling v3 Std Turbo T2V (canary) | `klingai/video-v3-standard-turbo-text-to-video` | 720p (9:16) | **$0.73** ($0.146/sec est.) | **$0.44** — T2V variant. Same silent-video behavior as I2V Turbo in single-clip mode. CANARY REQUIRED. |
-| Kling v3 Turbo Pro I2V (canary) | `klingai/video-v3-turbo-pro-image-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec — AIMLAPI pricing page confirmed June 2026) | **$0.546** (3s) — ⚠️ IF Pro canary confirms ~$0.73/5s (SC350 est.), Turbo Pro at $0.91 is now PRICIER than regular Pro for same 1080p — routing advantage eliminated. CANARY REQUIRED before routing finals here. ✓ SILENT VIDEO by default in single-clip mode. |
+| Kling v3 Turbo Pro I2V (canary) | `klingai/video-v3-turbo-pro-image-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec — AIMLAPI pricing page confirmed June 2026) | **$0.546** (3s) — ⚠️ ROUTING VERDICT (SC360 Sept 14, 2026): v3 Pro now confirmed $0.728/5s — Turbo Pro at $0.91 IS pricier than regular Pro for same 1080p. **DO NOT route finals to Turbo Pro** — use v3 Pro I2V ($0.728). Only valid use case: A→B transitions using first=last frame ($0.91 for explicit endpoint control, when that feature matters). ✓ SILENT VIDEO by default in single-clip mode. |
 | Kling v3 Turbo Pro T2V (canary) | `klingai/video-v3-turbo-pro-text-to-video` | **1080p (9:16)** | **$0.91** ($0.182/sec) | T2V variant at 1080p. Same silent-video behavior as Turbo Pro I2V. CANARY REQUIRED. |
 | **Kling O1 Image-to-Video (CANARY)** | `klingai/video-o1-image-to-video` | 1080p (9:16) | **$0.73** ($0.146/sec — CORRECTED SC199) | **$0.44** (3s) — ⚠️ SC350 2026-09-11: At new confirmed Standard price ($0.546/5s), O1 I2V ($0.73/5s) is now 34% MORE expensive than Standard — routing advantage gone for drafts. Still useful for 1080p quality check at draft stage (Standard is 720p). CANARY REQUIRED — verify identity vs NBP Edit baseline. |
 | **Kling O1 Reference-to-Video (CANARY)** | `klingai/video-o1-reference-to-video` | 1080p (9:16) | **$0.73** ($0.146/sec — CORRECTED SC194) | **$0.44** (3s) — Multi-image identity lock via `image_list` (1-7 refs). ⚠️ SC350: If Pro canary confirms ~$0.73/5s, O1 R2V is SAME price as Pro — no longer "50% cheaper than Pro." Compare: O1 R2V (1080p, 7 refs, no face_consistency param) vs v3 Pro (1080p, 3 refs, face_consistency:true). NOT confirmed to match v3 Pro identity quality — canary required. |
@@ -109,8 +109,8 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | **Kling O1 V2V Edit (CANARY)** | `klingai/video-o1-video-to-video-edit` | 1080p (9:16) | **$0.82** ($0.164/sec — SC199) | **$0.49** (3s) — Video-to-video editing mode. Same price as V2V Reference. CANARY REQUIRED. |
 | Kling v3 Standard I2V | `klingai/video-v3-standard-image-to-video` | 720p (9:16) | **✅ CONFIRMED NEW PRICE: $0.546/5s ($0.1092/sec) — SC350 2026-09-11.** Prior $1.09/5s ($0.218/sec) was AIMLAPI's old ~2.6× markup. Now ~1.3× markup (same as most AIMLAPI models): $0.084/sec native × 1.3 = $0.109/sec ≈ $0.1092/sec confirmed. Sources: buildmvpfast.com AIMLAPI price table, AIMLAPI model page (SC343), explicit web search "Kling 3.0 Standard Image to Video is priced at $0.1092/sec through aimlapi" (SC350). The June 2026 "PRICING RESOLVED $0.218/sec" note in generation-video.md is OUTDATED. AIMLAPI canary billing still needed to 100% confirm (proxy-blocked), but confidence HIGH from 3 independent sources. Character draft cost cut by 50%. | **$0.33** (3s at $0.1092/sec) |
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720p (9:16) | **✅ NEW PRICE: $0.546/5s ($0.1092/sec) — same as I2V (SC350 2026-09-11).** | — |
-| Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **⚠️ LIKELY NEW PRICE: ~$0.73/5s ($0.146/sec) — CANARY REQUIRED (SC350 2026-09-11).** Estimate: $0.112/sec native × 1.3 AIMLAPI markup = $0.146/sec. If Standard dropped from 2.6× to 1.3× markup, Pro likely followed same pattern. Non-AIMLAPI sources (EvoLink, Replicate Sept 2026) show $0.168/sec undiscounted for Pro — these are NOT AIMLAPI. Old AIMLAPI price was $1.46/5s ($0.291/sec). CANARY: run Standard canary and simultaneously log Pro billing. If $0.73/5s confirmed: finals cost halved, $15 ceiling covers 3-4 retry passes. | $0.44 (3s est. at $0.146/sec) |
-| Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | 1080p (9:16) | **⚠️ LIKELY NEW PRICE: ~$0.73/5s ($0.146/sec) — same as I2V (SC350 2026-09-11).** See I2V row for detail. | $0.44 est. |
+| Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **✅ SEARCH-CONFIRMED: $0.728/5s ($0.1456/sec — SC360 2026-09-14, AIMLAPI pricing page snippet "$0.1456 per second (variable)").** Old AIMLAPI price was $1.46/5s ($0.291/sec) — was 2.6× markup, now 1.3× ($0.112/sec native × 1.3 = $0.1456/sec). Audio behavior canary still needed; full invoice canary when unblocked. $15 session ceiling now covers ~20 Pro final clips. | $0.44 (3s at $0.1456/sec) |
+| Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | 1080p (9:16) | **✅ SEARCH-CONFIRMED: $0.728/5s ($0.1456/sec — SC360 2026-09-14).** Same as I2V. | $0.44 (3s) |
 | Veo 3.1 Lite T2V 720p (audio OFF — always use) | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.234** (~$0.039/sec AIMLAPI est.; $0.03/sec native CONFIRMED SC290 — OpenRouter + costgoat + MaxVideoAI + buildfastwithai converge) | ~$0.156 (4s), ~$0.312 (8s) |
 | Veo 3.1 Lite T2V 720p (audio ON — reference only) | same | 720p | ~$0.39 ($0.065/sec AIMLAPI est.) | — NEVER USE (audio defaults ON = Shari'ah risk) |
 | Veo 3.1 Lite T2V 1080p (audio OFF est.) | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.52** (~$0.065/sec AIMLAPI est. × 8s; audio-off 1080p native ~$0.05/sec unconfirmed) | — |
@@ -131,7 +131,7 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | LTXV 2 Standard I2V | `ltxv/ltxv-2` | 1080p | **$0.06/sec (was CONFIRMED)** | ❌ **BROKEN as of 2026-08-15.** Same Lightricks Aug 15 deprecation. String ERRORS on AIMLAPI. Do NOT use. |
 | Luma Ray Flash 2 I2V | `luma/ray-flash-2` | 720p (9:16 ✓) | **~$0.048/sec** (~$0.24/5s, AIMLAPI $0.002/M pixels) | No audio generation, no surcharge risk — CANARY REQUIRED. I2V + first+last frame. Max 9s. |
 | Grok Imagine Video 1.5 I2V/R2V | `xai/grok-imagine-video` | 720p (9:16 ✓) | **~$0.104/sec 480p** (~$0.52/5s); **~$0.182/sec 720p** (~$0.91/5s) — CORRECTED 2026-06-18. Audio always generated — strip required. WIDE RELEASE June 17. CANARY REQUIRED. |
-| Seedance 2.0 Fast | `bytedance/seedance-2-0-fast` | TBD | **$0.316/sec ($1.58/5s — CONFIRMED 2026-06-30)** | **DO NOT USE** — more expensive than Kling Pro ($1.46/5s) at corrected price. Standard = $0.394/sec ($1.97/5s), also DO NOT USE. Face content-policy block risk. |
+| Seedance 2.0 Fast | `bytedance/seedance-2-0-fast` | TBD | **$0.316/sec ($1.58/5s — CONFIRMED 2026-06-30)** | **DO NOT USE** — 2.2× more expensive than Kling Pro ($0.728/5s — SC360 confirmed). Standard = $0.394/sec ($1.97/5s), also DO NOT USE. Face content-policy block risk. |
 | MiniMax H3 (Hailuo 3.0) | `minimax/h3` | 2K (2560×1440) | **$0.169/sec** + $0.052/ref image (2K); 768p TBD | ✓ NOW ON AIMLAPI (SC283 2026-08-21). T2V/I2V/R2V/edit; 9-ref lock; 15s max. **DO NOT USE** for non-char shots — Hailuo 2.3 Fast wins at $0.0416/sec. Only viable for 2K or 15s requirements. CANARY REQUIRED (audio disable param unconfirmed). |
 | **MiniMax H3 Max (Hailuo 3.0 Max)** | `minimax/h3-max` | 768p/2K est. | **~$0.104/sec AIMLAPI est.** ($0.08/sec native 768p × 1.3; 480p: ~$0.065/sec AIMLAPI est.) | ✓ ON AIMLAPI (SC357 2026-09-13 — added Aug 31 per api-docs commit). Released Sept 2, 2026 by MiniMax (post-trained from H3 via fal.ai co-release). T2V/I2V/first+last frame; 15s max. **DO NOT USE** for non-char shots — Hailuo 2.3 Fast wins at $0.0416/sec (2.5× cheaper at 768p). CANARY REQUIRED (audio disable param unconfirmed, no `generate_audio` equivalent found). Only viable if 15s+ duration specifically needed and quality justifies cost premium. |
 | PixVerse V5.5 I2V | `pixverse/v5-5-image-to-video` | 360p-1080p | **$0.156/sec** ($0.78/5s confirmed) | 9:16 ✓; audio optional via `generate_audio_switch: false`; CANARY REQUIRED |
