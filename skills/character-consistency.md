@@ -211,7 +211,13 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 
 ### Step 6: QA Check for Character Drift
 
-**InsightFace install (pass 10 finding, 2026-05-25; SC342 update, 2026-09-09 — v2.0 released Sept 8, 2026):** InsightFace **2.0** released September 8, 2026 (major version bump from 1.0.1). **No breaking changes to our FaceAnalysis/buffalo_l QA pipeline** — `from insightface.app import FaceAnalysis` and `FaceAnalysis(name='buffalo_l')` work identically. Key v2.0 additions:
+**InsightFace install (pass 10 finding, 2026-05-25; SC342 update, 2026-09-09 — v2.0 released Sept 8, 2026; SC363 update, 2026-10-20 — v2.1 released Oct 3, 2026):** InsightFace **2.1** is the current release (October 3, 2026). **No breaking changes to our FaceAnalysis/buffalo_l QA pipeline** — `from insightface.app import FaceAnalysis` and `FaceAnalysis(name='buffalo_l')` work identically across 1.0.1, 2.0, and 2.1.
+
+**v2.1 additions (SC363 finding, 2026-10-20):**
+- **PersonAnalysis module** — new high-level API combining person detection, face recognition, and body re-identification (ReID) to match people across frames against registered reference photos. Python API (`PersonAnalysis()`) and desktop GUI supporting local videos, webcams, and RTSP streams. **Zero impact on our FaceAnalysis/buffalo_l clip QA pipeline** — PersonAnalysis is a separate module; our `clip_qa()` function unchanged. Potentially useful as a future replacement for manual multi-face disambiguation in crowd or multi-character shots.
+- No breaking changes; `pip install --upgrade insightface` installs 2.1.
+
+Key v2.0 additions (released September 8, 2026):
 - **raccoon_s / raccoon_l** — new manifest-backed model packages with automatic provider selection. Benchmarks not yet publicly documented in model zoo README. Monitor for accuracy table; if raccoon_l surpasses buffalo_l on IJB-C, it becomes the upgrade candidate.
 - **Auto CoreML/CUDA/CPU provider selection** — v2.0 auto-selects best available ONNX Runtime provider (CoreML → CUDA → CPU). Our `ctx_id=-1` still forces CPU on CPU-only environments; on CUDA-capable machines, omitting explicit providers now automatically uses GPU without code changes.
 - **Dual-resolution SCRFD** face detection (128×128 + 640×640) — enhanced detection accuracy. Our `det_size=(640, 640)` remains valid.
@@ -294,7 +300,14 @@ These are starting estimates only — calibrate per character by scoring 4 appro
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.9.0** is the current stable release (September 3, 2026; SC328 finding, 2026-09-05). Previously v3.8.3 (September 1, 2026).
+FaceFusion **v3.9.1** is the current stable release (September 30, 2026; SC363 finding, 2026-10-20). Previously v3.9.0 (September 3, 2026).
+
+**3.9.1 changes (SC363 finding, 2026-10-20):**
+- **Updated ONNX Runtime dependency** — bumped to the latest ONNX Runtime release for improved memory performance.
+- **ONNX Runtime arena workaround scoped** — a previous workaround for a memory arena bug is now applied only to the affected ONNX Runtime versions; no-op on updated installs, reducing overhead on clean environments.
+- **CoreML content analyser fix** — fixed a performance regression in the content analyser step when using CoreML (Apple Silicon). Not relevant to our CPU-only pipeline but eliminates a slow gate pass.
+- No breaking changes; drop-in upgrade from 3.9.0.
+- **Upgrade immediately:** `git checkout 3.9.1` in the facefusion directory.
 
 **3.9.0 changes (SC328 finding, 2026-09-05):**
 - **New face swapper model: `alphaface_256`** — additional option alongside existing `inswapper_128_fp16` and `hyperswap_1a_256`. Not yet evaluated for olive/brown-skin fidelity. Continue using `inswapper_128_fp16` until calibrated.
@@ -340,8 +353,8 @@ FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `h
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion
-# IMPORTANT: use v3.9.0+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
-git checkout 3.9.0
+# IMPORTANT: use v3.9.1+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
+git checkout 3.9.1
 # v3.7.0+: --onnxruntime is now positional (no flag name needed)
 python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
@@ -607,8 +620,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | buffalo_m | R50 / W600K | same as buffalo_l | — | — | — | ~200MB | 900 FPS | Batch QA; identical accuracy |
 | buffalo_s (CPU fallback) | R18 / W600K | 99.70% | 98.00% | — | — | 159MB | — | Edge/mobile only |
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
-| raccoon_s | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0 (Sept 8, 2026); benchmarks not in model_zoo.md as of SC356 (2026-09-13) |
-| raccoon_l | TBD (v2.0) | — | — | — | — | — | — | New in InsightFace v2.0; benchmarks not in model_zoo.md as of SC356; monitor for IJB-C scores |
+| raccoon_s | TBD (v2.0) | — | — | — | — | 34.9 MB | — | New in InsightFace v2.0 (Sept 8, 2026); **now default for PrivateFrame and new GUI configs** (SC363 finding, 2026-10-20); benchmarks not in model_zoo.md as of SC363 — cannot recommend for QA without IJB-C calibration |
+| raccoon_l | TBD (v2.0) | — | — | — | — | 243 MB | — | New in InsightFace v2.0; benchmarks not in model_zoo.md as of SC363 (2026-10-20); monitor for IJB-C scores before adopting as buffalo_l replacement |
 
 **InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
