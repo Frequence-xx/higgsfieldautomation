@@ -258,7 +258,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    import { installWhisperCpp, transcribe, toCaptions } from '@remotion/install-whisper-cpp';
 
    const WHISPER_PATH = './whisper-cpp';   // installation directory
-   const WHISPER_VERSION = '1.9.4';        // v1.9.4 is current latest STABLE (Sep 11, 2026) — GGML v0.23.0 sync, decoder reseeding fix, language-detect improvement; no DTW/timestamp changes. v1.9.3 stable (Aug 20, 2026). v1.9.2 — VAD token timestamp fix (PR #3910). (SC354 Sep 12, 2026)
+   const WHISPER_VERSION = '1.9.5';        // v1.9.5 is current latest STABLE (Oct 6, 2026) — int overflow fix in whisper_full_parallel chunk offsets (PR #4044, important for parallel processing); add abort_callback on language detection (PR #4077); VAD: reject invalid n_encoder_layers in model load (PR #4064); CLI: load backends after validating input files (PR #4069); GGML/backend sync (CUDA/Metal/Vulkan). No DTW or word-timestamp changes — caption pipeline unaffected. (SC368 Oct 22, 2026). v1.9.4 (Sep 11, 2026): GGML sync v0.23.0, decoder reseeding fix, language-detect improvement.
 
    await installWhisperCpp({
      version: WHISPER_VERSION,
@@ -269,7 +269,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    const result = await transcribe({
      inputPath: 'voiceover.wav',
      whisperPath: WHISPER_PATH,          // REQUIRED — path from installWhisperCpp(to:)
-     whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version; use '1.9.4' (current stable, Sep 11, 2026)
+     whisperCppVersion: WHISPER_VERSION, // REQUIRED — must match install version; use '1.9.5' (current stable, Oct 6, 2026)
      model: 'large-v3-turbo',           // ~3x faster than large-v2, same Dutch accuracy (Remotion v4.0.229+)
      language: 'nl',
      tokenLevelTimestamps: true,        // enables --dtw; tokensPerItem/splitOnWord ignored in this mode
@@ -287,6 +287,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    // toCaptions() sets timestampMs = null. Always null-check before using:
    //   const activeMs = caption.timestampMs ?? caption.startMs;
    // confidence is also number | null — null-safe default to 1.0.
+   // whisper.cpp v1.9.5 (Oct 6, 2026): use WHISPER_VERSION = '1.9.5'. Parallel chunk int overflow fixed.
    ```
 
    **Mode B (non-DTW, one-word-per-segment):** Use when DTW produces errors or you need strict 1-word-per-Caption output. `tokensPerItem: 1` sets `--max-len 1` (one word per segment); `splitOnWord: true` adds `--split-on-word` to prevent a word being split across two segments at the `max-len` boundary. **Only works with `tokenLevelTimestamps: false`.**
@@ -325,7 +326,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    const WHISPER_PATH = './whisper-cpp';
    const MODEL_FOLDER = './whisper-models'; // persistent volume or pre-provisioned dir
-   const WHISPER_VERSION = '1.9.4';        // current stable (Sep 11, 2026)
+   const WHISPER_VERSION = '1.9.5';        // current stable (Oct 6, 2026) — see Mode A comment for changes
 
    await installWhisperCpp({ version: WHISPER_VERSION, to: WHISPER_PATH, printOutput: false });
 
@@ -708,7 +709,27 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.524 (September 13, 2026 — current latest):**
+**Remotion v4.0.536 (October ~20, 2026 — current latest as of SC368):**
+- `@remotion/captions` — **`parseVtt()` added** (PR #12318 by DeryFerd, merged Oct 19, 2026 by @JonnyBurger). Parses WebVTT (`.vtt`) files into `Caption[]` — identical shape to `parseSrt()` output, so it drops directly into `createTikTokStyleCaptions()`. **Updates the previous note that "no `parseWebVtt()` exists" — it is now `parseVtt()`, which does exist.** Use case: when a subtitle provider delivers `.vtt` instead of `.srt`. Same block-level limitation as `parseSrt()` — no word-level timestamps; use for phrase-display only, not word-by-word highlight. `npm install remotion@4.0.536`.
+- No other `@remotion/captions` API changes confirmed in v4.0.529–4.0.535.
+
+**Remotion v4.0.528 (September 24, 2026):**
+- `@remotion/captions` — **`parseSrt()` millisecond precision fix** (PR #11501 by mfurkanakinci): milliseconds in SRT timestamps were parsed incorrectly (precision loss). Now correctly parsed. Affects any SRT file with non-zero milliseconds (e.g. `00:00:02,150` was misread).
+- `@remotion/captions` — **`parseSrt()` arrow text fix** (PR #11502): caption blocks whose text contained `-->` (arrow characters) were dropped entirely. Now preserved correctly. Rare edge case but a silent data loss bug.
+- `@remotion/captions` — **`ensureMaxCharactersPerLine()` fixes** (PRs #11503, #11504): two bug fixes in the line-break utility. Exact behavior unclear from available release notes — upgrade to at least 4.0.528 for correct Dutch line wrapping. `npm install remotion@4.0.528`.
+
+**Remotion v4.0.527 (September 22, 2026):**
+- `@remotion/studio`: multi-clip splitting; "Generate captions" quick action for media assets in Studio.
+- **No changes to `@remotion/captions` API.** Caption pipeline unaffected.
+
+**Remotion v4.0.526 (September 17, 2026):**
+- `@remotion/effects`: New `lut()` helper for inline Cube color transforms. Studio improvements.
+- **No changes to `@remotion/captions` API.** Caption pipeline unaffected.
+
+**Remotion v4.0.525 (September 15, 2026):**
+- **No changes to `@remotion/captions` API confirmed.** Caption pipeline unaffected.
+
+**Remotion v4.0.524 (September 13, 2026):**
 - `remotion`: toneFrequency pitch-shifting now works in both preview AND rendering (was preview-only in v4.0.520).
 - `@remotion/media`: Mediabunny 1.56.1.
 - `@remotion/studio`: Syntax highlighting for error overlays; timeline improvements; Prettier no longer required for composition management.
@@ -785,7 +806,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.524`. *(4.0.514 added silenceGapMs; 4.0.515 added ESM export; 4.0.518 added lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522 CLI/Studio only; 4.0.523 Studio captions element + caption public-folder import [Studio only]; 4.0.524 toneFrequency+Studio only, no caption API changes; SC361 Sep 14 2026)*
+- `npm install remotion@4.0.536`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–535 no caption API changes; 4.0.536 parseVtt added; SC368 Oct 22 2026)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -862,12 +883,13 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.524 — confirmed current as of 2026-09-14; caption API changes in 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter]; 4.0.519–524 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC361 Sep 14 recheck)
+### Full API (v4.0.536 — current as of SC368 Oct 22, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.536 [parseVtt added]; 4.0.519–527/529–535 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC368 Oct 22 2026)
 
 | Export | Purpose |
 |--------|---------|
 | `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight |
-| `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps** |
+| `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps.** v4.0.528: millisecond precision + arrow-text bug fixed. |
+| `parseVtt()` | **NEW v4.0.536** — Parses WebVTT → `Caption[]`. Same block-level shape as `parseSrt()`. No word timestamps. |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
 | `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null, lineBreakAfter?: boolean }` — `lineBreakAfter` added v4.0.518 |
@@ -879,7 +901,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `SerializeSrtInput` | Direct named type export for `serializeSrt()` |
 | `CreateTikTokStyleCaptionsInput`, `CreateTikTokStyleCaptionsOutput` | Direct named type exports for `createTikTokStyleCaptions()` |
 
-No `parseWebVtt()` exists in this package. No `convertToCaptions()` either — that was deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
+`parseVtt()` was added in v4.0.536 (PR #12318, Oct 19, 2026) — parses WebVTT (`.vtt`) into `Caption[]`, same shape as `parseSrt()`. Block-level only, no word timestamps. No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
 ### CRITICAL: parseSrt() does NOT give word-level timestamps
 
