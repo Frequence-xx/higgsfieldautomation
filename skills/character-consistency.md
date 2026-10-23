@@ -30,6 +30,7 @@ AI models drift: a crew member's face, build, skin tone, and clothing change bet
 | Compositing character into scene | `google/nano-banana-pro-edit` | `image_urls` (array) | **14** | Place character into any background |
 | Character-consistent video | `klingai/video-o1-reference-to-video` | `elements` + `image_list` | 4 elements, 7 total | Video with locked character identity |
 | High-quality character video | `google/veo-3.1-reference-to-video` | `image_urls` (array) | ~3+ | Premium character video |
+| Character-consistent video draft | `xai/grok-imagine-video` | `reference_images` (array) | **7** | R2V: up to 7 image refs, 9:16 ✓, 480p ~$0.52/5s — CANARY REQUIRED; audio always generated — FFmpeg strip mandatory (SC370 finding, 2026-10-23) |
 
 ## Step-by-Step Workflow
 
@@ -214,7 +215,7 @@ Up to 10 reference images are technically supported; 3–5 covering distinct ang
 **InsightFace install (pass 10 finding, 2026-05-25; SC342 update, 2026-09-09 — v2.0 released Sept 8, 2026; SC363 update, 2026-10-20 — v2.1 released Oct 3, 2026):** InsightFace **2.1** is the current release (October 3, 2026). **No breaking changes to our FaceAnalysis/buffalo_l QA pipeline** — `from insightface.app import FaceAnalysis` and `FaceAnalysis(name='buffalo_l')` work identically across 1.0.1, 2.0, and 2.1.
 
 **v2.1 additions (SC363 finding, 2026-10-20):**
-- **PersonAnalysis module** — new high-level API combining person detection, face recognition, and body re-identification (ReID) to match people across frames against registered reference photos. Python API (`PersonAnalysis()`) and desktop GUI supporting local videos, webcams, and RTSP streams. **Zero impact on our FaceAnalysis/buffalo_l clip QA pipeline** — PersonAnalysis is a separate module; our `clip_qa()` function unchanged. Potentially useful as a future replacement for manual multi-face disambiguation in crowd or multi-character shots.
+- **PersonAnalysis module** — new high-level API combining person detection, face recognition, and body re-identification (ReID) to match people across frames against registered reference photos. Python API (`PersonAnalysis()`) and desktop GUI supporting local videos, webcams, and RTSP streams. Uses **cheetah_s / cheetah_l** model packages (CPU and CUDA; automatic provider selection). Note: raccoon_s/raccoon_l (added in v2.0) are for PrivateFrame blur — NOT PersonAnalysis. cheetah is the PersonAnalysis model family; raccoon is the PrivateFrame model family. **Zero impact on our FaceAnalysis/buffalo_l clip QA pipeline** — PersonAnalysis is a separate module; our `clip_qa()` function unchanged. Potentially useful as a future replacement for manual multi-face disambiguation in crowd or multi-character shots. (SC370 finding, 2026-10-23)
 - No breaking changes; `pip install --upgrade insightface` installs 2.1.
 
 Key v2.0 additions (released September 8, 2026):
@@ -622,6 +623,8 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 | antelopev2 | R100 / Glint360K (glintr100) | — | — | — | higher | 407MB | — | Better on harder cases; lower raw cosine range 0.30–0.45 at FMR 1e-4 |
 | raccoon_s | TBD (v2.0) | — | — | — | — | 34.9 MB | — | New in InsightFace v2.0 (Sept 8, 2026); **now default for PrivateFrame and new GUI configs** (SC363 finding, 2026-10-20); benchmarks not in model_zoo.md as of SC363 — cannot recommend for QA without IJB-C calibration |
 | raccoon_l | TBD (v2.0) | — | — | — | — | 243 MB | — | New in InsightFace v2.0; benchmarks not in model_zoo.md as of SC363 (2026-10-20); monitor for IJB-C scores before adopting as buffalo_l replacement |
+| cheetah_s | TBD (v2.1) | — | — | — | — | TBD | — | New in InsightFace v2.1 (Oct 3, 2026) for **PersonAnalysis body ReID** — person detection + face recognition + cross-frame identity matching. **NOT for face similarity QA** — do not substitute for buffalo_l in `clip_qa()`. (SC370 finding, 2026-10-23) |
+| cheetah_l | TBD (v2.1) | — | — | — | — | TBD | — | New in InsightFace v2.1; larger variant of cheetah_s for PersonAnalysis. Not for face QA pipeline. Monitor for benchmark data. (SC370 finding, 2026-10-23) |
 
 **InsightFace Server (released 2026-07-27, pass 40 finding):** New product from DeepInsight — self-hosted web UI + snake_case REST API + Python client for detection, comparison, registration, and person search. Runs in a single Linux x86_64 Docker container (CPU or NVIDIA GPU) using local ONNX Runtime. Key addition: **INT8 embedding quantization** — 0.02% ArcFace error increase at 4× smaller model size (validates INT8 quantization note in TensorRT section below). Scales to 50M+ image search on one RTX 5090. Relevant if QA pipeline is ever refactored to a persistent microservice instead of in-process calls; commercial license required. Not needed for current per-clip QA volume.
 
@@ -943,6 +946,51 @@ ffmpeg -i wan_r2v_output.mp4 -an -c:v copy wan_r2v_muted.mp4
 ```
 
 Add this FFmpeg strip as a non-negotiable post-step in any Wan 2.7 R2V generation script — do NOT rely on an unverified API parameter to silence audio. Generating haram music is a Shari'ah production gate failure. When R2V docs appear on AIMLAPI, test and document the audio param name, then update this entry.
+
+## Grok Imagine Video 1.5 — Draft Character Reference Video (`xai/grok-imagine-video` — CANARY REQUIRED, SC370 finding, 2026-10-23)
+
+**AIMLAPI docs pages confirmed:** `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video` (base I2V/R2V model) and `docs.aimlapi.com/api-references/video-models/xai/grok-imagine-video-1.5-preview` (I2V-only preview).
+
+**Two AIMLAPI endpoints — different capabilities:**
+- `xai/grok-imagine-video` — **base model**: supports R2V with `reference_images` array (1–7 images). When 2–7 images provided → reference-to-video mode (character consistency). AIMLAPI docs confirm this `reference_images` array.
+- `xai/grok-imagine-video-1.5-preview` — **preview**: per AIMLAPI docs, supports only single `image_url` (I2V only). Multi-image reference NOT documented on AIMLAPI's preview page. **Do not assume reference mode works on the preview endpoint via AIMLAPI.**
+
+**Pricing (from credit-efficiency.md):**
+- xAI GA pricing: $0.08/sec (480p), $0.14/sec (720p)
+- AIMLAPI estimated (~1.3× markup): **~$0.104/sec (480p) = ~$0.52/5s**, **~$0.182/sec (720p) = ~$0.91/5s**
+- Use 480p for character draft iteration — $0.52/5s is below Kling Standard ($1.09/5s)
+
+**Key restrictions:**
+- **Audio is always generated — no `generate_audio` parameter.** Every generation includes dialogue, SFX, ambient audio. **AUDIO STRIP MANDATORY** immediately on download: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`. Shari'ah compliance: strip before any QA playback — AI-generated audio may include music.
+- **NOT text-to-video** — I2V and R2V only. No T2V mode.
+- Duration: 1–15 seconds. Aspect ratio: 9:16 supported.
+- Resolution: 480p or 720p (no 1080p).
+
+**Routing for character shots:**
+- Best use: draft character iteration when Wan 2.7 R2V is unavailable on AIMLAPI. At 480p ($0.52/5s), cheaper than Kling Standard ($1.09) for draft passes.
+- NOT suitable for finals — 480p/720p ceiling, unverified InsightFace scores for olive/brown-skin characters.
+- Run InsightFace QA (PASS ≥ 0.62) before any production consideration.
+
+**Canary procedure (base model `xai/grok-imagine-video`):**
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "xai/grok-imagine-video",
+    "reference_images": [
+        "https://cdn.example.com/characters/crew_lead/front.png",
+        "https://cdn.example.com/characters/crew_lead/three_quarter.png"
+    ],
+    # If reference_images rejected, fall back to single image_url (I2V mode)
+    "prompt": "Person lifts a box from the moving truck, confident motion, golden hour light, eases to stop",
+    "aspect_ratio": "9:16",
+    "duration": 5,
+}, headers=headers, timeout=120)
+# On download: STRIP AUDIO FIRST before any QA
+```
+1. Confirm `reference_images` param name on AIMLAPI (vs `image_urls` or `image_url`)
+2. Confirm `aspect_ratio` syntax ("9:16" vs "9x16")
+3. Strip audio immediately on download
+4. Score InsightFace (PASS ≥ 0.62 for Karel/Mourad)
+5. Log actual AIMLAPI cost — confirm ~$0.52 at 480p
 
 ## Wan 3.0 — High-Ref Character Video (on AIMLAPI as `alibaba/wan3.0-video` — CANARY REQUIRED)
 
