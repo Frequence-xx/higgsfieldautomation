@@ -709,8 +709,22 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.536 (October ~20, 2026 — current latest as of SC368):**
-- `@remotion/captions` — **`parseVtt()` added** (PR #12318 by DeryFerd, merged Oct 19, 2026 by @JonnyBurger). Parses WebVTT (`.vtt`) files into `Caption[]` — identical shape to `parseSrt()` output, so it drops directly into `createTikTokStyleCaptions()`. **Updates the previous note that "no `parseWebVtt()` exists" — it is now `parseVtt()`, which does exist.** Use case: when a subtitle provider delivers `.vtt` instead of `.srt`. Same block-level limitation as `parseSrt()` — no word-level timestamps; use for phrase-display only, not word-by-word highlight. `npm install remotion@4.0.536`.
+**Remotion v4.0.538 (October ~22, 2026 — current latest as of SC375):**
+- Studio: pitch preservation when changing playback speed.
+- Fix: memory leak when replacing Sequence children.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.538`.
+
+**Remotion v4.0.537 (October ~22, 2026):**
+- `@remotion/captions` — **`parseVtt()` added** (PR #12318 by DeryFerd, merged Oct 19, 2026). Parses WebVTT (`.vtt`) files into `Caption[]` — identical shape to `parseSrt()` output, so it drops directly into `createTikTokStyleCaptions()`. **⚠️ SC375 correction: previously attributed to v4.0.536 in SC368 — correct version is v4.0.537.** Use case: when a subtitle provider delivers `.vtt` instead of `.srt`. Same block-level limitation as `parseSrt()` — no word-level timestamps; use for phrase-display only, not word-by-word highlight.
+  - **PR #12565 (OPEN Oct 23, 2026 — watch item):** Adds HTML character-reference decoding to `parseVtt()`. Without it, named (`&amp;`, `&lt;`) and numeric (`&#123;`) HTML entities in VTT cue text are returned as-is. If your subtitle provider delivers VTT files with HTML entities, v4.0.537 will pass them through undecoded. Monitor for merge.
+  - **PR #12564 (OPEN):** Adds tests for `parseVtt()` — no pipeline impact.
+- `@remotion/effects`: `cylinder()` and `sphere()` projection effects added.
+- `@remotion/renderer`: render server now binds to localhost by default.
+- Fix: error message for non-finite `durationInFrames` improved.
+- **No other `@remotion/captions` or `@remotion/install-whisper-cpp` API changes.** `npm install remotion@4.0.537`.
+
+**Remotion v4.0.536 (October ~20, 2026):**
+- **No `@remotion/captions` API changes.** (**⚠️ SC375 correction: parseVtt() was incorrectly attributed to this version in SC368 — it shipped in v4.0.537.**)
 - No other `@remotion/captions` API changes confirmed in v4.0.529–4.0.535.
 
 **Remotion v4.0.528 (September 24, 2026):**
@@ -806,7 +820,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.536`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–535 no caption API changes; 4.0.536 parseVtt added; SC368 Oct 22 2026)*
+- `npm install remotion@4.0.538`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes [SC375 correction: parseVtt NOT in 4.0.536]; 4.0.537 parseVtt added [SC375]; 4.0.538 Studio only [SC375])*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -883,13 +897,13 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.536 — current as of SC368 Oct 22, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.536 [parseVtt added]; 4.0.519–527/529–535 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC368 Oct 22 2026)
+### Full API (v4.0.538 — current as of SC375 Oct 24, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added — SC375 corrects SC368 which wrongly listed 4.0.536]; 4.0.519–527/529–536/4.0.538 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC375 Oct 24 2026)
 
 | Export | Purpose |
 |--------|---------|
 | `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight |
 | `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps.** v4.0.528: millisecond precision + arrow-text bug fixed. |
-| `parseVtt()` | **NEW v4.0.536** — Parses WebVTT → `Caption[]`. Same block-level shape as `parseSrt()`. No word timestamps. |
+| `parseVtt()` | **NEW v4.0.537** — Parses WebVTT → `Caption[]`. Same block-level shape as `parseSrt()`. No word timestamps. ⚠️ PR #12565 (OPEN): HTML entity decoding not yet in 4.0.537. |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
 | `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null, lineBreakAfter?: boolean }` — `lineBreakAfter` added v4.0.518 |
@@ -901,7 +915,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `SerializeSrtInput` | Direct named type export for `serializeSrt()` |
 | `CreateTikTokStyleCaptionsInput`, `CreateTikTokStyleCaptionsOutput` | Direct named type exports for `createTikTokStyleCaptions()` |
 
-`parseVtt()` was added in v4.0.536 (PR #12318, Oct 19, 2026) — parses WebVTT (`.vtt`) into `Caption[]`, same shape as `parseSrt()`. Block-level only, no word timestamps. No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
+`parseVtt()` was added in v4.0.537 (PR #12318, merged Oct 19, 2026, released v4.0.537 Oct ~22, 2026 — SC375 correction, was wrongly listed as v4.0.536 in SC368) — parses WebVTT (`.vtt`) into `Caption[]`, same shape as `parseSrt()`. Block-level only, no word timestamps. ⚠️ PR #12565 (OPEN Oct 23, 2026): HTML character-reference decoding — `&amp;`/`&#123;` entities not yet decoded in v4.0.537; monitor for merge. No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
 ### CRITICAL: parseSrt() does NOT give word-level timestamps
 
@@ -1143,7 +1157,7 @@ If FFmpeg compositing is required without Remotion, generate a rounded-rect PNG 
 
 ### FFmpeg 8.0 Built-in Whisper Filter — NOT for word-level captions
 
-FFmpeg 8.0 "Huffman" (August 2025) added a native `whisper` audio filter that performs ASR transcription inside FFmpeg itself using whisper.cpp. Current stable: **FFmpeg 9.0.1 "Lei" (August 12, 2026)** — confirmed by SC305 Aug 29, 2026. FFmpeg 9.0 has no changes to the drawtext or whisper filters (SC308 Aug 30, 2026). **Do NOT use this for Snel Verhuizen caption pipeline.** Reason: it outputs segment-level SRT/JSON only — no word-level timestamps, no word-by-word highlighting. Suitable only for basic subtitle overlays without per-word orange highlight. Our pipeline requires word-level timestamps from Options A/B/C above.
+FFmpeg 8.0 "Huffman" (August 2025) added a native `whisper` audio filter that performs ASR transcription inside FFmpeg itself using whisper.cpp. Current stable: **FFmpeg 9.0.2** (confirmed SC372 Oct 22, 2026). No changes to drawtext or whisper filters in 9.0.x. **Do NOT use this for Snel Verhuizen caption pipeline.** Reason: it outputs segment-level SRT/JSON only — no word-level timestamps, no word-by-word highlighting. Suitable only for basic subtitle overlays without per-word orange highlight. Our pipeline requires word-level timestamps from Options A/B/C above.
 
 ```bash
 # What FFmpeg 8.0 whisper filter does (context only — not for our pipeline):
