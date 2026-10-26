@@ -163,7 +163,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
 
-   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. v2.63.0 SDK (Aug 11, 2026) added "missing realtime speech-to-text options" — additional config parameters for the WebSocket client. Batch Scribe API unchanged. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct. **Current SDK: v2.68.0 (Sep 11, 2026)** — v2.68.0 accepts every music model id and composition plan type in `compose_detailed` (music API only; zero forced-alignment or Scribe v2 batch API impact). v2.67.0 (Sep 7, 2026) fixes "Stop the OMIT sentinel from reaching the realtime TTS connection" (realtime TTS only; zero forced-alignment or Scribe v2 batch API impact). v2.66.0 (Sep 2, 2026) added file_ids to multimodal messaging (Conversational AI platform only). v2.65.0 (Aug 25, 2026) fixed repeated-form-field encoding for keyterms/webhook_ids (Conversational AI platform only). No changes to forced-alignment or Scribe v2 batch API since v2.59.0. (SC360 recheck Sep 14, 2026)
+   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. v2.63.0 SDK (Aug 11, 2026) added "missing realtime speech-to-text options" — additional config parameters for the WebSocket client. Batch Scribe API unchanged. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct. **Current SDK: v2.74.1 (Oct 20, 2026)** — v2.74.1 passes `enable_logging` through `compose_detailed` wrapper (music only). v2.74.0 (Oct 20, 2026): SDK regeneration. v2.73.1 (Oct 17): Python 3.13/3.14 CI support. v2.73.0 (Oct 15): type annotations + `create_and_wait` helpers for Flows (Flows/agents only). v2.72.0 (Oct 13): `play()`/`save()` accept any iterable; realtime CLOSE events include close code. v2.68.0–v2.71.x: music API, agent, and realtime changes only. No changes to forced-alignment or Scribe v2 batch API since v2.59.0. (SC382 Oct 26, 2026)
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.7rc1 released June 26, 2026 is a pre-release (Windows CUDA fix + huggingface-hub pin relax only — no timestamp changes; SC326 Sep 4 recheck: still pre-release, v3.8.6 remains current stable). **Stay on stable 3.8.6** for production. — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
@@ -709,14 +709,22 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.538 (October ~22, 2026 — current latest as of SC375):**
+**Remotion v4.0.539 (October 26, 2026 — current latest as of SC382):**
+- `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
+- `remotion`: Fixed `spring()` overshoot clamping with custom ranges — affects caption entrance animations that use a non-0-to-1 output range; standard word-scale (1.0→1.05) is unaffected.
+- `remotion`: Fixed multi-keyframe loops in `interpolate()`.
+- `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
+- `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.539`.
+
+**Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
 - Fix: memory leak when replacing Sequence children.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.538`.
 
 **Remotion v4.0.537 (October ~22, 2026):**
 - `@remotion/captions` — **`parseVtt()` added** (PR #12318 by DeryFerd, merged Oct 19, 2026). Parses WebVTT (`.vtt`) files into `Caption[]` — identical shape to `parseSrt()` output, so it drops directly into `createTikTokStyleCaptions()`. **⚠️ SC375 correction: previously attributed to v4.0.536 in SC368 — correct version is v4.0.537.** Use case: when a subtitle provider delivers `.vtt` instead of `.srt`. Same block-level limitation as `parseSrt()` — no word-level timestamps; use for phrase-display only, not word-by-word highlight.
-  - **PR #12565 (OPEN Oct 23, 2026 — watch item):** Adds HTML character-reference decoding to `parseVtt()`. Without it, named (`&amp;`, `&lt;`) and numeric (`&#123;`) HTML entities in VTT cue text are returned as-is. If your subtitle provider delivers VTT files with HTML entities, v4.0.537 will pass them through undecoded. Monitor for merge.
+  - **PR #12565 (OPEN Oct 23, 2026 — CI failing as of SC382 Oct 26):** Adds HTML character-reference decoding to `parseVtt()`. Decodes named (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`, `&lrm;`, `&rlm;`) and decimal/hex numeric references in a single pass. Unknown names and surrogates left unchanged. CI Install step was failing as of Oct 26 — not merged yet. If your subtitle provider delivers VTT files with HTML entities, v4.0.537+ will pass them through undecoded until this merges. Monitor for merge.
   - **PR #12564 (OPEN):** Adds tests for `parseVtt()` — no pipeline impact.
 - `@remotion/effects`: `cylinder()` and `sphere()` projection effects added.
 - `@remotion/renderer`: render server now binds to localhost by default.
@@ -820,7 +828,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.538`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes [SC375 correction: parseVtt NOT in 4.0.536]; 4.0.537 parseVtt added [SC375]; 4.0.538 Studio only [SC375])*
+- `npm install remotion@4.0.539`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes [SC375 correction: parseVtt NOT in 4.0.536]; 4.0.537 parseVtt added [SC375]; 4.0.538 Studio only [SC375]; 4.0.539 no caption API changes [SC382])*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -897,7 +905,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.538 — current as of SC375 Oct 24, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added — SC375 corrects SC368 which wrongly listed 4.0.536]; 4.0.519–527/529–536/4.0.538 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC375 Oct 24 2026)
+### Full API (v4.0.539 — current as of SC382 Oct 26, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added — SC375 corrects SC368 which wrongly listed 4.0.536]; 4.0.519–527/529–536/4.0.538/4.0.539 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC382 Oct 26 2026)
 
 | Export | Purpose |
 |--------|---------|
