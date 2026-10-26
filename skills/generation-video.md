@@ -43,6 +43,9 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$0.546** ($0.1092/sec — SC350 confirmed) |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$0.728** ($0.1456/sec — search-confirmed from AIMLAPI pricing page SC360 Sept 14, 2026; audio canary still needed; old $1.46 was the 2.6× markup era, now 1.3×) |
 | Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | **1080x1920 (9:16)** | **$0.728** ($0.1456/sec — search-confirmed SC360 Sept 14, 2026; audio canary still needed) |
+| **Kling v4 I2V** | `kling-video/v4/image-to-video` | 720p or 1080p (set via `resolution` param; default 1080p) | **⚠️ UNCONFIRMED** (sample $0.06/5s is likely a docs placeholder — unverified) — CANARY REQUIRED. **NO `generate_audio` param — audio always on; strip immediately.** |
+| **Kling v4 T2V** | `kling-video/v4/text-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **⚠️ UNCONFIRMED** — CANARY REQUIRED. No `generate_audio`, no `cfg_scale`, no `camera_control`, no `negative_prompt`. |
+| **Kling v4 Reference-to-Video** | `kling-video/v4/reference-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **⚠️ UNCONFIRMED** — CANARY REQUIRED. Supports up to 7 elements + 10 image_urls. No `generate_audio`. |
 
 **Use Standard for iteration/testing, Pro for final output. O1 Reference-to-Video is the cheapest option for character shots requiring multi-image identity lock — see Kling O1 section below.**
 
@@ -50,7 +53,7 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 
 **⚠️ PRICING OUTDATED — SC350 2026-09-11 SUPERSEDES:** The June 2026 "PRICING RESOLVED" note is WRONG as of September 2026. AIMLAPI Kling v3 Standard is now **$0.1092/sec = $0.546/5s** (confirmed SC350 — 3 independent sources: buildmvpfast.com AIMLAPI price table, AIMLAPI model page, explicit search result "Kling 3.0 Standard Image to Video is priced at $0.1092/sec through aimlapi"). AIMLAPI dropped Kling markup from ~2.6× to ~1.3× of native rates. Standard: $0.084/sec native × 1.3 = $0.109/sec ≈ $0.1092/sec. Pro: $0.1456/sec ($0.728/5s) — search-confirmed from AIMLAPI pricing page (SC360 Sept 14, 2026; AIMLAPI snippet: "$0.1456 per second (variable)"); audio behavior canary still needed for full pipeline confirmation. Market comp: fal.ai v3 Pro = $0.112/sec ($0.56/5s), fal.ai Turbo Pro = $0.14/sec ($0.70/5s) — AIMLAPI Pro lands at $0.1456/sec, confirmed above. The $1.09/5s and $1.46/5s figures in the original routing matrix are outdated and will cause 2× budget overestimation. See credit-efficiency.md for updated budget tables.
 
-**Confirmed AIMLAPI Kling model roster (July 5, 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, **Kling v3 Standard Turbo I2V, Kling v3 Standard Turbo T2V, Kling v3 Turbo Pro I2V, Kling v3 Turbo Pro T2V** (all launched June 17, 2026 — canary required), Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **Also on AIMLAPI (NOT in routing matrix):** Kling v2 Master I2V/T2V and Kling v2.1 Master I2V/T2V (SC258 Aug 15, 2026 — found as dedicated docs.aimlapi.com pages; pricing ~$1.70/5s; more expensive than v3 Pro at $0.728 (SC360 confirmed) and older architecture — do NOT use for Snelverhuizen; v3 Pro is cheaper + higher resolution ceiling). **⚠️ RETIREMENT NOTICE (SC300 Aug 28, 2026):** Kling 1.0, 1.5, 1.6, 2.0 Master, 2.1, and 2.1 Master are confirmed retiring September 15, 2026 on the native Kling API — the v2 Master and v2.1 Master models listed here will be removed from AIMLAPI around the same date. These were already marked do-not-use; no pipeline impact since we use v3 Standard/Pro only. Kling 2.6 Pro is NOT in the retirement list — safe to use. **⚠️ RETIREMENT TOMORROW (as of Sept 14, 2026 — SC360 pass 48; SC353 pass 47 first flagged as 3 days):** Script audit SC339: zero legacy strings found in scripts/ or data/ — no action needed. No action needed for our v3 Standard/Pro pipeline. ⚠️ PRE-REMOVAL CONFIRMED (two-stage): (1) Kling v2 image model removed from ComfyUI partner node Aug 17, 2026 (PR #15676 merged — SC339 GitHub audit); (2) Kling v2 removed from Kling Image Generation (Kling's own native image-gen pipeline) ~Aug 28, 2026 (ComfyUI changelog — SC318). Full Sept 15 video API retirement proceeding on schedule. AIMLAPI-side: v2-master and v1.x docs pages still visible as of Sept 6, 2026 (SC332) — expected to be pulled on or after Sept 15. **NOT on AIMLAPI (confirmed absent Sept 8, 2026 — SC339 pass 45; GitHub api-docs audit Sept 6–8 shows ZERO Kling commits):** Kling O3/Omni (`klingai/video-v3-omni` base string — see dedicated O3 section below for full model strings confirmed in AIMLAPI model database SC279; no new O3 docs page added Aug-Sept 2026; site:docs.aimlapi.com search confirms no O3 page as of Sept 8, 2026), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI; v3 Motion Control is live on WaveSpeedAI, Eachlabs, Replicate, MindStudio — but not AIMLAPI as of Sept 8, 2026 (SC339 pass 45 recheck)), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself lacks a dedicated docs page), **Kling 4.0** (announced Q3 2026 — Flash, Standard, Pro & 4K tiers; **⚠️ SPECS CONFIRMED (SC367 Oct 22, 2026):** 30s max clips (vs 15s for v3), 10 keyframes, 15 references via Omni Reference (vs 3 for v3 Pro), 4K + stereo sound; Flash tier: 720p, 20s max; 10-bit HDR "coming soon"; **LAUNCH STATUS:** Kling 4.0 Flash early access Sept 28, 2026 (limited, Ultra yearly subscribers, web UI only); full model rolling out Oct 2026 on kling.ai web UI; **API STATUS: STILL NOT ON AIMLAPI as of SC367 Oct 22, 2026** — Kling developer platform says "Coming Soon," no model strings published, no AIMLAPI docs page found; monitor for `klingai/video-4-*` model strings; major pipeline upgrade when API arrives: 30s clips + 15 refs vs current 15s + 3 refs). **AIMLAPI Kling audit Sept 6–14, 2026 (SC339/SC346/SC353/SC360 pass 45-48):** Zero Kling-specific commits in AIMLAPI api-docs repo Sept 6-14, 2026 (GitHub commit audit). All Kling model strings, pricing, and parameters confirmed unchanged. Non-Kling additions Sept 11, 2026: sakana/fugu-ultra-v2, sakana/fugu-max, inclusionai/ling-3.0-flash-vl. Sept 13–14: zero new model additions (SC360 Github audit). Hidden Sept 10: deepseek/deepseek-v4.1-flash. Non-Kling additions Sept 9, 2026: openai/gpt-image-2.5-sunburst (Sept 9 — AIMLAPI string `openai/gpt-image-2.5-sunburst`; precision editing, 50% lower latency, same token pricing as GPT Image 2); openai/gpt-image-2.5-flare (Sept 9 — AIMLAPI string `openai/gpt-image-2.5-flare`; fast everyday generation variant); nvidia/nemotron-3.5-content-safety (Sept 9). Hidden Sept 9: nex-agi/nex-n2-pro, nex-agi/nex-n2-mini, kwaipilot/kat-coder-air-v2.5, ibm-granite/granite-4.1-8b, anthropic/claude-opus-4.8-fast. Non-Kling additions Sept 4-8: openai/gpt-6-astra (Sept 4); meta/muse-spark-1.3 (Sept 4). Previously noted: anthropic/claude-fable-5-1 (Sept 1), minimax/h3-max (Aug 31), arcee-ai/virtuoso-large (hidden), allenai/olmo-3-32b-think (hidden), Tencent HY4-Preview (LLM), Google Gemini Omni 1.1 Flash, Wan 3.0 Video. **AIMLAPI Kling audit Oct 20–22, 2026 (SC364/SC367 pass 49):** Kling 4.0 API still NOT on AIMLAPI — web UI (kling.ai) launched Oct 2026 but developer API remains "Coming Soon" on Kling platform; no model strings, no docs page. No new v3 parameter changes. cfg_scale community guidance extended (SC367): 0.7–0.9 for strict stylized adherence, 0.3–0.4 for natural motion — our routing (0.5 character, 0.7 truck/branded) confirmed optimal within this range. All Kling v3 Standard/Pro model strings, pricing, and parameters unchanged. **⚠️ SC374 UPDATE (Oct 24, 2026): Kling 4.0 native API now in early access.** Native model string confirmed: `kling-4.0` (Griptape issue #849, citing Kling capability map). Kling 4.0 Flash: still NO API model string (web UI, Ultra yearly subscribers only). AIMLAPI: still NOT confirmed as of Oct 24, 2026 — no AIMLAPI docs page, no model string. New I2V parameter names for 4.0 that differ from v3 (AIMLAPI wrapper names TBD — CANARY REQUIRED): `first_frame_url` replaces `image_url`; `last_frame_url` replaces `end_image_url`/`tail_image_url`; NEW `keyframe_urls[]` array (up to 8 intermediate keyframes). Duration: 3–30s default 10s (vs 3–15s in v3). Audio: defaults OFF in 4.0 (vs ON in v3) — still ALWAYS pass `generate_audio: false` as safety. Expected AIMLAPI model strings when it lands (pattern-inferred, unconfirmed): `klingai/video-4-0-image-to-video` (720p) / `klingai/video-4-0-pro-image-to-video` (1080p). Pricing: not yet published by Kling or confirmed on AIMLAPI as of Oct 24, 2026.
+**Confirmed AIMLAPI Kling model roster (July 5, 2026):** Kling 2.6 Pro, Kling v3 Standard I2V, Kling v3 Standard T2V, Kling v3 Pro I2V, Kling v3 Pro T2V, **Kling v3 Standard Turbo I2V, Kling v3 Standard Turbo T2V, Kling v3 Turbo Pro I2V, Kling v3 Turbo Pro T2V** (all launched June 17, 2026 — canary required), Kling O1 Reference-to-Video, Kling O1 Video-to-Video Reference, Kling O1 Video-to-Video Edit, Kling 2.6 Pro Motion Control. **Also on AIMLAPI (NOT in routing matrix):** Kling v2 Master I2V/T2V and Kling v2.1 Master I2V/T2V (SC258 Aug 15, 2026 — found as dedicated docs.aimlapi.com pages; pricing ~$1.70/5s; more expensive than v3 Pro at $0.728 (SC360 confirmed) and older architecture — do NOT use for Snelverhuizen; v3 Pro is cheaper + higher resolution ceiling). **⚠️ RETIREMENT NOTICE (SC300 Aug 28, 2026):** Kling 1.0, 1.5, 1.6, 2.0 Master, 2.1, and 2.1 Master are confirmed retiring September 15, 2026 on the native Kling API — the v2 Master and v2.1 Master models listed here will be removed from AIMLAPI around the same date. These were already marked do-not-use; no pipeline impact since we use v3 Standard/Pro only. Kling 2.6 Pro is NOT in the retirement list — safe to use. **⚠️ RETIREMENT TOMORROW (as of Sept 14, 2026 — SC360 pass 48; SC353 pass 47 first flagged as 3 days):** Script audit SC339: zero legacy strings found in scripts/ or data/ — no action needed. No action needed for our v3 Standard/Pro pipeline. ⚠️ PRE-REMOVAL CONFIRMED (two-stage): (1) Kling v2 image model removed from ComfyUI partner node Aug 17, 2026 (PR #15676 merged — SC339 GitHub audit); (2) Kling v2 removed from Kling Image Generation (Kling's own native image-gen pipeline) ~Aug 28, 2026 (ComfyUI changelog — SC318). Full Sept 15 video API retirement proceeding on schedule. AIMLAPI-side: v2-master and v1.x docs pages still visible as of Sept 6, 2026 (SC332) — expected to be pulled on or after Sept 15. **NOT on AIMLAPI (confirmed absent Sept 8, 2026 — SC339 pass 45; GitHub api-docs audit Sept 6–8 shows ZERO Kling commits):** Kling O3/Omni (`klingai/video-v3-omni` base string — see dedicated O3 section below for full model strings confirmed in AIMLAPI model database SC279; no new O3 docs page added Aug-Sept 2026; site:docs.aimlapi.com search confirms no O3 page as of Sept 8, 2026), Kling v3 Motion Control Standard/Pro (only v2.6 confirmed on AIMLAPI; v3 Motion Control is live on WaveSpeedAI, Eachlabs, Replicate, MindStudio — but not AIMLAPI as of Sept 8, 2026 (SC339 pass 45 recheck)), Kling 4K (`klingai/video-o3-4k` — officially announced June 12, 2026; Runware-confirmed; AIMLAPI TBD since O3 itself lacks a dedicated docs page), **Kling 4.0** (announced Q3 2026 — Flash, Standard, Pro & 4K tiers; **⚠️ SPECS CONFIRMED (SC367 Oct 22, 2026):** 30s max clips (vs 15s for v3), 10 keyframes, 15 references via Omni Reference (vs 3 for v3 Pro), 4K + stereo sound; Flash tier: 720p, 20s max; 10-bit HDR "coming soon"; **LAUNCH STATUS:** Kling 4.0 Flash early access Sept 28, 2026 (limited, Ultra yearly subscribers, web UI only); full model rolling out Oct 2026 on kling.ai web UI; **API STATUS: STILL NOT ON AIMLAPI as of SC367 Oct 22, 2026** — Kling developer platform says "Coming Soon," no model strings published, no AIMLAPI docs page found; monitor for `klingai/video-4-*` model strings; major pipeline upgrade when API arrives: 30s clips + 15 refs vs current 15s + 3 refs). **AIMLAPI Kling audit Sept 6–14, 2026 (SC339/SC346/SC353/SC360 pass 45-48):** Zero Kling-specific commits in AIMLAPI api-docs repo Sept 6-14, 2026 (GitHub commit audit). All Kling model strings, pricing, and parameters confirmed unchanged. Non-Kling additions Sept 11, 2026: sakana/fugu-ultra-v2, sakana/fugu-max, inclusionai/ling-3.0-flash-vl. Sept 13–14: zero new model additions (SC360 Github audit). Hidden Sept 10: deepseek/deepseek-v4.1-flash. Non-Kling additions Sept 9, 2026: openai/gpt-image-2.5-sunburst (Sept 9 — AIMLAPI string `openai/gpt-image-2.5-sunburst`; precision editing, 50% lower latency, same token pricing as GPT Image 2); openai/gpt-image-2.5-flare (Sept 9 — AIMLAPI string `openai/gpt-image-2.5-flare`; fast everyday generation variant); nvidia/nemotron-3.5-content-safety (Sept 9). Hidden Sept 9: nex-agi/nex-n2-pro, nex-agi/nex-n2-mini, kwaipilot/kat-coder-air-v2.5, ibm-granite/granite-4.1-8b, anthropic/claude-opus-4.8-fast. Non-Kling additions Sept 4-8: openai/gpt-6-astra (Sept 4); meta/muse-spark-1.3 (Sept 4). Previously noted: anthropic/claude-fable-5-1 (Sept 1), minimax/h3-max (Aug 31), arcee-ai/virtuoso-large (hidden), allenai/olmo-3-32b-think (hidden), Tencent HY4-Preview (LLM), Google Gemini Omni 1.1 Flash, Wan 3.0 Video. **AIMLAPI Kling audit Oct 20–22, 2026 (SC364/SC367 pass 49):** Kling 4.0 API still NOT on AIMLAPI — web UI (kling.ai) launched Oct 2026 but developer API remains "Coming Soon" on Kling platform; no model strings, no docs page. No new v3 parameter changes. cfg_scale community guidance extended (SC367): 0.7–0.9 for strict stylized adherence, 0.3–0.4 for natural motion — our routing (0.5 character, 0.7 truck/branded) confirmed optimal within this range. All Kling v3 Standard/Pro model strings, pricing, and parameters unchanged. **⚠️ SC374 UPDATE (Oct 24, 2026): Kling 4.0 native API now in early access.** Native model string confirmed: `kling-4.0` (Griptape issue #849, citing Kling capability map). Kling 4.0 Flash: still NO API model string (web UI, Ultra yearly subscribers only). AIMLAPI: still NOT confirmed as of Oct 24, 2026 — no AIMLAPI docs page, no model string. New I2V parameter names for 4.0 that differ from v3 (AIMLAPI wrapper names TBD — CANARY REQUIRED): `first_frame_url` replaces `image_url`; `last_frame_url` replaces `end_image_url`/`tail_image_url`; NEW `keyframe_urls[]` array (up to 8 intermediate keyframes). Duration: 3–30s default 10s (vs 3–15s in v3). Audio: defaults OFF in 4.0 (vs ON in v3) — still ALWAYS pass `generate_audio: false` as safety. Expected AIMLAPI model strings when it lands (pattern-inferred, unconfirmed): `klingai/video-4-0-image-to-video` (720p) / `klingai/video-4-0-pro-image-to-video` (1080p). Pricing: not yet published by Kling or confirmed on AIMLAPI as of Oct 24, 2026. **⚠️ SC381 UPDATE (Oct 26, 2026): Kling v4 NOW CONFIRMED ON AIMLAPI** — GitHub api-docs PRs #636–639 merged Oct 23, 2026. Model strings use `kling-video/v4/` prefix (NOT `klingai/video-4-0-` as predicted). See dedicated Kling v4 section below. SC374 prediction of `first_frame_url` replacing `image_url` was WRONG for AIMLAPI wrapper — v4 I2V still uses `image_url`. **CRITICAL: No `generate_audio` parameter in v4 AIMLAPI schema — audio CANNOT be disabled via API; strip immediately post-generation with `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`. Never play v4 output before stripping.**
 
 **fal.ai naming note:** fal.ai renamed v3 endpoints to `o3` on April 10, 2026, then reversed back to `v3` on May 23, 2026. For v3 Pro on fal.ai, use `fal-ai/kling-video/v3/pro/image-to-video`. For O3/Omni on fal.ai, it's a separate model: `fal-ai/kling-video/o3/standard/image-to-video`. **Kling O3 is NOT on AIMLAPI as of September 8, 2026** — confirmed absent from AIMLAPI docs index (SC339 pass 45 recheck; no dedicated O3 page in site:docs.aimlapi.com Kling search results). The June 17, 2026 Turbo launch did NOT include O3/Omni on AIMLAPI — only the Turbo tier (Standard Turbo + Turbo Pro) was added. AIMLAPI's own blog post listing Kling models only mentions Kling 2.6 Pro and Kling v3 Pro. Also note: fal.ai Kling v3 Standard pricing ($0.084/sec) is ~1.3× cheaper than AIMLAPI ($0.1092/sec — SC350 confirmed) — the AIMLAPI-only mandate is a real but reduced cost penalty for Kling Standard tier (was ~2.6× before SC350 pricing correction).
 
@@ -880,6 +883,126 @@ The native Kling O3 API uses a `refs` array (NOT `kling_elements`, `elements`, o
 **O3 June 17, 2026 upgrade:** Kling extended O3's *editing* pipeline (Omni Edit) to support 3–15s video input/output and 4K resolution. This is a V2V editing capability upgrade — the I2V reference-to-video character parameters are unchanged.
 
 **Voice control in v3 T2V (AIMLAPI, confirmed June 2026 — DO NOT USE in our pipeline):** AIMLAPI v3 Standard T2V now supports `voice_list` parameter for character dialogue ($0.154/sec surcharge). Voice references in prompts use `<<<voice_1>>>` triple-angle-bracket syntax (distinct from element `@Element1` syntax). **Our pipeline never uses audio (Shari'ah compliance) — always set `generate_audio: false`. This feature is documented for awareness only.**
+
+## Kling v4 Series — NOW ON AIMLAPI (SC381 Oct 26, 2026)
+
+GitHub api-docs PRs #636–639 merged Oct 23, 2026. Three model strings confirmed with full parameter schemas. **CANARY REQUIRED** before production use — confirm pricing and audio behavior.
+
+### Confirmed Model Strings
+
+| Model | AIMLAPI String | Duration | Resolution |
+|-------|---------------|----------|------------|
+| v4 Image-to-Video | `kling-video/v4/image-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) |
+| v4 Text-to-Video | `kling-video/v4/text-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) |
+| v4 Reference-to-Video | `kling-video/v4/reference-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`); `aspect_ratio: "auto"` follows refs |
+| v4 Video-to-Video Edit | `kling-video/v4/video-to-video/edit` | — | CANARY REQUIRED (PR #636 — schema not fetched) |
+
+### Complete v4 I2V Parameter Schema
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "kling-video/v4/image-to-video",
+    "image_url": "<hero_frame_url>",      # required. max 30MB, ≥300px per side, AR 0.4–2.5
+    "tail_image_url": "<end_frame_url>",  # optional — same limits as image_url
+    "prompt": "<motion description>",     # optional, max 2500 chars; OR use multi_prompt
+    "duration": 5,                        # optional, default 5, range 3–30 (integer)
+    "resolution": "1080p",                # optional, default "1080p"; enum: "720p", "1080p"
+    # NOTE: aspect_ratio follows input frame — no parameter
+    # NOTE: generate_audio NOT in schema — audio always generated; strip immediately
+    # NOTE: cfg_scale NOT in schema — prompt adherence cannot be tuned
+    # NOTE: camera_control NOT in schema — no programmatic camera movement
+    # NOTE: static_mask_url NOT in schema — no pixel-level freeze
+    # NOTE: negative_prompt NOT in schema — embed negatives in prompt text if needed
+    # NOTE: elements NOT in schema — use reference-to-video model for character binding
+}, headers=headers, timeout=30)
+```
+
+**⚠️ SHARI'AH RISK — audio strip is MANDATORY for ALL v4 outputs:**
+```bash
+ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4
+```
+Do NOT play any v4 video before stripping. `generate_audio` parameter does not exist in v4 — there is no API-level way to suppress audio generation.
+
+### Complete v4 T2V Parameter Schema
+
+```python
+{
+    "model": "kling-video/v4/text-to-video",
+    "prompt": "<scene description>",      # optional, max 2500 chars; OR use multi_prompt (mutually exclusive)
+    "multi_prompt": [                     # optional, mutually exclusive with prompt
+        {"prompt": "<shot1>", "duration": 5},  # per-shot prompt max 512 chars; duration default 5
+    ],
+    "duration": 5,                        # default 5, range 3–30; equals sum of multi_prompt durations
+    "resolution": "1080p",                # default "1080p"; enum: "720p", "1080p"
+    "aspect_ratio": "9:16",              # default "16:9"; enum: "16:9", "9:16", "1:1", "21:9"
+}
+```
+
+### Complete v4 Reference-to-Video Parameter Schema
+
+```python
+{
+    "model": "kling-video/v4/reference-to-video",
+    "prompt": "<description referencing @Image1 @Element1>",  # OR multi_prompt (mutually exclusive)
+    "image_url": "<first_frame_url>",     # optional — counts toward 10-image limit
+    "image_urls": [                       # optional, 1–10 images; referenced as @Image1, @Image2…
+        "<url1>", "<url2>"
+    ],
+    "elements": [                         # optional, 1–7 items; referenced as @Element1, @Element2…
+        {
+            "frontal_image_url": "<required_front_face>",
+            "reference_image_urls": ["<angle1>", "<angle2>", "<angle3>"]  # 1–3, required
+        }
+    ],
+    "multi_prompt": [{"prompt": "<shot>", "duration": 5}],  # mutually exclusive with prompt
+    "duration": 5,                        # default 5, range 3–30
+    "resolution": "1080p",                # default "1080p"; enum: "720p", "1080p"
+    "aspect_ratio": "9:16",              # default "16:9"; enum: "auto", "16:9", "9:16", "1:1", "21:9"
+    # "auto" follows reference images' aspect ratio
+}
+```
+
+### v4 vs v3 Pro — Parameter Comparison
+
+| Feature | v3 Pro | v4 |
+|---------|--------|-----|
+| Model tier | Pro/Standard by model string | `resolution` param on single model string |
+| Duration | 3–15s | **3–30s** (double) |
+| `generate_audio` | `false` suppresses | **NOT in schema — always generates audio** |
+| `cfg_scale` | 0.0–1.0 | **Not available** |
+| `negative_prompt` | Supported | **Not in schema** |
+| `camera_control` | Yes | **Not available** |
+| `static_mask_url` | Yes | **Not available** |
+| `face_consistency` | Yes | **Not in I2V schema** |
+| Elements per call | 3 max (I2V) | **7 max (reference-to-video)** |
+| Reference images | 3–4 per element | **10 total image_urls** |
+| T2V aspect_ratio | "16:9", "9:16", "1:1" | Adds **"21:9"** widescreen |
+| I2V aspect_ratio | Specified param | **Follows input frame** |
+
+### v4 Pipeline Assessment
+
+**DO NOT use v4 for truck shots:** `static_mask_url` and `camera_control` are absent — ghost driving prevention is MUCH weaker than v3 Pro.
+
+**DO NOT use v4 for character shots requiring identity lock:** `face_consistency` absent; `cfg_scale` absent for prompt adherence tuning; no `negative_prompt` to block drift.
+
+**v4 reference-to-video IS better for multi-character shots:** 7 elements (vs 3 in v3 I2V) and 10 image_urls. Canary this for complex character scenes.
+
+**v3 Pro remains the production choice for final delivery.** v4 is a research/canary item until pricing, audio behavior, and ghost-driving performance are measured in practice.
+
+### v4 CANARY CHECKLIST
+
+- [ ] Submit one 5s I2V call with `kling-video/v4/image-to-video`, character hero frame, `resolution: "1080p"`, no `generate_audio` param
+- [ ] **Strip audio IMMEDIATELY before playback:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
+- [ ] Record actual cost from `meta.usage.usd_spent` in response — confirm vs sample $0.06 placeholder
+- [ ] Confirm resolution from response or file metadata
+- [ ] Test `negative_prompt` as a field — if accepted silently, add it; if error, embed in prompt text
+- [ ] Confirm `aspect_ratio` follows input frame (no param accepted, or param silently ignored)
+- [ ] Run InsightFace cosine similarity vs v3 Pro baseline on same hero frame + prompt
+- [ ] Run brand binary checklist + ghost-driving QA on a truck hero frame
+- [ ] If cost ≥ v3 Pro AND quality ≤ v3 Pro: do not use; v3 Pro stays primary
+- [ ] If v4 reference-to-video succeeds with 7 elements: evaluate for complex multi-character sequences
+
+---
 
 ## Kling 3.0 4K Variant — Future Watch (Not Yet Confirmed on AIMLAPI)
 
