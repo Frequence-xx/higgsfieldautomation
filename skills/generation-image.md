@@ -22,9 +22,21 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
+## ✅ SC387 2026-10-27 — NB2.1 resolution syntax CONFIRMED uppercase on AIMLAPI; NB2 Oct 29 still WITHDRAWN; GPT Image 2.5 Flare/Sunburst confirmed Sept 8 launch; MAI-Image 2.6 still NOT on AIMLAPI
+
+**✅ NB2.1 resolution syntax on AIMLAPI CONFIRMED uppercase (SC387 2026-10-27).** The AIMLAPI docs page for `google/gemini-nano-banana-2.1` (confirmed from search snippet `docs.aimlapi.com/api-references/image-models/google/nano-banana-2.1`) explicitly documents `resolution` with allowed values `"1K"`, `"2K"`, `"4K"` — **uppercase with K suffix**. Default is `"1K"`. This resolves the primary canary item from SC380 (which flagged "1K" uppercase vs "1k" lowercase as conflicting sources). Atlas Cloud and other third-party guides use lowercase `"2k"` — those are NOT AIMLAPI. Always pass UPPERCASE `"1K"`, `"2K"`, `"4K"` for AIMLAPI calls. Also confirmed: `aspect_ratio` has 5 values on AIMLAPI (default `"16:9"` if omitted — always pass `"9:16"` explicitly). **`thinking_level`: still NOT confirmed on AIMLAPI** (Atlas Cloud exposes it, AIMLAPI docs snippet did not mention it — consistent with SC380 prediction; likely not exposed, same as NB2). Remaining NB2.1 canary items: thinking_level exposure, exact per-image pricing on AIMLAPI.
+
+**✅ NB2 (gemini-3.1-flash-image) Oct 29 shutdown: STILL WITHDRAWN as of SC387 2026-10-27.** Today is October 27 — two days before the originally announced date. LiteLLM PR #45491 (merged Oct 9) explicitly dropped the Oct 29 date after Google's changelog was revised ("no shutdown date announced"). Google deprecations page confirms: NB2 is deprecated, no shutdown date. NB2 remains OPERATIONAL. Do not start new NB2 workflows — migrate to NB2.1 — but no hard deadline applies.
+
+**GPT Image 2.5 Flare & Sunburst — confirmed Sept 8, 2026 launch (SC387 2026-10-27).** OpenAI released both models September 8, 2026 with snapshot IDs `gpt-image-2.5-flare-2026-09-08` and `gpt-image-2.5-sunburst-2026-09-08`. Key difference: **Flare** = 50% lower latency than GPT Image 2 (speed-first), identical token pricing; **Sunburst** = quality/editing-first, identical token pricing. Pricing confirmed same as GPT Image 2 (per-token). APIYI lists both via official relay. **AIMLAPI status: NOT CONFIRMED** — no AIMLAPI pages found in search. Expected model strings (based on Vercel/Zenmux pattern): `openai/gpt-image-2.5-flare` and `openai/gpt-image-2.5-sunburst`. **CANARY REQUIRED** before any AIMLAPI use.
+
+**MAI-Image 2.6 on AIMLAPI: Still NOT confirmed (SC387 2026-10-27).** Available on OpenRouter (`microsoft/mai-image-2.6`) and Microsoft Foundry only. No AIMLAPI product or docs page found. **⚠️ MAI-Image 2.5 possible deprecation on AIMLAPI:** one search result placed `microsoft/mai-image-2.5` under a "Deprecated / No Longer Supported Models" heading in AIMLAPI docs — status unconfirmed (may be a layout quirk). Verify MAI-Image-2.5 is still functional on AIMLAPI before any production call; if deprecated, MAI-Image-2.6 is the replacement (currently OpenRouter/Foundry only).
+
+---
+
 ## ✅ SC380 2026-10-26 — NB2.1 CONFIRMED ON AIMLAPI; NB2 Oct 29 shutdown date WITHDRAWN
 
-**✅ Nano Banana 2.1 CONFIRMED ON AIMLAPI (SC380 2026-10-26).** AIMLAPI product page confirmed at `aimlapi.com/models/google-nano-banana-2-1`. **Correct AIMLAPI model string: `google/gemini-nano-banana-2.1`** (NOT `google/nano-banana-2.1` as listed in SC373 — the `gemini-` prefix is present, matching the NB2 Lite naming pattern). Supports 1K, 2K, 4K output. AIMLAPI token-based pricing: $1.95/M input + $39/M output tokens — per-image estimate ~$0.034 (1K) / ~$0.050 (2K) based on Google token counts; AIMLAPI product page lists $0.104/generation (likely for 2K). **Note: AIMLAPI page incorrectly lists 0.5K — NB2.1 does NOT support 512px; only 1K, 2K, 4K.** **CANARY still required:** (1) exact resolution parameter syntax on AIMLAPI proxy (`"1K"` uppercase vs `"1k"` lowercase — conflicting sources); (2) whether `thinking_level` is exposed on AIMLAPI (NB2's `thinking_level` was NOT exposed — NB2.1 likely same); (3) actual per-image cost at each resolution tier.
+**✅ Nano Banana 2.1 CONFIRMED ON AIMLAPI (SC380 2026-10-26).** AIMLAPI product page confirmed at `aimlapi.com/models/google-nano-banana-2-1`. **Correct AIMLAPI model string: `google/gemini-nano-banana-2.1`** (NOT `google/nano-banana-2.1` as listed in SC373 — the `gemini-` prefix is present, matching the NB2 Lite naming pattern). Supports 1K, 2K, 4K output. AIMLAPI token-based pricing: $1.95/M input + $39/M output tokens — per-image estimate ~$0.034 (1K) / ~$0.050 (2K) based on Google token counts; AIMLAPI product page lists $0.104/generation (likely for 2K). **Note: AIMLAPI page incorrectly lists 0.5K — NB2.1 does NOT support 512px; only 1K, 2K, 4K.** **CANARY items:** (1) ✅ resolution syntax CONFIRMED on AIMLAPI: uppercase `"1K"`, `"2K"`, `"4K"` (AIMLAPI docs page confirmed SC387 2026-10-27 — Atlas Cloud uses lowercase `"2k"` which is NOT AIMLAPI); (2) `thinking_level` on AIMLAPI: NOT confirmed (likely NOT exposed, consistent with NB2 behavior — do not pass); (3) actual per-image cost at each resolution tier: still estimated.
 
 **⚠️ NB2 Oct 29, 2026 shutdown date WITHDRAWN (SC380 2026-10-26).** Google's Gemini API deprecations page and changelog now read: *"The `gemini-3.1-flash-image` model is deprecated (no shutdown date announced). Migrate to `gemini-nano-banana-2.1`."* The October 29 date in SC373 was Google's *earliest possible* date — subsequently withdrawn. Confirmed by Google changelog (Oct 2026) and LiteLLM PR that dropped the withdrawn date. **NB2 (`google/nano-banana-2`) remains operational but is officially deprecated.** The SC373 urgent alarm is resolved — migrate to NB2.1 (`google/gemini-nano-banana-2.1`) now, but no hard deadline.
 
@@ -112,7 +124,7 @@ Google retired both Gemini image preview models on **June 25, 2026**:
 | Imagen 4 Fast (DRAFT) | `google/imagen-4.0-fast-generate-001` | **⚠️ RETIRES 2026-06-24** — cheap prompt iteration, $0.02/img. Migrate to NBP now. | 0 | $0.02 | native |
 | Imagen 4 | `google/imagen-4.0-generate-001` | **⚠️ RETIRES 2026-06-24** — use NBP Pro instead | 0 | ~$0.04 | native |
 | Imagen 4 Ultra | `google/imagen-4.0-ultra-generate-001` | **⚠️ RETIRES 2026-06-24** — migrate to NBP Pro immediately | 0 | ~$0.06 | 2K native |
-| Nano Banana 2.1 Edit | `google/gemini-nano-banana-2.1` (**✅ CONFIRMED ON AIMLAPI SC380 2026-10-26 — CANARY required: resolution param case, thinking_level exposure, exact pricing**) | Draft iterations with refs; improved character consistency (4 chars/10 objs); mandatory thinking tokens; replaces NB2 | 14 | ~$0.034(1K)/~$0.050(2K)+thinking; AIMLAPI $1.95/M in+$39/M out | 1K/2K/4K (0.5K removed) |
+| Nano Banana 2.1 Edit | `google/gemini-nano-banana-2.1` (**✅ CONFIRMED ON AIMLAPI SC380 2026-10-26 — ✅ resolution syntax CONFIRMED uppercase `"1K"`/`"2K"`/`"4K"` (SC387 2026-10-27); CANARY remaining: thinking_level NOT confirmed on AIMLAPI, exact pricing**) | Draft iterations with refs; improved character consistency (4 chars/10 objs); mandatory thinking tokens; replaces NB2 | 14 | ~$0.034(1K)/~$0.050(2K)+thinking; AIMLAPI $1.95/M in+$39/M out | 1K/2K/4K (0.5K removed); `aspect_ratio` default=`"16:9"` — ALWAYS pass `"9:16"` explicitly |
 | ~~Nano Banana 2 Edit~~ | ~~`google/nano-banana-2`~~ (**⚠️ DEPRECATED — no shutdown date announced (SC380 2026-10-26: Oct 29 date withdrawn); still operational but migrate to NB2.1**) | ~~Draft iterations with refs~~ — DEPRECATED, no hard deadline. Migrate to `google/gemini-nano-banana-2.1`. | ~~14~~ | ~~$0.07~~ | ~~768x1344~~ |
 | Nano Banana Pro | `google/nano-banana-pro` | Text-only scenes, B-roll, establishing shots | 0 | ~$0.13 | 768x1344 |
 | Nano Banana Pro Edit | `google/nano-banana-pro-edit` | Brand asset compositing (truck + character + box) — final quality | 14 | ~$0.20 | 768x1344 |
@@ -246,7 +258,7 @@ Use NB2 ($0.067) for cheap iteration drafts; GPT Image 2 `high` only for finals 
 
 ```
 Need ultra-cheap T2I/I2I layout/composition draft (no characters, ≤5 refs, 1K output acceptable)? → NB2 Lite ($0.044 AIMLAPI, `google/gemini-3.1-flash-lite-image`, 1K ONLY, 5-ref max) — confirmed on AIMLAPI; CANARY required for parameter names; fallback: Gemini 2.5 Flash Image ($0.039, retiring Oct 2, 2026)
-Shot has characters, need to iterate prompt? → **NB2.1 Edit first** (`google/nano-banana-2.1`, AIMLAPI canary needed — if not yet on AIMLAPI use Seedream 5.0 Lite $0.031-0.035 as fallback); then NBP Edit for approved final ($0.20). **⚠️ NB2 (`google/nano-banana-2`) retiring Oct 29 — do NOT start new workflows on NB2; NB2.1 0.5K tier is gone, use 1K minimum.**
+Shot has characters, need to iterate prompt? → **NB2.1 Edit first** (`google/nano-banana-2.1`, AIMLAPI confirmed SC380; resolution `"1K"`/`"2K"`/`"4K"` uppercase — see SC387); then NBP Edit for approved final ($0.20). **⚠️ NB2 (`google/nano-banana-2`) DEPRECATED — no shutdown date (Oct 29 date withdrawn SC380/SC387; LiteLLM PR #45491); still operational 2026-10-27 but DO NOT start new workflows on NB2 — use NB2.1. NB2.1 0.5K tier removed, use `"1K"` minimum.**
 Shot has characters (Karel/Mourad), final? → Nano Banana Pro Edit (existing refs as Image 1)
 Shot has characters (new recurring)? → Create ref sheet first, then NBP Edit
 Shot has brand assets but no people? → Nano Banana Pro Edit (truck/box refs) OR FLUX.2 Pro Edit (up to 3 refs on AIMLAPI) OR FLUX.2 Max (up to 8 refs, ~$0.09 — canary first)
@@ -294,6 +306,26 @@ hero_url = resp.json()["data"][0]["url"]
 - **NOT a confirmed API parameter for the image generation endpoint.** `thinking_level` applies to Gemini TEXT models only — the image generation API uses internal reasoning by default that cannot be controlled externally.
 - Remove `thinking_level` from any image generation API calls. Model reasoning is handled server-side.
 - Previous guidance (2026-05-16) was incorrect — it conflated text and image API parameters.
+
+### Nano Banana 2.1 Edit (draft/iteration — AIMLAPI confirmed SC380; resolution syntax confirmed SC387)
+
+Use NB2.1 for every prompt iteration pass. Replaces NB2. Resolution syntax: **UPPERCASE** `"1K"`, `"2K"`, `"4K"`. Default `aspect_ratio` is `"16:9"` — always pass `"9:16"` explicitly.
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v1/images/generations", json={
+    "model": "google/gemini-nano-banana-2.1",
+    "prompt": "Image 1: Mourad character reference sheet. Mourad-SV standing next to the truck cab, three-quarter view. Keep facial features identical to Image 1. Golden hour warm backlight, 85mm portrait, shallow DOF, vertical composition.",
+    "image_urls": [mourad_sheet_url],
+    "aspect_ratio": "9:16",   # MUST pass explicitly — default is "16:9" (confirmed SC387)
+    "resolution": "1K",       # UPPERCASE: "1K", "2K", "4K" (SC387 confirmed); use "1K" for draft
+    "num_images": 1,
+    # NOTE: thinking_level is NOT confirmed on AIMLAPI (unconfirmed SC387 — do not pass)
+    # NOTE: thinking tokens are billed on top of per-image price — watch costs
+}, headers=headers, timeout=120)
+hero_url = resp.json()["data"][0]["url"]
+```
+
+**NB2.1 vs NB2 for iteration:** NB2.1 is the correct replacement for NB2 drafts. At same ~$0.034-0.050/img (plus thinking surcharge), NB2.1 adds: mandatory thinking (cannot disable), improved 4-char/10-obj consistency, better text rendering, mask-based editing. 0.5K draft tier gone — cheapest is now `"1K"`.
 
 ### Nano Banana Pro (text-to-image)
 
