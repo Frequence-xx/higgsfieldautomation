@@ -303,6 +303,35 @@ Install command unchanged: `pip install scenedetect-headless` (no `[opencv]` ext
 
 **Practical pipeline update:** Replace bare `split-video` with `split-video --expand` in the standard scene-detect command to ensure no footage is trimmed at the beginning/end of the clip. This is especially relevant when detecting short sub-ranges within a longer AI-generated clip.
 
+### 3e. NVIDIA Vulkan Optical Flow FRUC (Coming in FFmpeg 9.1 — NOT YET AVAILABLE)
+
+**⚠️ SC386 (2026-10-27) — FFmpeg 9.1 NOT released.** FFmpeg 9.1 is in preparation as of 2026-10-27. The `fruc_vulkan` filter is confirmed merged into FFmpeg main (August 29, 2026) and will ship in 9.1. Do NOT use until 9.1 is released and available on the pipeline machine.
+
+**What it is:** `vf_fruc_vulkan` — hardware-accelerated Frame Rate Up-Conversion using NVIDIA Vulkan Optical Flow (`VK_NV_optical_flow` extension). Alternative to RIFE for frame interpolation.
+
+**Hardware requirement:** NVIDIA RTX 30, RTX 40, or RTX 50 series (Ampere or newer). RTX 20-series is excluded despite having an OFA accelerator. Requires Vulkan-enabled FFmpeg build.
+
+**When to prefer over RIFE:** GPU-accelerated (faster than CPU RIFE), no Python/binary install required (built into FFmpeg). Use when an NVIDIA RTX 30+ GPU is available on the pipeline machine and FFmpeg 9.1 is installed.
+
+**Integer multiples only:** Works reliably only for integer-multiple frame rate conversions (24→48fps, 30→60fps). Non-integer conversions (e.g., 24→30fps) may not work correctly.
+
+**Future usage template (once FFmpeg 9.1 ships):**
+```bash
+# Check availability after upgrading to FFmpeg 9.1+
+ffmpeg -version && ffmpeg -filters 2>/dev/null | grep fruc
+
+# Interpolate 24fps → 48fps using NVIDIA Vulkan Optical Flow
+ffmpeg -i clip_24fps.mp4 \
+  -vf "fruc_vulkan=fps=48" \
+  -c:v libx264 -crf 18 -preset slow \
+  -pix_fmt yuv420p -c:a copy \
+  clip_48fps.mp4
+```
+
+**Quality notes:** NVIDIA Optical Flow is hardware-estimated — quality is similar to RIFE on smooth motion, but may produce fewer artifacts on fast camera pans (hardware optical flow is more stable than learned models on large displacements). Face close-ups: same risk as RIFE — skip interpolation if face warping occurs. Apply scene-change detection (§3d) before running fruc_vulkan.
+
+**Current pipeline action: none.** Continue using rife-ncnn-vulkan CLI (§3b) with `rife-v4.25` model. Add `fruc_vulkan` to the pipeline decision flow when FFmpeg 9.1 is confirmed released and available.
+
 ---
 
 ## 4. Loudness Normalize Before Delivery
@@ -821,6 +850,8 @@ Note on `@remotion/install-whisper-cpp`: Remotion's install package recommends v
 **SC365 update (2026-10-21):** All tools confirmed unchanged. FFmpeg 9.0.1 current (no 9.1 released). SVT-AV1 v4.2.0 (no v4.3). rife-ncnn-vulkan CLI v20250112 (no new binary). PySceneDetect v0.7.1 stable (no v0.7.2). Practical-RIFE v4.26 / v4.25 pipeline default (no v4.27). Remotion: minor patch releases beyond v4.0.524 (found 4.0.534 on third-party mirror, no confirmed post-production or caption pipeline changes). **FFmpeg 9.0 version reference corrected throughout skill** (was "8.x"; now "9.x / 9.0.1"). `--tune-vmaf` flag in SVT-AV1 4.2.0: confirmed NOT exposed via libsvtav1 FFmpeg plugin as of v4.2.0 — standalone SvtAv1EncApp only; pipeline unaffected. Remotion 4.1 NOT released (still 4.0.x). **⚠️ SC365 CORRECTION (found SC372 2026-10-23):** FFmpeg 9.0.2 released Sept 19, 2026 was missed by SC365 — see SC372 below.
 
 **SC372 update (2026-10-23):** Post-production topic (pass 48). **One substantive finding: FFmpeg 9.0.2 released 2026-09-19 — missed by SC365 (2026-10-21).** Security/bugfix release: H.264 decoder validity checks + out-of-bounds read fix; VP8, VP9, Vulkan HEVC, VVC, CFHD decoder fixes; MOV demuxer security patches. No pipeline command changes required — all FFmpeg filters (drawtext, lut3d, haldclut, eq, zscale, loudnorm, libvmaf, h264_metadata BSF, whisper) confirmed unchanged. **Version references updated throughout skill** from 9.0.1 → 9.0.2. **Upgrade recommendation:** Run `ffmpeg -version` on pipeline machines; upgrade to 9.0.2 for security fixes — no pipeline script changes needed. **All other tools confirmed unchanged (2026-10-23):** SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no new binary), PySceneDetect v0.7.1 (no v0.7.2), Practical-RIFE v4.26 (no v4.27, v4.25 pipeline default for diffusion video), FFmpeg 9.1 NOT released.
+
+**SC386 update (2026-10-27):** Post-production topic (pass 50). **One substantive finding: FFmpeg 9.1 `fruc_vulkan` filter.** FFmpeg 9.1 is in preparation and will include `vf_fruc_vulkan` — NVIDIA Vulkan Optical Flow FRUC (Frame Rate Up-Conversion), merged into FFmpeg main on 2026-08-29 (Phoronix confirmed 9.1 prep underway). Hardware: RTX 30/40/50 series only (VK_NV_optical_flow), RTX 20 excluded. Integer multiples only (24→48, 30→60fps). **FFmpeg 9.1 NOT yet released as of 2026-10-27** — current stable remains 9.0.2. New §3e added documenting fruc_vulkan as a future frame interpolation option. **All other tools confirmed unchanged:** SVT-AV1 v4.2.0 (no v4.3), rife-ncnn-vulkan CLI v20250112 (no 2026 binary), PySceneDetect v0.7.1 (no v0.7.2), Practical-RIFE v4.26 / v4.25 pipeline default (no v4.27). Remotion: last confirmed v4.0.539 (SC382, 2026-10-26).
 
 **SC379 update (2026-10-25):** Post-production topic (pass 49). **All tools confirmed unchanged** — no new releases since SC372 (2026-10-23). FFmpeg 9.0.2 current (no 9.1 — confirmed via search). SVT-AV1 v4.2.0 current (no v4.3 found). rife-ncnn-vulkan CLI v20250112 current (no new TNTwise binary). PySceneDetect v0.7.1 current (no v0.7.2). Practical-RIFE v4.26 / v4.25 pipeline default (no v4.27). whisper.cpp v1.9.5 current (no v1.9.6 — confirmed by SC376 halal audio study). Remotion: now at **v4.0.538+** (SC375 caption study 2026-10-24 confirmed v4.0.537 shipped parseVtt() and v4.0.538 was Studio-only — no post-production relevant changes in either). Remotion 5.0 NOT released (migration docs live but status = "not yet released"). **Version table updated:** Remotion entry corrected from v4.0.524 → v4.0.538+.
 
