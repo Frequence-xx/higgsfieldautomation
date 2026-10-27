@@ -878,9 +878,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Wan 2.7 R2V — Character Shots at Lower Cost (Coming Soon on AIMLAPI — NOT YET LIVE as of 2026-07-17)
+## Wan 2.7 R2V — Character Shots at Lower Cost (Coming Soon on AIMLAPI — NOT YET LIVE as of 2026-10-27)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. However, no dedicated R2V docs page at `docs.aimlapi.com` has been confirmed yet (only the I2V page exists). Status upgrade: "Coming Soon" → "likely live — must canary-test before production adoption." AIMLAPI AIMLAPI has not published the R2V parameter schema yet; use Segmind/Replicate docs as reference for expected params. (previously NOT on AIMLAPI as of 2026-07-06, pass 27)
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. However, no dedicated R2V docs page at `docs.aimlapi.com` has been confirmed yet (only the I2V page exists). Status reconfirmed: "likely live — must canary-test before production adoption." AIMLAPI has not published the R2V parameter schema yet; use Segmind/Replicate docs as reference for expected params. (previously NOT on AIMLAPI as of 2026-07-06, pass 27; AIMLAPI status still unconfirmed as of SC384 2026-10-27)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
@@ -931,7 +931,12 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 }, headers=headers, timeout=120)
 ```
 
-**Prompt binding syntax (Wan 2.7):** "image1" / "Image1", "image2" / "Image2", "video1" (no @ prefix). Each identifier maps to its position in the reference array. Official Segmind examples use capital "Image1" — treat binding as case-insensitive but prefer capitalized form ("Image1 walks toward the truck") to match published examples. "Image1 and Image2 carry boxes together" for 2 characters.
+**Prompt binding syntax (Wan 2.7) — PROVIDER CONFLICT (SC384, 2026-10-27):** Two conflicting syntaxes exist across platforms:
+- **Official Alibaba/Segmind**: "Image1", "Image2", "Video1" (capitalized, positional). Segmind sample prompt: "Image1 walks through a garden." Slots run Image1–Image5, Video1–Video5.
+- **ComfyUI/Novita wrappers**: "character1", "character2" (same as Wan 2.6 binding). Novita sample: "character1 walks in from the left."
+- **AIMLAPI canary rule (SC384)**: APIYI (a similar AIMLAPI-style wrapper) notes "Wan 2.7 uses the same request structure as Wan 2.6." If AIMLAPI follows the same wrapper pattern as Wan 2.6, it will likely use "character1" binding. **Test both "Image1" and "character1" on first AIMLAPI canary run** — start with "character1" (lower risk given AIMLAPI's Wan 2.6 precedent), fall back to "Image1" if rejected.
+
+**Aspect ratio warning (SC384, 2026-10-27):** Novita documents that "the output video's aspect ratio follows the input reference media." Practical implication: if your character reference images are 1:1, output may be 1:1 regardless of `aspect_ratio` param. **Use 9:16 cropped reference images when targeting 9:16 output on Wan 2.7 R2V.** Confirm `aspect_ratio` param behavior on first AIMLAPI canary run.
 
 **Wan 2.7 R2V improvements over 2.6:**
 - Supports STATIC IMAGE references (not video-only like 2.6) — "image1" binding directly from character photo
