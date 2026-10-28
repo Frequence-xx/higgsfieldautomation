@@ -904,11 +904,11 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
     "model": "kling-video/v4/image-to-video",
     "image_url": "<hero_frame_url>",      # required. max 30MB, ≥300px per side, AR 0.4–2.5
     "tail_image_url": "<end_frame_url>",  # optional — same limits as image_url
-    "prompt": "<motion description>",     # optional, max 2500 chars; OR use multi_prompt
+    "prompt": "<motion description>",     # optional, max 2500 chars per AIMLAPI schema; Kling's official Oct 14 2026 guide cites 8,000 tokens — CANARY to confirm actual AIMLAPI limit. Add "no background music, no subtitles" to suppress default audio/text. Use 7-slot formula (see below).
     "duration": 5,                        # optional, default 5, range 3–30 (integer)
     "resolution": "1080p",                # optional, default "1080p"; enum: "720p", "1080p"
     # NOTE: aspect_ratio follows input frame — no parameter
-    # NOTE: generate_audio NOT in schema — audio always generated; strip immediately
+    # NOTE: generate_audio NOT in schema — audio always generated; strip immediately. Use "no background music, no subtitles" in prompt as secondary mitigation.
     # NOTE: cfg_scale NOT in schema — prompt adherence cannot be tuned
     # NOTE: camera_control NOT in schema — no programmatic camera movement
     # NOTE: static_mask_url NOT in schema — no pixel-level freeze
@@ -921,7 +921,12 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 ```bash
 ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4
 ```
-Do NOT play any v4 video before stripping. `generate_audio` parameter does not exist in v4 — there is no API-level way to suppress audio generation.
+Do NOT play any v4 video before stripping. `generate_audio` parameter does not exist in v4 — there is no API-level way to fully suppress audio generation.
+
+**v4 Audio control via prompt text (Kling's official guide, Oct 14, 2026 — confirmed by Krea):**
+Since `generate_audio` is absent, add these two phrases to EVERY v4 prompt as secondary mitigation:
+- `"no background music, no subtitles"`
+Kling 4.0 generates stereo audio (background music + SFX) and text overlays by default. These are the only two phrases Kling's guide identifies as reliably suppressing them. The ffmpeg strip remains MANDATORY regardless — prompt mitigation reduces the generation effort but does not guarantee silence.
 
 ### Complete v4 T2V Parameter Schema
 
@@ -978,6 +983,24 @@ Do NOT play any v4 video before stripping. `generate_audio` parameter does not e
 | Reference images | 3–4 per element | **10 total image_urls** |
 | T2V aspect_ratio | "16:9", "9:16", "1:1" | Adds **"21:9"** widescreen |
 | I2V aspect_ratio | Specified param | **Follows input frame** |
+
+### v4 Prompt Formula (Kling's Official Guide, Oct 14, 2026)
+
+Kling's official v4 guide defines a 7-slot structure (source: kling.ai/quickstart/kling-4-model-user-guide, dated Oct 14, 2026 per Krea). Use as a pre-write checklist:
+
+| Slot | Component | What to specify |
+|------|-----------|----------------|
+| 1 | **Subject** | Who/what is central |
+| 2 | **Action** | What they are doing |
+| 3 | **Setting** | Environment and location |
+| 4 | **Camera** | Camera movement and angle |
+| 5 | **Lighting** | Light quality and changes |
+| 6 | **Pacing** | Speed and rhythm of the clip |
+| 7 | **Sound** | `"no background music, no subtitles"` for Snelverhuizen (Shari'ah) |
+
+**Keyframes (v4-specific):** Up to 10 keyframes per generation, each marking a key visual moment. Prompt covers transitions, camera movement, pacing, dialogue, and sound between keyframes. Keyframe count and `multi_prompt` are separate features — keyframes are image inputs, `multi_prompt` defines shot timing in text. Combined reference limit (image_urls + elements): **15 items**.
+
+**Availability (Oct 2026):** Kling 4.0 is now open to all kling.ai users (source: letsdatascience.com). API on AIMLAPI: CANARY REQUIRED before production use.
 
 ### v4 Pipeline Assessment
 
