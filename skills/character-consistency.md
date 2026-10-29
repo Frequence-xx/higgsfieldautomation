@@ -316,14 +316,21 @@ When InsightFace QA or the Evaluator returns RETRY-WITH-NOTES, classify the fail
 
 ### FaceFusion Fallback (identity score < 0.50)
 
-FaceFusion **v3.9.1** is the current stable release (September 30, 2026; SC363 finding, 2026-10-20). Previously v3.9.0 (September 3, 2026).
+FaceFusion **v3.9.2** is the current stable release (October 26, 2026; SC391 finding, 2026-10-29). Previously v3.9.1 (September 30, 2026).
+
+**3.9.2 changes (SC391 finding, 2026-10-29):**
+- **NVIDIA driver fatal error fix** — fixes a fatal crash caused by a recent NVIDIA driver update. **Production-critical on GPU machines:** any FaceFusion v3.9.1 or earlier running against newly updated NVIDIA drivers may crash fatally. Upgrade immediately.
+- **FFmpeg exits when a job is stopped** — prevents orphaned FFmpeg processes when FaceFusion jobs are cancelled mid-run; reduces resource leaks in batch QA sessions.
+- **More reliable download handling** — better detection of failed or partial downloads during model weight fetching; reduces silent failures on first-run setup.
+- **Updated ONNX Runtime** — bumped to the latest ONNX Runtime release (follows the v3.9.1 bump; keeps dependency current).
+- No breaking changes; drop-in upgrade from 3.9.1.
+- **Upgrade immediately:** `git checkout 3.9.2` in the facefusion directory.
 
 **3.9.1 changes (SC363 finding, 2026-10-20):**
 - **Updated ONNX Runtime dependency** — bumped to the latest ONNX Runtime release for improved memory performance.
 - **ONNX Runtime arena workaround scoped** — a previous workaround for a memory arena bug is now applied only to the affected ONNX Runtime versions; no-op on updated installs, reducing overhead on clean environments.
 - **CoreML content analyser fix** — fixed a performance regression in the content analyser step when using CoreML (Apple Silicon). Not relevant to our CPU-only pipeline but eliminates a slow gate pass.
 - No breaking changes; drop-in upgrade from 3.9.0.
-- **Upgrade immediately:** `git checkout 3.9.1` in the facefusion directory.
 
 **3.9.0 changes (SC328 finding, 2026-09-05):**
 - **New face swapper model: `alphaface_256`** — additional option alongside existing `inswapper_128_fp16` and `hyperswap_1a_256`. Not yet evaluated for olive/brown-skin fidelity. Continue using `inswapper_128_fp16` until calibrated.
@@ -369,8 +376,8 @@ FaceFusion v3.6.0+ uses a **job-based architecture** — `run` is replaced by `h
 ```bash
 conda create -n facefusion python=3.12 -y && conda activate facefusion
 git clone https://github.com/facefusion/facefusion && cd facefusion
-# IMPORTANT: use v3.9.1+ — earlier versions break with FFmpeg 9 (see FFmpeg 9 warning above)
-git checkout 3.9.1
+# IMPORTANT: use v3.9.2+ — 3.9.2 fixes NVIDIA driver fatal crash (Oct 26 2026); earlier versions break with FFmpeg 9
+git checkout 3.9.2
 # v3.7.0+: --onnxruntime is now positional (no flag name needed)
 python install.py cpu  # or: python install.py cuda  (positional, not --onnxruntime cuda)
 
@@ -878,9 +885,9 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
-## Wan 2.7 R2V — Character Shots at Lower Cost (Coming Soon on AIMLAPI — NOT YET LIVE as of 2026-10-27)
+## Wan 2.7 R2V — Character Shots at Lower Cost (CONFIRMED LIVE on AIMLAPI as of 2026-10-29)
 
-`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. However, no dedicated R2V docs page at `docs.aimlapi.com` has been confirmed yet (only the I2V page exists). Status reconfirmed: "likely live — must canary-test before production adoption." AIMLAPI has not published the R2V parameter schema yet; use Segmind/Replicate docs as reference for expected params. (previously NOT on AIMLAPI as of 2026-07-06, pass 27; AIMLAPI status still unconfirmed as of SC384 2026-10-27)
+`alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. **SC391 finding (2026-10-29): CONFIRMED LIVE.** AIMLAPI now has a dedicated Wan 2.7 R2V page at `aimlapi.com/models/alibaba-wan2-7-r2v`. Model string expected: `alibaba/wan2.7-r2v` (based on URL slug — confirm on canary; current skill uses `alibaba/wan-2-7-r2v`). AIMLAPI pricing confirmed at **$0.13/sec at 720P → $0.65/5s** (from AIMLAPI models page, SC391). R2V parameter schema still unconfirmed on AIMLAPI directly (aimlapi.com blocked in cloud sessions); use canary test to confirm binding syntax and param names. (previously: AIMLAPI status unconfirmed as of SC384 2026-10-27)
 
 **Why it matters:** Official Wan 2.7 credit structure: **$0.125/sec → $0.625/5s at 720P**; $0.1875/sec → $0.9375/5s at 1080P. This is ~**2.3× cheaper** than Kling O1 at $1.46/5s at 720P (not 3× — earlier estimate of $0.50/5s was too low). Pricing above reflects Segmind/official Wan 2.7 rates; AIMLAPI pricing when R2V lands may differ. Use 720P for drafts, 1080P only for finals.
 
@@ -914,7 +921,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 **Key parameters (Together AI/fal.ai format; AIMLAPI format expected similar):**
 ```python
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "alibaba/wan-2-7-r2v",   # Coming Soon on AIMLAPI as of 2026-07-17 — NOT live yet
+    "model": "alibaba/wan-2-7-r2v",   # CONFIRMED LIVE on AIMLAPI (SC391, 2026-10-29) — URL slug suggests "wan2.7-r2v" — test both on canary
     "prompt": "Image1 carries a box confidently toward the moving truck, golden hour, no ghost driving",
     "reference_images": [              # confirmed param name for AIMLAPI-compatible wrappers (pass 31)
         "https://cdn.example.com/crew_lead/front.png",
