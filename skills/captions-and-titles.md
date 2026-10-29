@@ -709,7 +709,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.539 (October 26, 2026 — current latest as of SC382):**
+**Remotion v4.0.539 (October 26, 2026 — current latest as of SC389 Oct 29, 2026; no v4.0.540+ found):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
 - `remotion`: Fixed `spring()` overshoot clamping with custom ranges — affects caption entrance animations that use a non-0-to-1 output range; standard word-scale (1.0→1.05) is unaffected.
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
@@ -828,7 +828,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.539`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes [SC375 correction: parseVtt NOT in 4.0.536]; 4.0.537 parseVtt added [SC375]; 4.0.538 Studio only [SC375]; 4.0.539 no caption API changes [SC382])*
+- `npm install remotion@4.0.539`. *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes [SC375 correction: parseVtt NOT in 4.0.536]; 4.0.537 parseVtt added [SC375]; 4.0.538 Studio only [SC375]; 4.0.539 no caption API changes [SC382]. SC389 Oct 29 2026: no v4.0.540+ found; parseVtt behavioral docs added; v5.0 pre-release watch section added)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -905,7 +905,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.539 — current as of SC382 Oct 26, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added — SC375 corrects SC368 which wrongly listed 4.0.536]; 4.0.519–527/529–536/4.0.538/4.0.539 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC382 Oct 26 2026)
+### Full API (v4.0.539 — current as of SC389 Oct 29, 2026; caption API changes: 4.0.514 [silenceGapMs], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added — SC375 corrects SC368 which wrongly listed 4.0.536]; 4.0.519–527/529–536/4.0.538/4.0.539 no caption API changes; 4.0.521 install-whisper-cpp Windows path fix; SC382 Oct 26 2026 — SC389 Oct 29 2026: parseVtt behavioral docs added, v5.0 watch section added, no new releases)
 
 | Export | Purpose |
 |--------|---------|
@@ -924,6 +924,38 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `CreateTikTokStyleCaptionsInput`, `CreateTikTokStyleCaptionsOutput` | Direct named type exports for `createTikTokStyleCaptions()` |
 
 `parseVtt()` was added in v4.0.537 (PR #12318, merged Oct 19, 2026, released v4.0.537 Oct ~22, 2026 — SC375 correction, was wrongly listed as v4.0.536 in SC368) — parses WebVTT (`.vtt`) into `Caption[]`, same shape as `parseSrt()`. Block-level only, no word timestamps. ⚠️ PR #12565 (OPEN Oct 23, 2026): HTML character-reference decoding — `&amp;`/`&#123;` entities not yet decoded in v4.0.537; monitor for merge. No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
+
+**`parseVtt()` behavioral details (confirmed from official remotion.dev docs, SC389 Oct 29, 2026):**
+- WEBVTT header is optional and ignored; any text trailing the header line is dropped
+- Optional cue identifier on its own line above a cue is supported
+- Accepts shorter `MM:SS.mmm` timestamp format (no hours required)
+- **Comma accepted as millisecond separator** — `00:00:02,150` parses correctly (same as SRT convention)
+- Cue settings placed after timestamps (alignment, position, size, etc.) are discarded silently
+- Multi-line cue text is joined with newlines into the single `text` field
+- NOTE, STYLE, and REGION blocks are skipped entirely
+
+### Remotion v5.0 Watch Items (Pre-release as of SC389 Oct 29, 2026)
+
+**Remotion v5.0 has NOT shipped yet** (PR #3750 "Prepare Remotion 5.0" is still open as of Oct 29, 2026). The v5.0 migration guide at remotion.dev/docs/5-0-migration is live but incomplete ("incomplete list of breaking changes"). Current latest is v4.0.539. Monitor npm for `remotion@5.0.0`.
+
+**Breaking changes confirmed for our caption pipeline when v5.0 ships:**
+
+1. **`<Sequence>` now premounts by 1 second by default.** Caption `<Sequence>` components will prerender 1 second before their `from` frame. This is usually harmless for captions, but if it causes performance issues, opt out: `premountFor={0}` on each `<Sequence>`. (Official behavior: `premountFor` defaults to 30 frames at 30fps = 1 second.)
+
+2. **`--disable-headless` / `headless: false` removed.** Chrome Headless Shell is now always used. **Our pipeline uses `npx remotion render` (server-side, no headless flag) — unaffected.** Only relevant if running Remotion on a display server or passing `headless: false` explicitly.
+
+3. **`bt709` is now the default color space.** Was previously undefined/unset. For most caption-only compositions (no graded footage), no impact. If compositing over color-graded clips, verify output color matches expected.
+
+4. **`overwrite: true` is now the default in `renderMediaOnLambda()`.** Only affects Lambda users — we use local `npx remotion render`. Not relevant unless migrating to Lambda.
+
+5. **License changes (effective when v5.0 ships):**
+   - **Contractors count toward team size** for the company license threshold (was employees only). A 3-person team + 1 freelancer = 4 people → Company License required.
+   - **Automators tier: `licenseKey` becomes mandatory for telemetry.** Our pipeline is automated rendering → Automators tier. After v5.0 ships, will need to add a `licenseKey` to renders or switch to Creator (manual) tier. **Action: verify Farouq's Remotion license tier before v5.0 upgrade.**
+   - Free tier: still covers ≤3 employees for commercial use.
+
+**No `@remotion/captions` API breaking changes in v5.0 have been announced.** The caption API (`createTikTokStyleCaptions`, `parseSrt`, `parseVtt`, etc.) is unchanged. `@remotion/install-whisper-cpp` also unaffected.
+
+---
 
 ### CRITICAL: parseSrt() does NOT give word-level timestamps
 
