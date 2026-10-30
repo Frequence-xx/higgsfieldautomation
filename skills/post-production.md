@@ -303,9 +303,19 @@ Install command unchanged: `pip install scenedetect-headless` (no `[opencv]` ext
 
 **Practical pipeline update:** Replace bare `split-video` with `split-video --expand` in the standard scene-detect command to ensure no footage is trimmed at the beginning/end of the clip. This is especially relevant when detecting short sub-ranges within a longer AI-generated clip.
 
+**PySceneDetect v0.7.2 RELEASED (~2026-10-12, SC393 2026-10-30).** Key changes vs v0.7.1:
+
+- **Detector defaults changed (histogram + hash only — content detector UNCHANGED):** HistogramDetector default threshold 0.05→0.20, bins 256→128; HashDetector default threshold 0.395→0.35, size 16→8. If you use `detect-hist` or `detect-hash` and rely on old defaults, set parameters explicitly. Our `detect-content --threshold 27` pipeline command is **unaffected** — no change required.
+- **Fade handling improvement:** `detect-threshold` now ignores fade-outs shorter than 0.1s by default. Reduces false-positive cuts on AI clips that fade between frames.
+- **New `save-keyframes` command:** Exports detected cuts as an Aegisub-compatible keyframe file. Not needed for our FFmpeg-based pipeline, but useful if editing in Aegisub.
+- **`scenedetect-core` package discontinued:** The `scenedetect-core` package introduced in v0.7.1 was immediately yanked from PyPI. Use only `scenedetect-headless` (unchanged install command).
+- **Windows distribution updated:** Now bundles PyAV 19 and FFmpeg 9.0 (was PyAV 18 + FFmpeg 8.1.2 in v0.7.1). Server/headless pipeline unaffected.
+
+**Pipeline action:** `pip install --upgrade scenedetect-headless` to get v0.7.2. Our detect-content command is unchanged; no threshold adjustments needed.
+
 ### 3e. NVIDIA Vulkan Optical Flow FRUC (Coming in FFmpeg 9.1 — NOT YET AVAILABLE)
 
-**⚠️ SC386 (2026-10-27) — FFmpeg 9.1 NOT released.** FFmpeg 9.1 is in preparation as of 2026-10-27. The `fruc_vulkan` filter is confirmed merged into FFmpeg main (August 29, 2026) and will ship in 9.1. Do NOT use until 9.1 is released and available on the pipeline machine.
+**⚠️ SC393 (2026-10-30) — FFmpeg 9.1 NOT released.** FFmpeg 9.1 release branch exists as of 2026-10-23 (Phoronix: "FFmpeg 9.1 Preps For Release"). Final tagged release not yet confirmed. The `fruc_vulkan` filter is confirmed as a listed 9.1 feature (NVIDIA Optical Flow FRUC). Do NOT use until 9.1 is officially released and available on the pipeline machine.
 
 **What it is:** `vf_fruc_vulkan` — hardware-accelerated Frame Rate Up-Conversion using NVIDIA Vulkan Optical Flow (`VK_NV_optical_flow` extension). Alternative to RIFE for frame interpolation.
 
