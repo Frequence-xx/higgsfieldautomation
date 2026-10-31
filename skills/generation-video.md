@@ -43,9 +43,10 @@ Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720x1280 (9:16) | **$0.546** ($0.1092/sec — SC350 confirmed) |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | **1080x1920 (9:16)** | **$0.728** ($0.1456/sec — search-confirmed from AIMLAPI pricing page SC360 Sept 14, 2026; audio canary still needed; old $1.46 was the 2.6× markup era, now 1.3×) |
 | Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | **1080x1920 (9:16)** | **$0.728** ($0.1456/sec — search-confirmed SC360 Sept 14, 2026; audio canary still needed) |
-| **Kling v4 I2V** | `kling-video/v4/image-to-video` | 720p or 1080p (set via `resolution` param; default 1080p) | **⚠️ UNCONFIRMED** (sample $0.06/5s is likely a docs placeholder — unverified) — CANARY REQUIRED. **NO `generate_audio` param — audio always on; strip immediately.** |
-| **Kling v4 T2V** | `kling-video/v4/text-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **⚠️ UNCONFIRMED** — CANARY REQUIRED. No `generate_audio`, no `cfg_scale`, no `camera_control`, no `negative_prompt`. |
-| **Kling v4 Reference-to-Video** | `kling-video/v4/reference-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **⚠️ UNCONFIRMED** — CANARY REQUIRED. Supports up to 7 elements + 10 image_urls. No `generate_audio`. |
+| **Kling v4 I2V** | `kling-video/v4/image-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **720p: $0.785/5s ($0.157/sec) · 1080p: $1.175/5s ($0.235/sec)** — AIMLAPI pricing confirmed SC395 Oct 31 2026 from AIMLAPI model page (release Oct 15, 2026). **More expensive than v3 Pro ($0.728) — use v3 Pro for production.** NO `generate_audio`, no `cfg_scale`, no `camera_control`, no `negative_prompt`. Audio always on; strip immediately. CANARY REQUIRED for full parameter confirmation. |
+| **Kling v4 T2V** | `kling-video/v4/text-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **720p: $0.785/5s ($0.157/sec) · 1080p: $1.175/5s ($0.235/sec)** — same rates as I2V (AIMLAPI model page SC395). No `generate_audio`, no `cfg_scale`, no `camera_control`, no `negative_prompt`. CANARY REQUIRED. |
+| **Kling v4 Reference-to-Video** | `kling-video/v4/reference-to-video` | 720p or 1080p (`resolution` param; default 1080p) | **720p: $0.785/5s · 1080p: $1.175/5s** (SC395). Supports **up to 10 reference images + 7 elements** (AIMLAPI model page — significant upgrade from v3 Pro's 3 elements). No `generate_audio`. CANARY REQUIRED. |
+| **Kling v4 Video Edit** | `kling-video/v4/video-to-video/edit` | 720p or 1080p | **720p: $0.188/sec · 1080p: $0.282/sec** — CONFIRMED on AIMLAPI (SC395 Oct 31 2026, AIMLAPI model page). Takes source clip + text instruction, returns edited video of same length. NOT previously in skill file. CANARY REQUIRED. |
 
 **Use Standard for iteration/testing, Pro for final output. O1 Reference-to-Video is the cheapest option for character shots requiring multi-image identity lock — see Kling O1 section below.**
 
@@ -886,16 +887,23 @@ The native Kling O3 API uses a `refs` array (NOT `kling_elements`, `elements`, o
 
 ## Kling v4 Series — NOW ON AIMLAPI (SC381 Oct 26, 2026)
 
-GitHub api-docs PRs #636–639 merged Oct 23, 2026. Three model strings confirmed with full parameter schemas. **CANARY REQUIRED** before production use — confirm pricing and audio behavior.
+GitHub api-docs PRs #636–639 merged Oct 23, 2026. Three model strings confirmed with full parameter schemas. **CANARY REQUIRED** before production use — confirm audio behavior.
+
+**⚠️ v4 is MORE EXPENSIVE than v3 Pro (SC395 Oct 31 2026 — AIMLAPI model pages confirmed):**
+- v4 720p: $0.157/sec = **$0.785/5s** (vs v3 Pro $0.728/5s — 7.8% more expensive)
+- v4 1080p: $0.235/sec = **$1.175/5s** (vs v3 Pro $0.728/5s — 61% more expensive)
+- v4 Video Edit: $0.188/sec (720p) · $0.282/sec (1080p) — editing-mode surcharge
+
+**v3 Pro ($0.728/5s) remains cheaper AND has more ghost-driving controls. Use v4 only for specific advantages (30s clips, 7-element binding) after canary.**
 
 ### Confirmed Model Strings
 
-| Model | AIMLAPI String | Duration | Resolution |
-|-------|---------------|----------|------------|
-| v4 Image-to-Video | `kling-video/v4/image-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) |
-| v4 Text-to-Video | `kling-video/v4/text-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) |
-| v4 Reference-to-Video | `kling-video/v4/reference-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`); `aspect_ratio: "auto"` follows refs |
-| v4 Video-to-Video Edit | `kling-video/v4/video-to-video/edit` | — | CANARY REQUIRED (PR #636 — schema not fetched) |
+| Model | AIMLAPI String | Duration | Resolution | Cost/5s |
+|-------|---------------|----------|------------|---------|
+| v4 Image-to-Video | `kling-video/v4/image-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) | **720p $0.785 · 1080p $1.175** (SC395) |
+| v4 Text-to-Video | `kling-video/v4/text-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`) | **720p $0.785 · 1080p $1.175** (SC395) |
+| v4 Reference-to-Video | `kling-video/v4/reference-to-video` | 3–30s | `resolution` param: `720p`/`1080p` (default `1080p`); `aspect_ratio: "auto"` follows refs | **720p $0.785 · 1080p $1.175** (SC395) |
+| v4 Video-to-Video Edit | `kling-video/v4/video-to-video/edit` | same as input | 720p or 1080p | **720p $0.188/sec · 1080p $0.282/sec** (SC395 — AIMLAPI model page; schema not yet fetched) |
 
 ### Complete v4 I2V Parameter Schema
 
@@ -1010,19 +1018,19 @@ Kling's official v4 guide defines a 7-slot structure (source: kling.ai/quickstar
 
 **v4 reference-to-video IS better for multi-character shots:** 7 elements (vs 3 in v3 I2V) and 10 image_urls. Canary this for complex character scenes.
 
-**v3 Pro remains the production choice for final delivery.** v4 is a research/canary item until pricing, audio behavior, and ghost-driving performance are measured in practice.
+**v3 Pro remains the production choice for final delivery.** v4 is MORE expensive at 1080p ($1.175 vs $0.728/5s — 61% premium) AND has fewer ghost-driving controls. Use v4 only for shots that REQUIRE its unique advantages: 30s clips, 7-element character binding, or video editing. Canary before any production use.
 
 ### v4 CANARY CHECKLIST
 
 - [ ] Submit one 5s I2V call with `kling-video/v4/image-to-video`, character hero frame, `resolution: "1080p"`, no `generate_audio` param
 - [ ] **Strip audio IMMEDIATELY before playback:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
-- [ ] Record actual cost from `meta.usage.usd_spent` in response — confirm vs sample $0.06 placeholder
+- [ ] Record actual cost from `meta.usage.usd_spent` in response — confirm vs $0.235/sec ($1.175/5s at 1080p), confirmed from AIMLAPI model page SC395
 - [ ] Confirm resolution from response or file metadata
 - [ ] Test `negative_prompt` as a field — if accepted silently, add it; if error, embed in prompt text
 - [ ] Confirm `aspect_ratio` follows input frame (no param accepted, or param silently ignored)
 - [ ] Run InsightFace cosine similarity vs v3 Pro baseline on same hero frame + prompt
 - [ ] Run brand binary checklist + ghost-driving QA on a truck hero frame
-- [ ] If cost ≥ v3 Pro AND quality ≤ v3 Pro: do not use; v3 Pro stays primary
+- [ ] v4 1080p ($1.175/5s) costs 61% MORE than v3 Pro ($0.728/5s) — quality must justify premium; v3 Pro stays primary for standard shots
 - [ ] If v4 reference-to-video succeeds with 7 elements: evaluate for complex multi-character sequences
 
 ---
