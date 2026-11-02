@@ -1008,7 +1008,7 @@ Kling's official v4 guide defines a 7-slot structure (source: kling.ai/quickstar
 
 **Keyframes (v4-specific):** Up to 10 keyframes per generation, each marking a key visual moment. Prompt covers transitions, camera movement, pacing, dialogue, and sound between keyframes. Keyframe count and `multi_prompt` are separate features — keyframes are image inputs, `multi_prompt` defines shot timing in text. Combined reference limit (image_urls + elements): **15 items**.
 
-**Availability (Oct 2026):** Kling 4.0 is now open to all kling.ai users (source: letsdatascience.com). API on AIMLAPI: CANARY REQUIRED before production use.
+**Availability (Oct 2026):** Kling 4.0 full model is open to all kling.ai users (source: letsdatascience.com). **Kling 4.0 Flash: web UI only — Ultra yearly subscribers; NO API model string on AIMLAPI as of SC402 Nov 2, 2026.** API on AIMLAPI: CANARY REQUIRED before production use.
 
 ### v4 Pipeline Assessment
 
@@ -1021,6 +1021,8 @@ Kling's official v4 guide defines a 7-slot structure (source: kling.ai/quickstar
 **v3 Pro remains the production choice for final delivery.** v4 is MORE expensive at 1080p ($1.175 vs $0.728/5s — 61% premium) AND has fewer ghost-driving controls. Use v4 only for shots that REQUIRE its unique advantages: 30s clips, 7-element character binding, or video editing. Canary before any production use.
 
 ### v4 CANARY CHECKLIST
+
+**⚠️ Alternate model ID for reference-to-video (SC402 Nov 2, 2026):** AIMLAPI has two pages for the same model: `kling-video/v4/reference-to-video` (confirmed SC381) AND `klingai/video-v4-reference-to-video` (second AIMLAPI page found SC402). CANARY: try `kling-video/v4/reference-to-video` first; if rejected with 404, try `klingai/video-v4-reference-to-video` as fallback. Update CONFIRMED string once resolved.
 
 - [ ] Submit one 5s I2V call with `kling-video/v4/image-to-video`, character hero frame, `resolution: "1080p"`, no `generate_audio` param
 - [ ] **Strip audio IMMEDIATELY before playback:** `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
@@ -1049,7 +1051,7 @@ Kling 3.0 supports native 4K output (3840×2160, up to 60fps, 16-bit HDR). **4K 
 
 **Third-party model strings:** Runware uses `klingai:kling-video@3-4k` (v3 base) and `klingai:kling-video@o3-4k` (O3 4K). fal.ai uses dedicated path `fal-ai/kling-video/v3/4k/image-to-video`.
 
-**AIMLAPI status:** UNCONFIRMED. No 4K-specific model page appears in AIMLAPI docs index. Neither `klingai/video-v3-pro-4k` nor a `mode: "4k"` mention appears in AIMLAPI's indexed model pages. Since O3 itself (`klingai/video-v3-omni`) is also absent from AIMLAPI, access to the O3-based 4K variant is doubly blocked. The most likely AIMLAPI access path when it lands: `mode: "4k"` on existing v3 Pro string (canonical approach from native API) — try this first; dedicated model string as fallback. Fall back to 1080p Pro if neither works. Use only for final-delivery hero clips; 4K costs ~44% more than Pro 1080p.
+**AIMLAPI status:** UNCONFIRMED — still NOT on AIMLAPI as of SC402 Nov 2, 2026 (site search returns zero new results vs SC381). EachLabs and WaveSpeed confirmed live at $0.42/sec. No 4K-specific model page appears in AIMLAPI docs index. Neither `klingai/video-v3-pro-4k` nor a `mode: "4k"` mention appears in AIMLAPI's indexed model pages. Since O3 itself (`klingai/video-v3-omni`) is also absent from AIMLAPI, access to the O3-based 4K variant is doubly blocked. The most likely AIMLAPI access path when it lands: `mode: "4k"` on existing v3 Pro string (canonical approach from native API) — try this first; dedicated model string as fallback. Fall back to 1080p Pro if neither works. Use only for final-delivery hero clips; 4K costs ~44% more than Pro 1080p.
 
 ## Hailuo 2.3 Fast — B-roll I2V (CANARY REQUIRED)
 

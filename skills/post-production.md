@@ -315,7 +315,9 @@ Install command unchanged: `pip install scenedetect-headless` (no `[opencv]` ext
 
 ### 3e. NVIDIA Vulkan Optical Flow FRUC (Coming in FFmpeg 9.1 — NOT YET AVAILABLE)
 
-**⚠️ SC393 (2026-10-30) — FFmpeg 9.1 NOT released.** FFmpeg 9.1 release branch exists as of 2026-10-23 (Phoronix: "FFmpeg 9.1 Preps For Release"). Final tagged release not yet confirmed. The `fruc_vulkan` filter is confirmed as a listed 9.1 feature (NVIDIA Optical Flow FRUC). Do NOT use until 9.1 is officially released and available on the pipeline machine.
+**⚠️ SC400 (2026-11-01) — FFmpeg 9.1 STILL NOT released.** Phoronix "FFmpeg 9.1 Preps For Release" article (~2026-10-23) remains the latest status — no tagged final release found as of SC400. The `fruc_vulkan` filter is confirmed as a 9.1 feature. SC393 (2026-10-30) + SC400 (2026-11-01): still NOT released. Do NOT use until 9.1 is officially tagged and available on the pipeline machine.
+
+**Other confirmed FFmpeg 9.1 features (Phoronix):** APV Vulkan encoder (not pipeline-relevant), improved AAC encoder (may yield marginally better audio quality in loudness-normalize pass), ASTC Vulkan support (not pipeline-relevant), H.264 data partitioning (not pipeline-relevant). For our pipeline, only `fruc_vulkan` matters.
 
 **What it is:** `vf_fruc_vulkan` — hardware-accelerated Frame Rate Up-Conversion using NVIDIA Vulkan Optical Flow (`VK_NV_optical_flow` extension). Alternative to RIFE for frame interpolation.
 

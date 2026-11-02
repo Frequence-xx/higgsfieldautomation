@@ -885,6 +885,73 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Action on O3 landing on AIMLAPI:** Confirm `kling_elements` parameter passthrough with a draft test; update frame-chaining snippet (`start_image_url` → `image_url`). Do NOT remove `negative_prompt` or `cfg_scale` — they still work.
 
+## Kling v4 R2V — CONFIRMED ON AIMLAPI, CANARY REQUIRED (SC378 2026-10-25; SC395 2026-10-31)
+
+**Model string (canonical):** `kling-video/v4/reference-to-video` — confirmed via AIMLAPI api-docs GitHub commits #636-639 (Oct 23, 2026). Two AIMLAPI pages exist: docs uses `kling-video/v4/reference-to-video`; model page URL uses `klingai/video-v4-reference-to-video`. Use `kling-video/v4/reference-to-video` as the canonical string.
+
+**Pricing (medium confidence — AIMLAPI model page, SC395 confirmed 2026-10-31):** $0.157/sec at 720p → **$0.785/5s**; $0.235/sec at 1080p → **$1.175/5s**. Billing canary still required to confirm actual invoice.
+
+**Cost position vs O1:** At $0.785/5s (720p), v4 is **46% cheaper than Kling O1 ($1.46/5s)** for draft character passes. At $1.175/5s (1080p) it replaces O1 as the final-tier model when identity lock is equivalent. Do NOT switch production routing until canary passes.
+
+**Expanded capacity vs O1/O3:**
+- Up to **10 reference images** via `image_urls[]` (vs O1's 4 and O3's 4-per-element)
+- Up to **7 elements** via `elements[]` (vs O3's 3 elements max)
+- Each element: `frontal_image_url` + `reference_image_urls` (1–3 side-angle views)
+
+**Prompt binding syntax:**
+- `@Image1`, `@Image2`, … → raw reference images from `image_urls[]` (no element metadata)
+- `@Element1`, `@Element2`, … → named elements from `elements[]` (uses frontal + side views)
+- Same differential prompt rule applies — describe action and camera ONLY; identity comes from elements
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "kling-video/v4/reference-to-video",
+    "prompt": "@Element1 lifts a moving box from the truck, pivots left 30 degrees, eases to stop at doorway, golden hour",
+    "elements": [
+        {
+            "frontal_image_url": "https://cdn.example.com/characters/crew_lead/front.png",
+            "reference_image_urls": [
+                "https://cdn.example.com/characters/crew_lead/three_quarter.png",
+                "https://cdn.example.com/characters/crew_lead/profile.png",
+                "https://cdn.example.com/characters/crew_lead/face_crop.png"
+            ]
+        }
+    ],
+    # image_urls: optional array of additional raw ref images (no element binding)
+    "negative_prompt": "ghost driving, morphing, face morphing, shifting jawline, hairstyle change, outfit change, extra characters, blurry, flickering",
+    "duration": 5,
+    "aspect_ratio": "9:16",
+    "resolution": "1080p",   # "720p" or "1080p" — default is 1080p (replaces Pro/Standard tiering)
+    # tail_image_url: optional last-frame anchor
+    # multi_prompt: list of {prompt, duration} dicts for multi-shot in one call
+    # NO audio param documented — v4 likely defaults audio OFF (SC374 finding)
+    # NO subject_fidelity / face adherence param found — unknown if equivalent exists
+}, headers=headers, timeout=120)
+```
+
+**Key v4 changes vs v3 Pro:**
+- Model string format changed: `kling-video/v4/reference-to-video` (not `klingai/video-v3-pro-image-to-video`)
+- `elements[]` replaces O1's `elements[]` with different schema — `frontal_image_url` + `reference_image_urls[]` (same field names as O1; confirm passthrough on canary)
+- Duration extended to 3–30s (was 3–10s in v3)
+- `resolution: "720p"|"1080p"` replaces Pro/Standard split; default 1080p
+- `tail_image_url` — optional last frame anchor (new in v4)
+- `multi_prompt[]` — multi-shot in one API call: `[{"prompt": "...", "duration": 5}, ...]`
+- Audio: NO `generate_audio` param in v4 docs. v4 appears to default audio OFF (SC374). Canary MUST confirm — run `ffprobe` on result to check for audio track.
+- Face adherence: v3's `subject_fidelity` / `cfg_scale` (0–1) has NO confirmed v4 equivalent. Whether v4 has improved native adherence or a renamed param is UNKNOWN — canary required.
+
+**⚠️ AUDIO CANARY REQUIRED:** No audio param in v4 docs. If v4 silently defaults audio ON (unlike what SC374 implies), generated audio may include haram music. Run `ffprobe -i output.mp4` to check for audio streams before any QA playback. Add FFmpeg audio strip as safety step on all v4 clips until audio behavior is confirmed:
+```bash
+ffmpeg -i kling_v4_output.mp4 -an -c:v copy kling_v4_muted.mp4
+```
+
+**Canary sequence (run before first production use):**
+1. R2V: call `kling-video/v4/reference-to-video`, single element with Karel/Mourad `front.png` + 2 side refs, `duration: 5, resolution: "1080p", aspect_ratio: "9:16"`. Log actual AIMLAPI billing — confirm $0.157 (720p) or $0.235 (1080p) per second.
+2. Download result → `ffprobe` to confirm no audio track.
+3. Score InsightFace buffalo_l vs v3 Pro baseline (same Karel/Mourad references). PASS ≥ 0.62.
+4. If identity ≥ 0.62 and billing confirmed → eligible to replace Kling O1 as production character video model at lower cost.
+
+**Production routing UNCHANGED until canary passes.** Use `klingai/video-o1-reference-to-video` (finals) and `klingai/kling-video-v3-standard-image-to-video` (drafts) for all production character shots until v4 canary passes.
+
 ## Wan 2.7 R2V — Character Shots at Lower Cost (CONFIRMED LIVE on AIMLAPI as of 2026-10-29)
 
 `alibaba/wan-2-7-r2v` is the Reference-to-Video mode of Wan 2.7. **As of 2026-07-09 (pass 28), the model ID `alibaba/wan-2-7-r2v` appears in the AIMLAPI model database** — search results confirm it alongside `alibaba/wan-2-7-i2v` and `alibaba/wan-2-7-t2v`. **SC391 finding (2026-10-29): CONFIRMED LIVE.** AIMLAPI now has a dedicated Wan 2.7 R2V page at `aimlapi.com/models/alibaba-wan2-7-r2v`. Model string expected: `alibaba/wan2.7-r2v` (based on URL slug — confirm on canary; current skill uses `alibaba/wan-2-7-r2v`). AIMLAPI pricing confirmed at **$0.13/sec at 720P → $0.65/5s** (from AIMLAPI models page, SC391). R2V parameter schema still unconfirmed on AIMLAPI directly (aimlapi.com blocked in cloud sessions); use canary test to confirm binding syntax and param names. (previously: AIMLAPI status unconfirmed as of SC384 2026-10-27)
@@ -1058,16 +1125,17 @@ ffmpeg -i wan3_output.mp4 -an -c:v copy wan3_muted.mp4
 
 **Wan 3.0 vs existing models:**
 
-| Model | AIMLAPI ID | Refs (images) | Cost/5s (720P est.) | Status |
-|-------|------------|--------------|---------------------|--------|
+| Model | AIMLAPI ID | Refs (images) | Cost/5s (720P) | Status |
+|-------|------------|--------------|----------------|--------|
 | Kling O1 | `klingai/video-o1-reference-to-video` | 4 | $1.46 | Production |
-| MiniMax H3 | `minimax/h3` | 9 | $0.845 | Canary |
+| **Kling v4** | `kling-video/v4/reference-to-video` | **10 + 7 elements** | **$0.785** (1080p: $1.175) | Canary required (SC395) |
+| MiniMax H3 | `minimax/h3` | 9 | $0.845 (2K only) | Canary |
 | Happy Horse 1.1 | `alibaba/happyhorse-1.1` | 9 | ~$0.70 | Canary |
-| MiniMax H3-Max | `minimax/h3-max` | 9 | ~$0.05 | Canary (draft) |
+| Wan 2.7 | `alibaba/wan-2-7-r2v` | 5 | ~$0.65 | Canary |
 | Wan 3.0 | `alibaba/wan3.0-video` | 10 (+ 5 vid) | ~$0.50 | Canary |
-| Wan 2.7 | `alibaba/wan-2-7-r2v` | 5 | ~$0.625 | Canary |
+| MiniMax H3-Max | `minimax/h3-max` | 9 | ~$0.05 | Canary (draft) |
 
-**Canary priority:** H3-Max first (cheapest draft), Wan 3.0 second (most refs, competitive cost), Happy Horse 1.1 third.
+**Canary priority (updated SC398 2026-11-01):** Kling v4 FIRST (same Kling architecture + face adherence parity, 46% cheaper than O1 at 720p, 7 elements); H3-Max second (cheapest draft); Wan 3.0 third (most refs, competitive cost); Happy Horse 1.1 fourth.
 
 **Canary procedure (Wan 3.0):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `aspect_ratio: "9:16"` (confirm param name), `resolution: "720p"`, `duration: 5`, `"Image 1"` binding in prompt, strip audio, InsightFace score ≥ 0.62. If identity holds → promotes to draft model for character shots ($0.50 vs Kling O1's $1.46). Do NOT use in production without owner-reviewed output passing brand binary checklist.
 
