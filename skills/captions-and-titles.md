@@ -356,22 +356,14 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    Choose Option C when: no Python env available, CPU-only server (avoids loading second neural network), or pure TypeScript pipeline.
 
-   **Option D: @remotion/whisper-web (browser/WASM, free, NOT for Dutch production)**
-   Browser-side transcription via WebAssembly. No Node.js or Python required. Uses whisper.cpp compiled to WASM.
+   **Option D: @remotion/whisper-webgpu (browser/WebGPU, free, NOT for Dutch production)**
+   **⚠️ `@remotion/whisper-web` DEPRECATED in v4.0.540** (PR #12828) in favor of `@remotion/whisper-webgpu`. If existing code uses `@remotion/whisper-web`, migrate to `@remotion/whisper-webgpu`. The `toCaptions()` function remains the same; only the package name and import path change.
 
-   **⚠️ HARD LIMIT — do NOT use for Snel Verhuizen Dutch voiceovers:** Supported models are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en` only. No `large-v3-turbo` in WASM. Small models produce significantly worse Dutch accuracy than large-v3-turbo. Word alignment will drift and caption sync will be poor.
+   Browser-side transcription via WebGPU. No Node.js or Python required.
 
-   ```typescript
-   import { transcribe, toCaptions, canUseWhisperWeb } from '@remotion/whisper-web';
-   // Requires: cross-origin isolation headers (COOP + COEP) for SharedArrayBuffer
-   const check = await canUseWhisperWeb();
-   if (check.supported) {
-     const result = await transcribe({ audioData: float32Array, model: 'small', language: 'nl' });
-     const { captions } = toCaptions({ whisperWebOutput: result });
-   }
-   ```
+   **⚠️ HARD LIMIT — do NOT use for Snel Verhuizen Dutch voiceovers:** Supported models are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en` only. No `large-v3-turbo` in browser builds. Small models produce significantly worse Dutch accuracy than large-v3-turbo. Word alignment will drift and caption sync will be poor.
 
-   Version: 4.0.498 (confirmed July 24, 2026 — synced with main Remotion package). Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
+   Only use Option D for: browser-only apps with no server component, rapid prototyping, or languages where small models are sufficient (English/Spanish).
 
    **Option E: @remotion/openai-whisper (paid OpenAI API — NOT for this pipeline)**
    Package converts OpenAI Whisper API output directly into `Caption[]` compatible with `createTikTokStyleCaptions()`. Requires `timestamp_granularities: ['word']` in the OpenAI transcription call. Dutch is supported. **Do not use** — OpenAI API is paid and our pipeline is AIMLAPI-only per Farouq directive 2026-04-16. Use Options B or C instead. Documented here for awareness only.
@@ -709,20 +701,22 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
-**Remotion v4.0.540 (pending npm — confirmed in main branch, SC403 Nov 2, 2026): THREE BREAKING CHANGES for caption pipeline shipping in this release:**
+**Remotion v4.0.540 (released npm Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
 - **`silenceGapMs` RENAMED → `breakOnSilenceAfterMilliseconds`** on `createTikTokStyleCaptions()`. Old name is gone — code using `silenceGapMs` will silently do nothing (TypeScript: compile error). Migrate: replace `silenceGapMs: 400` → `breakOnSilenceAfterMilliseconds: 400`. See parameter docs below.
 - **`Caption.lineBreakAfter` RENAMED → `Caption.pageBreakAfter`**. Same meaning — forces a page break after this word. Old field is ignored. Migrate: replace `lineBreakAfter: true` → `pageBreakAfter: true` in all Caption arrays.
-- **`parseVtt()` NOW strips HTML cue tags and decodes HTML entities** (PR #12636 merged Oct 27, 2026 — confirmed in main branch source). Cue markup tags (`<i>`, `<b>`, `<v Speaker>`, `<00:00:01.000>`, etc.) are stripped before text is returned. HTML entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`, `&lrm;`, `&rlm;`, decimal `&#123;`, hex `&#x7B;`) are decoded. NUL codepoints and surrogates are left as-is. Tag stripping runs BEFORE entity decoding (so `&lt;i&gt;` stays as literal `<i>` not a tag). The ⚠️ warning from SC396 about PR #12565 is obsolete — it was superseded by PR #12636 which is now merged.
+- **`parseVtt()` NOW strips HTML cue tags and decodes HTML entities** (PR #12636). Cue markup tags (`<i>`, `<b>`, `<v Speaker>`, `<00:00:01.000>`, etc.) are stripped before text is returned. HTML entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`, `&lrm;`, `&rlm;`, decimal `&#123;`, hex `&#x7B;`) are decoded. NUL codepoints and surrogates are left as-is. Tag stripping runs BEFORE entity decoding (so `&lt;i&gt;` stays as literal `<i>` not a tag).
+- **`parseVtt()` no longer drops YouTube auto-generated caption text** (PR #12623). Previously, YouTube auto-generated VTT files had a cue-identifier format that caused `parseVtt()` to skip the text entirely — lines were parsed but returned empty. Fixed in 4.0.540. If you use YouTube-sourced VTT captions, upgrade is required.
 - **New `TikTokToken.pageBreakAfter?: boolean` output field** — when a `Caption` has `pageBreakAfter: true`, the corresponding output `TikTokToken` also carries `pageBreakAfter: true`. Callers can detect explicit page breaks in rendered tokens.
-`npm install remotion@4.0.539` until 4.0.540 lands on npm; then `npm install remotion@4.0.540`.
+- **`@remotion/whisper-web` DEPRECATED** in v4.0.540 (PR #12828) in favor of `@remotion/whisper-webgpu`. See Option D below for migration guidance.
+`npm install remotion@4.0.540`
 
-**Remotion v4.0.539 (October 26, 2026 — current latest on npm as of SC403 Nov 2, 2026; v4.0.540 confirmed merged to main, pending npm):**
+**Remotion v4.0.539 (October 26, 2026 — superseded by v4.0.540 Nov 2, 2026):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
 - `remotion`: Fixed `spring()` overshoot clamping with custom ranges — affects caption entrance animations that use a non-0-to-1 output range; standard word-scale (1.0→1.05) is unaffected.
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
 - `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
 - `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
-- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.539`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.540`.
 
 **Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
@@ -806,8 +800,8 @@ If the Remotion paint-order approach does not work, render text twice: first pas
   const { pages } = createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 700 });
   // → "Bel ons nu" on page 1, "085 3331133" on page 2
   ```
-  - **Complements `silenceGapMs`:** Use `silenceGapMs: 400` for automatic silence detection + `lineBreakAfter` for programmatic overrides on specific words. Both can coexist.
-- **⚠️ `lineBreakAfter` RENAMED → `pageBreakAfter` in v4.0.540+ (confirmed in main branch, SC403 Nov 2, 2026).** The `lineBreakAfter?: boolean` field on `Caption` added in this release is renamed to `pageBreakAfter?: boolean` in the upcoming v4.0.540 release. Migrate: replace `lineBreakAfter: true` → `pageBreakAfter: true` before upgrading to 4.0.540+. Both field names behave identically — the value forces a page break after that word in `createTikTokStyleCaptions()`.
+  - **Complements `breakOnSilenceAfterMilliseconds`:** Use `breakOnSilenceAfterMilliseconds: 400` for automatic silence detection + `pageBreakAfter` for programmatic overrides on specific words. Both can coexist.
+- **⚠️ `lineBreakAfter` RENAMED → `pageBreakAfter` in v4.0.540 (now live — SC410 Nov 4, 2026).** Migrate: replace `lineBreakAfter: true` → `pageBreakAfter: true`. Old field ignored in 4.0.540+.
 - `@remotion/whisper-webgpu`: New browser-only package. **NOT for this pipeline** — browser WASM only, small models, no large-v3-turbo. Same limitations as Option D.
 - `@remotion/studio`: WebMCP tools integrated.
 - `npm install remotion@4.0.518`.
@@ -835,7 +829,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.539` (current latest on npm). **Upgrade to 4.0.540 when it lands — it has BREAKING RENAMES.** *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.522–524 Studio only; 4.0.525–527 Studio only; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.529–536 no caption API changes; 4.0.537 parseVtt added; 4.0.538 Studio only; 4.0.539 no caption API changes. SC403 Nov 2 2026: v4.0.540 confirmed in main branch — silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, TikTokToken.pageBreakAfter output — PENDING NPM. ElevenLabs Python SDK v2.75.0, whisper.cpp v1.9.5 — both unchanged from SC402.)*
+- `npm install remotion@4.0.540` (current latest on npm, Nov 2, 2026 — SC410). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu. ElevenLabs Python SDK v2.75.0, whisper.cpp v1.9.5 — both unchanged from SC402.)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -912,17 +906,17 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.539 current on npm; v4.0.540 confirmed in main branch, pending npm — SC403 Nov 2, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540+ [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, TikTokToken.pageBreakAfter output field — all confirmed in main branch SC403]; SC396 Oct 31 2026: PR #12636 merged → ships in 4.0.540; SC403 Nov 2 2026: confirmed in main branch parse-vtt.ts and create-tiktok-style-captions.ts source)
+### Full API (v4.0.540 current on npm Nov 2, 2026 — SC410 Nov 4, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated])
 
 | Export | Purpose |
 |--------|---------|
-| `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight. **v4.0.540+ (pending npm):** `silenceGapMs` param RENAMED to `breakOnSilenceAfterMilliseconds`; `Caption.lineBreakAfter` RENAMED to `Caption.pageBreakAfter`. |
+| `createTikTokStyleCaptions()` | Groups `Caption[]` into pages with per-token timing for word highlight. **v4.0.540 (live):** `silenceGapMs` param RENAMED to `breakOnSilenceAfterMilliseconds`; `Caption.lineBreakAfter` RENAMED to `Caption.pageBreakAfter`. |
 | `parseSrt()` | Parses SRT → `Caption[]` — input: `{ input: string }` object. **Block-level only, NO word timestamps.** v4.0.528: millisecond precision + arrow-text bug fixed. |
-| `parseVtt()` | **NEW v4.0.537** — Parses WebVTT → `Caption[]`. Same block-level shape as `parseSrt()`. No word timestamps. **v4.0.540+ (pending npm): strips HTML cue tags AND decodes HTML entities** — PR #12636 merged Oct 27, 2026, confirmed in main branch source (SC403). Before 4.0.540: `<i>hello</i>` returned raw. After: tags stripped, `&amp;`/`&#123;` decoded. PR #12565 closed in favor of PR #12636. |
+| `parseVtt()` | **NEW v4.0.537** — Parses WebVTT → `Caption[]`. Same block-level shape as `parseSrt()`. No word timestamps. **v4.0.540 (live): strips HTML cue tags AND decodes HTML entities** (PR #12636). **Also fixed: no longer drops YouTube auto-generated caption text** (PR #12623). Before 4.0.540: `<i>hello</i>` returned raw, YouTube VTT text was silently dropped. After: tags stripped, `&amp;`/`&#123;` decoded, YouTube text preserved. |
 | `serializeSrt()` | Serializes `Caption[]` back to SRT string (round-trip) |
 | `CaptionsInternals.ensureMaxCharactersPerLine()` | Splits `Caption[]` into line segments with max char limit + orphan prevention |
-| `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null, pageBreakAfter?: boolean }` — `pageBreakAfter` is the current name (v4.0.540+, confirmed in main). Was `lineBreakAfter` in v4.0.518–4.0.539. |
-| `TikTokToken` output | `pageBreakAfter?: boolean` added in v4.0.540+ — propagated from input `Caption.pageBreakAfter: true` when set. |
+| `Caption` | Type: `{ text: string, startMs: number, endMs: number, timestampMs: number \| null, confidence: number \| null, pageBreakAfter?: boolean }` — `pageBreakAfter` is the current name (v4.0.540, live). Was `lineBreakAfter` in v4.0.518–4.0.539. |
+| `TikTokToken` output | `pageBreakAfter?: boolean` added in v4.0.540 (live) — propagated from input `Caption.pageBreakAfter: true` when set. |
 | `TikTokPage` | Type: `{ text, startMs, durationMs, tokens: TikTokToken[] }` — `durationMs` added v4.0.261 |
 | `TikTokToken` | Type: `{ text, fromMs, toMs }` — named export for TypeScript typing |
 | `EnsureMaxCharactersPerLineInput` | Direct named type export (TypeScript only) — input type for `CaptionsInternals.ensureMaxCharactersPerLine` |
@@ -931,7 +925,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 | `SerializeSrtInput` | Direct named type export for `serializeSrt()` |
 | `CreateTikTokStyleCaptionsInput`, `CreateTikTokStyleCaptionsOutput` | Direct named type exports for `createTikTokStyleCaptions()` |
 
-`parseVtt()` was added in v4.0.537 (PR #12318, merged Oct 19, 2026, released v4.0.537 Oct ~22, 2026 — SC375 correction, was wrongly listed as v4.0.536 in SC368) — parses WebVTT (`.vtt`) into `Caption[]`, same shape as `parseSrt()`. Block-level only, no word timestamps. ⚠️ PR #12565 (OPEN Oct 23, 2026): HTML character-reference decoding — `&amp;`/`&#123;` entities not yet decoded in v4.0.537; monitor for merge. No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
+`parseVtt()` was added in v4.0.537 (PR #12318, Oct ~22, 2026). Block-level only, no word timestamps. **v4.0.540 (live):** HTML cue tags stripped + entities decoded (PR #12636); YouTube auto-generated VTT text no longer dropped (PR #12623). No `convertToCaptions()` — deprecated at v4.0.216; use `toCaptions()` from `@remotion/install-whisper-cpp` instead.
 
 **`parseVtt()` behavioral details (confirmed from official remotion.dev docs, SC389 Oct 29, 2026):**
 - WEBVTT header is optional and ignored; any text trailing the header line is dropped
@@ -1083,7 +1077,7 @@ import { createTikTokStyleCaptions } from '@remotion/captions';
 const { pages } = createTikTokStyleCaptions({
   captions,
   combineTokensWithinMilliseconds: 500, // word-by-word
-  // silenceGapMs: 400,  // v4.0.514–4.0.539 (RENAMED to breakOnSilenceAfterMilliseconds in v4.0.540+)
+  breakOnSilenceAfterMilliseconds: 400, // v4.0.540+ (was silenceGapMs in 4.0.514–4.0.539)
 });
 // Each page: { text: string, startMs: number, durationMs: number, tokens: TikTokToken[] }
 // durationMs is available from v4.0.261 — use it to advance pages:
@@ -1154,14 +1148,14 @@ Forces a page break when the gap between caption end and next caption start is �
 
 | Version | Parameter name | Status |
 |---------|---------------|--------|
-| v4.0.514–v4.0.539 | `silenceGapMs` | Current on npm |
-| v4.0.540+ (pending npm) | `breakOnSilenceAfterMilliseconds` | **Renamed — migrate before upgrading** |
+| v4.0.514–v4.0.539 | `silenceGapMs` | Old — REMOVED in 4.0.540 |
+| v4.0.540+ | `breakOnSilenceAfterMilliseconds` | **Current on npm** — use this |
 
 ```typescript
-// v4.0.539 and earlier:
-createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 700, silenceGapMs: 400 });
+// v4.0.539 and earlier (DO NOT USE — silenceGapMs removed in 4.0.540):
+// createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 700, silenceGapMs: 400 });
 
-// v4.0.540+ (migrate to this once 4.0.540 lands on npm):
+// v4.0.540+ (current — use this):
 createTikTokStyleCaptions({ captions, combineTokensWithinMilliseconds: 700, breakOnSilenceAfterMilliseconds: 400 });
 ```
 
