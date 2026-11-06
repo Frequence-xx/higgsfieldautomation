@@ -163,7 +163,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **When NOT to use Scribe:** For ElevenLabs TTS voiceovers where you have both audio + transcript, always prefer `/v1/forced-alignment` (Option A) — it gives exact timestamps by aligning the known transcript, whereas Scribe transcribes and may produce slightly different wording. Scribe is for **unknown audio** only.
 
-   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. v2.63.0 SDK (Aug 11, 2026) added "missing realtime speech-to-text options" — additional config parameters for the WebSocket client. Batch Scribe API unchanged. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct. **Current SDK: v2.75.0 (Oct 27, 2026)** — v2.75.0 adds conversational AI disconnection detail reporting (agents/realtime only; no impact on TTS/STT/forced-alignment pipeline). v2.74.1 (Oct 20, 2026): passes `enable_logging` through `compose_detailed` wrapper (music only). v2.74.0 (Oct 20, 2026): SDK regeneration. v2.73.1 (Oct 17): Python 3.13/3.14 CI support. v2.73.0 (Oct 15): type annotations + `create_and_wait` helpers for Flows (Flows/agents only). v2.72.0 (Oct 13): `play()`/`save()` accept any iterable; realtime CLOSE events include close code. v2.68.0–v2.71.x: music API, agent, and realtime changes only. No changes to forced-alignment or Scribe v2 batch API since v2.59.0. (SC395 Oct 31, 2026)
+   **Scribe v2 Realtime (WebSocket mode — NOT for this pipeline):** Launched January 6, 2026. 150ms latency over WebSocket for live speech. v2.63.0 SDK (Aug 11, 2026) added "missing realtime speech-to-text options" — additional config parameters for the WebSocket client. Batch Scribe API unchanged. Key limit vs batch: keyterms capped at **50 terms, 20 chars each** (vs batch Scribe: **1,000 terms, 50 chars each** — expanded April 2026). Use case is live agent calls / real-time transcription — our pipeline uses pre-recorded voiceover so batch mode is always correct. **Current SDK: v2.76.0 (Nov 4, 2026)** — v2.76.0 adds entity_redaction to the realtime WebSocket STT wrapper only (realtime/conversational AI; no impact on TTS/forced-alignment/Scribe v2 batch pipeline). v2.75.0 (Oct 27, 2026): adds conversational AI disconnection detail reporting (agents/realtime only; no impact on TTS/STT/forced-alignment pipeline). v2.74.1 (Oct 20, 2026): passes `enable_logging` through `compose_detailed` wrapper (music only). v2.74.0 (Oct 20, 2026): SDK regeneration. v2.73.1 (Oct 17): Python 3.13/3.14 CI support. v2.73.0 (Oct 15): type annotations + `create_and_wait` helpers for Flows (Flows/agents only). v2.72.0 (Oct 13): `play()`/`save()` accept any iterable; realtime CLOSE events include close code. v2.68.0–v2.71.x: music API, agent, and realtime changes only. No changes to forced-alignment or Scribe v2 batch API since v2.59.0. (SC417 Nov 6, 2026)
 
    **Option B: WhisperX (free, $0, use when ElevenLabs credits are low)**
    Dutch (`nl`) supported via wav2vec2 forced alignment. **Version requirement: `>=3.8.6`** — v3.8.7rc1 released June 26, 2026 is a pre-release (Windows CUDA fix + huggingface-hub pin relax only — no timestamp changes; SC326 Sep 4 recheck: still pre-release, v3.8.6 remains current stable). **Stay on stable 3.8.6** for production. — v3.8.2 fixed a wildcard alignment bug; v3.8.4 fixed blank_id for HuggingFace models and restored digit/symbol timestamps ("085 3331133", "4,9 ster"); v3.8.5 (April 2026) pins torchvision/torchcodec for torch 2.8 compatibility + includes PR #1347 fix (SRT/ASS subtitle cue timestamps now derived from word-level data, not VAD segment boundaries — previously caused premature cue display); v3.8.6 (May 25, 2026) fixes handling of the 'ignore' interpolation method in `interpolate_nans` — when Dutch wav2vec2 alignment fails on unusual tokens (foreign proper nouns, special characters), the code falls back to interpolation; the bug caused incorrect timestamps in those edge cases. Older versions silently produce wrong timestamps.
@@ -701,6 +701,11 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.541 (Nov 5, 2026 — SC417):**
+- Studio: spring() and interpolateColors() fixes; additional visual/Studio improvements.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
+`npm install remotion@4.0.541`
+
 **Remotion v4.0.540 (released npm Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
 - **`silenceGapMs` RENAMED → `breakOnSilenceAfterMilliseconds`** on `createTikTokStyleCaptions()`. Old name is gone — code using `silenceGapMs` will silently do nothing (TypeScript: compile error). Migrate: replace `silenceGapMs: 400` → `breakOnSilenceAfterMilliseconds: 400`. See parameter docs below.
 - **`Caption.lineBreakAfter` RENAMED → `Caption.pageBreakAfter`**. Same meaning — forces a page break after this word. Old field is ignored. Migrate: replace `lineBreakAfter: true` → `pageBreakAfter: true` in all Caption arrays.
@@ -708,7 +713,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **`parseVtt()` no longer drops YouTube auto-generated caption text** (PR #12623). Previously, YouTube auto-generated VTT files had a cue-identifier format that caused `parseVtt()` to skip the text entirely — lines were parsed but returned empty. Fixed in 4.0.540. If you use YouTube-sourced VTT captions, upgrade is required.
 - **New `TikTokToken.pageBreakAfter?: boolean` output field** — when a `Caption` has `pageBreakAfter: true`, the corresponding output `TikTokToken` also carries `pageBreakAfter: true`. Callers can detect explicit page breaks in rendered tokens.
 - **`@remotion/whisper-web` DEPRECATED** in v4.0.540 (PR #12828) in favor of `@remotion/whisper-webgpu`. See Option D below for migration guidance.
-`npm install remotion@4.0.540`
+`npm install remotion@4.0.541`
 
 **Remotion v4.0.539 (October 26, 2026 — superseded by v4.0.540 Nov 2, 2026):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
@@ -716,7 +721,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
 - `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
 - `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
-- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.540`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.541`.
 
 **Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
@@ -829,7 +834,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.540` (current latest on npm, Nov 2, 2026 — SC410). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu. ElevenLabs Python SDK v2.75.0, whisper.cpp v1.9.5 — both unchanged from SC402.)*
+- `npm install remotion@4.0.541` (current latest on npm, Nov 5, 2026 — SC417). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu; 4.0.541 Studio/spring fixes, no caption changes. ElevenLabs Python SDK v2.76.0 (SC417, entity_redaction realtime only), whisper.cpp v1.9.5 — unchanged from SC368.)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -906,7 +911,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.540 current on npm Nov 2, 2026 — SC410 Nov 4, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated])
+### Full API (v4.0.541 current on npm Nov 5, 2026 — SC417 Nov 6, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes])
 
 | Export | Purpose |
 |--------|---------|
