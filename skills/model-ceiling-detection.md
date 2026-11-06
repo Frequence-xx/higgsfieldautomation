@@ -75,8 +75,8 @@ Nano Banana Pro (text-only)
 Kling v3 Standard I2V
   → Kling v3 Pro I2V
     → Kling O1 Reference-to-Video (character binding)
-      → Veo 3.1 Lite I2V
-        → STOP: simplify composition
+      → STOP: simplify composition
+        (Veo 3.1 Lite has no Subject Binding — do NOT route character shots there even though an I2V variant now exists — SC420 2026-11-06)
 ```
 
 ### Composition Simplification (Last Resort)

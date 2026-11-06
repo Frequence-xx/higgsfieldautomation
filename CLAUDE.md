@@ -77,7 +77,7 @@ Every API call goes through `scripts/pre_flight_gate.py` (already wired in all `
 
 **Draft→Final tiering (Kling): iterate with Standard ($1.09), lock final with Pro ($1.46). Never use Pro for prompt iteration — saves $0.37/pass.**
 
-**Veo 3.1 Lite is T2V only — NO character in frame, NO hero frame I2V.** Its `image_url` parameter behavior on AIMLAPI is unverified. Use ONLY for scenery, environment, and B-roll without characters.
+**Veo 3.1 Lite has NO Subject Binding — NO character in frame, NO hero frame animation.** T2V string `google/veo-3-1-lite-generate-preview` (~$0.039/sec) for B-roll. I2V variant (`google/veo-3.1-lite-generate-001`, ~$0.104/sec) now confirmed on AIMLAPI (SC420 2026-11-06) but NOT cost-competitive vs Hailuo 2.3 Fast and lacks character lock — still NEVER for character shots.
 
 **Veo 3.1 Lite parameter naming differs from Kling** (camelCase): `durationSeconds` not `duration`, `aspectRatio` not `aspect_ratio`, `generateAudio` not `generate_audio`, `enhancePrompt` must be `false`. See `skills/credit-efficiency.md` for full template.
 
