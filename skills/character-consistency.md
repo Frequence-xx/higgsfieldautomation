@@ -1251,7 +1251,7 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Key specs:**
 - References: up to 9 image refs (highest alongside Happy Horse 1.1) — covers all 4 angles + face crop + 4 extras
-- Output: **2K native** (short-side resolution)
+- Output: **2K native** (short-side resolution) — via a 2-stage hosted pipeline: base model generates at lower resolution, then a separate 2K Regenerate stage upscales. **The open-weight release produces 768p only** — the 2K regeneration stage remains hosted-only as of SC419 (2026-11-06). MiniMax announced plans to open-source the 2K regeneration weights and sparse-attention code (Aug 7, 2026 community post); no release date given; still unreleased. The AIMLAPI endpoint provides the full hosted 2K pipeline, so `"resolution": "2K"` works correctly on AIMLAPI.
 - `ratio`: `"9:16"` (NOT `aspect_ratio` — critical difference from all other AIMLAPI models)
 - Audio generation on by default: must mute post (same Shari'ah risk as Happy Horse 1.1)
 - `image_url` (singular): first frame control (optional)
@@ -1264,6 +1264,8 @@ ffmpeg -i minimax_h3_output.mp4 -an -c:v copy minimax_h3_muted.mp4
 ```
 
 **Canary procedure (H3 base):** Karel/Mourad `front.png` + 3 angle refs in `reference_image_urls`, `ratio: "9:16"`, `resolution: "2K"`, `duration: 5`, use `@image1` binding in prompt (confirmed SC321), strip audio, InsightFace score ≥ 0.62. Log cost per 5s clip.
+
+**Spark-H3 (Oct 11, 2026 — SC419 finding):** Third-party block sparse attention backend for MiniMax H3 in ComfyUI. Reports up to 3.15× DiT speedup at 20% attention density for 1344×768 / 14.4s clips (RTX PRO 6000 Blackwell). Packages for RTX 40/50 series on Windows/Linux. **Not relevant to our AIMLAPI-only pipeline** — applies only if running H3 locally via ComfyUI with open weights (which produce 768p, not 2K). No quality benchmark vs dense baseline published independently.
 
 ---
 
