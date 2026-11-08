@@ -20,7 +20,7 @@ negatives:
 
 **Hero Frame Generation:** AIMLAPI — Nano Banana Pro Edit (`google/nano-banana-pro-edit`) or Flux Kontext Max
 **Video Animation — Character shots:** AIMLAPI — Kling v3 Pro I2V (`klingai/video-v3-pro-image-to-video`)
-**Video Animation — Establishing/B-roll (no character):** AIMLAPI — Veo 3.1 Lite T2V (`google/veo-3-1-lite-generate-preview`)
+**Video Animation — Establishing/B-roll (no character):** AIMLAPI — Gemini Omni 1.2 Flash T2V (`google/gemini-omni-1.2-flash`, $0.0695/sec) ⚠️ AUDIO ALWAYS ON — always strip with `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4` before assembly. [Veo 3.1 Lite RETIRED Oct 22, 2026]
 **Voiceover:** ElevenLabs (Willem voice, eleven_multilingual_v2)
 **Post-Production:** FFmpeg + Remotion (free, local)
 
@@ -35,7 +35,7 @@ No browser automation needed. Entire generation pipeline is clean API calls.
 3. Only if the still passes → send to video generation
 4. If the still fails → fix the prompt and regenerate the still (cheap, not video credits)
 
-For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference still first via NBP to confirm composition, then proceed to T2V generation with the same prompt intent.
+For T2V establishing shots (Gemini Omni 1.2 Flash, no character): generate a reference still first via NBP to confirm composition, then proceed to T2V generation with the same prompt intent. Always strip audio post-generation (`ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`) — Omni 1.2 has no audio toggle.
 
 ## Model Routing — Updated 2026-05-17
 
@@ -44,7 +44,7 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 | Character close-up | NBP Edit ($0.195) | Kling v3 Pro I2V ($0.728) | **~$0.92** | Subject Binding 80-90, I2V from hero frame |
 | Character — draft/iteration | NBP Edit ($0.195) | Kling v3 Standard I2V ($0.546) | **~$0.74** | Use Standard until prompt is dialed in, Pro for final only |
 | Wide establishing (no character, T2V — cheapest canary) | NBP (T2I, $0.13) | Krea WAN 14B T2V ($0.033/sec, ~$0.165/5s) | **~$0.295** | CANARY REQUIRED — cheapest T2V on AIMLAPI if quality passes |
-| Wide establishing (no character, draft) | NBP (T2I, $0.13) | Veo 3.1 Lite T2V 720p ($0.26/4s) | **~$0.39** | Draft at 720p 4s — cheapest confirmed B-roll |
+| Wide establishing (no character, draft) | NBP (T2I, $0.13) | ❌ Veo 3.1 Lite RETIRED Oct 22, 2026 → use Gemini Omni 1.2 Flash T2V 4s ($0.278) | **~$0.41** | Omni 1.2: `google/gemini-omni-1.2-flash`, audio always on — strip post |
 | Wide establishing (no character, final) | NBP (T2I, $0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | CANARY REQUIRED — 1080p, no char, 9:16 confirmed |
 | B-roll / texture (no character) | NBP ($0.13) | Hailuo 02 I2V 6s ($0.28) | **~$0.41** | No audio param needed — no surcharge risk |
 | Truck/product (no char, draft) | NBP Edit ($0.195) | Veo 3.1 Fast I2V (~$0.65/5s est.) | **~$0.85** | CANARY REQUIRED — `google/veo-3.1-i2v-fast`, camelCase params |
@@ -55,7 +55,7 @@ For T2V establishing shots (Veo 3.1 Lite, no character): generate a reference st
 | Money shot / CTA | Flux Pro v1.1 Ultra ($0.10) | Kling v3 Pro I2V ($0.728) | **~$0.83** | Highest quality |
 
 **CRITICAL: Always use I2V (image-to-video) for character shots — I2V preserves hero frame composition.**
-**CRITICAL: Veo 3.1 Lite has NO Subject Binding — NEVER for character or hero-frame animation.** T2V string `google/veo-3-1-lite-generate-preview` (~$0.039/sec audio-off) is correct for B-roll. I2V variant `google/veo-3.1-lite-generate-001` (~$0.104/sec AIMLAPI — SC420 2026-11-06) now confirmed, but costs 2.7× more than T2V and lacks Subject Binding — NOT cost-competitive vs Hailuo 2.3 Fast ($0.0416/sec) for non-char I2V. Prior note "T2V only / image_url UNVERIFIED" is now OUTDATED — I2V exists but is pricier; use T2V for all B-roll.
+**CRITICAL: ❌ Veo 3.1 Lite RETIRED Oct 22, 2026 (SC427 2026-11-08).** `google/veo-3-1-lite-generate-preview` shut down in Gemini API — treat as BROKEN. Replacement: **Gemini Omni 1.2 Flash** (`google/gemini-omni-1.2-flash`, $0.0695/sec, audio always on, strip post). I2V variant `google/veo-3.1-lite-generate-001` also likely retired — do not use.
 **CRITICAL: Always generate with audio OFF on ALL models. Audio adds 33–85% surcharge depending on model.**
 **CRITICAL: New Veo 3.1 Fast models use camelCase params like Veo 3.1 Lite (`generateAudio`, `aspectRatio`, `durationSeconds`) — NOT snake_case.**
 
@@ -111,9 +111,8 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | Kling v3 Standard T2V | `klingai/video-v3-standard-text-to-video` | 720p (9:16) | **✅ NEW PRICE: $0.546/5s ($0.1092/sec) — same as I2V (SC350 2026-09-11).** | — |
 | Kling v3 Pro I2V | `klingai/video-v3-pro-image-to-video` | 1080p (9:16) | **✅ SEARCH-CONFIRMED: $0.728/5s ($0.1456/sec — SC360 2026-09-14, AIMLAPI pricing page snippet "$0.1456 per second (variable)").** Old AIMLAPI price was $1.46/5s ($0.291/sec) — was 2.6× markup, now 1.3× ($0.112/sec native × 1.3 = $0.1456/sec). Audio behavior canary still needed; full invoice canary when unblocked. $15 session ceiling now covers ~20 Pro final clips. | $0.44 (3s at $0.1456/sec) |
 | Kling v3 Pro T2V | `klingai/video-v3-pro-text-to-video` | 1080p (9:16) | **✅ SEARCH-CONFIRMED: $0.728/5s ($0.1456/sec — SC360 2026-09-14).** Same as I2V. | $0.44 (3s) |
-| Veo 3.1 Lite T2V 720p (audio OFF — always use) | `google/veo-3-1-lite-generate-preview` | 720p (default) | **~$0.234** (~$0.039/sec AIMLAPI est.; $0.03/sec native CONFIRMED SC290 — OpenRouter + costgoat + MaxVideoAI + buildfastwithai converge) | ~$0.156 (4s), ~$0.312 (8s) |
-| Veo 3.1 Lite T2V 720p (audio ON — reference only) | same | 720p | ~$0.39 ($0.065/sec AIMLAPI est.) | — NEVER USE (audio defaults ON = Shari'ah risk) |
-| Veo 3.1 Lite T2V 1080p (audio OFF est.) | `google/veo-3-1-lite-generate-preview` | 1080p (requires dur=8) | **~$0.52** (~$0.065/sec AIMLAPI est. × 8s; audio-off 1080p native ~$0.05/sec unconfirmed) | — |
+| ❌ Veo 3.1 Lite T2V 720p (RETIRED Oct 22, 2026) | `google/veo-3-1-lite-generate-preview` | 720p | ❌ **RETIRED — Gemini API shut down Oct 22, 2026.** AIMLAPI may still serve temporarily but DO NOT ROUTE new production here. Was ~$0.234/6s audio-off. | ❌ DO NOT USE |
+| **Gemini Omni 1.2 Flash T2V** ✓ ON AIMLAPI (SC427 2026-11-08) | `google/gemini-omni-1.2-flash` | 360p/720p/1080p/4K 24fps | **$0.0695/sec** (AIMLAPI flat rate — SC427) · 4s=$0.278 · 6s=$0.417 · 10s=$0.695 | 3–15s, 9:16 ✓, T2V+I2V+R2V. **⚠️ AUDIO ALWAYS ON, NO TOGGLE** — mandatory post-strip: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`. Replaces Veo 3.1 Lite. 2.0× more expensive per clip at 6s ($0.417 vs $0.234 est.). CANARY REQUIRED: confirm 9:16 aspect_ratio param name, actual AIMLAPI billing, check Google Vertex retirement schedule (`gemini-omni-1.1-flash` retired Oct 22; 1.2 is successor). |
 | Veo 3.1 I2V | `google/veo-3.1-i2v` | 720p/1080p | **~$1.00** ($0.20/sec × 5s) | ~$0.60 (3s) |
 | Veo 3.1 Fast I2V (canary) | `google/veo-3.1-i2v-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | ~$0.39 (3s) |
 | Veo 3.1 First+Last Fast (canary) | `google/veo-3.1-first-last-image-to-video-fast` | 720p/1080p | **~$0.65** (~$0.13/sec est.) | — |
@@ -146,8 +145,8 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 | **Kling v4 (✓ NOW ON AIMLAPI — CANARY REQUIRED)** | `kling-video/v4/image-to-video` (I2V) · `kling-video/v4/text-to-video` (T2V) · `kling-video/v4/reference-to-video` (R2V) · `kling-video/v4/video-to-video/edit` (V2V edit) | 720p / 1080p (default 1080p) | **✅ PRICING CONFIRMED SC413 2026-11-04 (HIGH confidence — AIMLAPI model page + fal.ai cross-check):** 720p: **$0.157/sec** = $0.785/5s — 8% MORE expensive than v3 Pro ($0.728/5s). 1080p (default): **$0.235/sec** = $1.175/5s — **61% MORE expensive than v3 Pro**. V2V edit: $0.188/sec (resolution tier unconfirmed). Prior SC399 assumption that "$0.157/sec is the 1080p rate" was WRONG — $0.157/sec is the 720p rate. **If using v4, ALWAYS pass `resolution: "720p"` to avoid the $0.235/sec 1080p default.** Invoice canary still recommended to confirm actual billing. ✓ **CONFIRMED ON AIMLAPI (SC378 2026-10-25)**: docs added Oct 23, 2026 commits #636-639 by Lookoff-AIMLAPI. **⚠️ DEVELOPER API STATUS (SC392 2026-10-30):** Kling's own developer pricing page says "Kling 4.0 API access is not yet available" and lists prices as "for preview purposes only" — confirmed by two independent sources as of Oct 26, 2026. AIMLAPI added docs Oct 23 but this may be ahead of actual availability. Some resellers claim their Kling v4 endpoint callable since Oct 22. DO NOT treat AIMLAPI docs as confirming the API is live — canary test is mandatory before any call. **Kling v4 API officially rolling out (Preview) per Kling Oct 21, 2026 announcement.** **Key v4 parameter changes vs v3:** `tail_image_url` (optional last frame); `multi_prompt[]` for multi-shot sequences in one API call; duration 3-30s (was 3-15s); `resolution: "720p"\|"1080p"` replaces Pro/Standard tiering; `image_urls[]` + `elements[]` for R2V (up to 10 refs + 7 elements). **⚠️ NO AUDIO PARAM FOUND** in docs — SC374 says Kling 4.0 native defaults audio OFF (unlike v3 which defaulted ON). Canary must verify AIMLAPI audio behavior. **Face adherence/Subject Binding param NOT found** — unknown if equivalent exists in v4. DO NOT use for production until (1) billing canary confirms 720p vs 1080p pricing split, (2) audio behavior confirmed, (3) identity preservation vs v3 w/ Subject Binding tested. **Updated cost verdict (SC413 2026-11-04):** 720p ($0.785/5s) is 8% more expensive than v3 Pro — NOT competitive for routine shots. 1080p default ($1.175/5s) is 61% MORE expensive than v3 Pro — DO NOT use at default resolution. No Subject Binding equivalent found. Best use case: 30s single-pass clips or multi-shot `multi_prompt[]` sequences — ALWAYS pass `resolution: "720p"` explicitly. |
 
 **Non-character video routing (CORRECTED SC126, 2026-06-14 — Hailuo 2.3 Fast is I2V only, NOT T2V):**
-- **T2V (no reference image, 4-8s):** Veo 3.1 Lite T2V (`google/veo-3-1-lite-generate-preview`) — 720p ~$0.33/5s (~$0.39/6s). Hailuo 2.3 Fast CANNOT do T2V (Fast variant requires `image_url`).
-- **T2V fallback (Veo unavailable):** Wan 2.7 T2V (`alibaba/wan-2-7-t2v`) ~$0.50/5s — CANARY REQUIRED.
+- **T2V (no reference image, 3-15s):** ❌ Veo 3.1 Lite RETIRED Oct 22, 2026 → **Gemini Omni 1.2 Flash T2V** (`google/gemini-omni-1.2-flash`, $0.0695/sec) — 6s=$0.417. ⚠️ Audio ALWAYS ON, no toggle — strip post: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`. CANARY REQUIRED. Hailuo 2.3 Fast CANNOT do T2V (Fast variant requires `image_url`).
+- **T2V fallback (Omni 1.2 unavailable):** Wan 2.7 T2V (`alibaba/wan-2-7-t2v`) ~$0.50/5s — CANARY REQUIRED.
 - **I2V 5s (anchor frame available):** Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`) $0.208/5s — confirmed cheapest. CANARY REQUIRED. **Watch: Wan 2.6 I2V Flash (`alibaba/wan2.6-i2v-flash`) ~$0.165/5s est. — if canary passes, becomes new cheapest by 21%.**
 - **I2V 5s fallback:** Luma Ray Flash 2 (`luma/ray-flash-2`) ~$0.24/5s — CANARY REQUIRED.
 - **I2V 6s+:** ❌ LTXV 2 Fast (`ltxv/ltxv-2-fast`) **BROKEN since 2026-08-15 — string ERRORS on AIMLAPI.** Use Hailuo 2.3 Fast ($0.0416/sec = $0.250/6s) or Luma Ray Flash 2 (~$0.24/5s). Expected replacement: `ltxv/ltxv-2-3-fast` — CANARY REQUIRED when AIMLAPI adds it.
@@ -156,7 +155,9 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 **LTXV 2 Fast — ❌ BROKEN as of 2026-08-15 (SC262):** `ltxv/ltxv-2-fast` NOW ERRORS on AIMLAPI. Lightricks removed LTX-2 strings on Aug 15, 2026 as announced. AIMLAPI did not add `ltxv/ltxv-2-3-fast` before the deadline. Do NOT call this string — it will fail. Hailuo 2.3 Fast (`minimax/hailuo-2.3-fast`, $0.0416/sec) is the confirmed fallback for all non-character I2V 5s+ clips. When AIMLAPI adds the replacement string (expected: `ltxv/ltxv-2-3-fast`), run a canary to confirm. **Note:** LTX-2.5 released 2026-08-11 (22B, 4K, 50fps, native audio, I2V in 6.8s on GB200 superchips). **Still NOT on AIMLAPI as of SC399 2026-11-01** (re-confirmed by web search — aimlapi.com only shows old LTXV 2 model pages; no AIMLAPI model string found for 2.5. LTX native API offers `ltx-2-5-fast` at $0.09/s 720p, $0.13/s 1080p and `ltx-2-5-pro` at $0.12/s 720p, $0.17/s 1080p, but AIMLAPI has not added any LTX-2.5 string). Third-party unconfirmed prices: $0.09/s 720p, $0.15/s 1080p. Watch for AIMLAPI model string (likely `ltxv/ltxv-2-5-fast`).
 
-**Veo 3.1 Lite pricing update (2026-05-06, updated SC213 2026-07-15, SC290 2026-08-23):** Resolution-tiered pricing confirmed. 720p WITH audio: $0.05/sec (Vertex) → ~$0.065/sec on AIMLAPI. 1080p: $0.08/sec (Vertex) → ~$0.104/sec on AIMLAPI (production-verified ✓). **PRICING UPGRADE — 720p WITHOUT audio (SC290 HIGH CONFIDENCE):** $0.03/sec confirmed by OpenRouter ($0.03/sec direct proxy of Vertex pricing) + costgoat ($0.03/sec), MaxVideoAI ($0.04/sec, likely markup), buildfastwithai, and the official Veo 3.1 Lite model page — all Aug 2026 sources converge on **$0.03/sec at 720p audio-off** (vs $0.05/sec audio-on). Audio-off pricing tier is a Vertex billing split: `generateAudio: false` routes to the cheaper tier. With AIMLAPI ~1.3× markup → **~$0.039/sec on AIMLAPI est. = ~$0.234/6s** (vs previously documented $0.39/6s audio-on rate). **This cuts all B-roll T2V cost by ~40%.** Since we always send `generateAudio: false`, ALL Veo 3.1 Lite clips should hit this cheaper tier. **AIMLAPI billing canary urgently needed** to confirm AIMLAPI splits the audio-off/audio-on tiers identically to Vertex — if confirmed, update budget math. Duration valid values: **4, 6, or 8 seconds ONLY** — 5 is invalid. 1080p requires duration=8. Use 720p for B-roll drafts.
+**❌ Veo 3.1 Lite — RETIRED Oct 22, 2026 (SC427 2026-11-08):** `google/veo-3-1-lite-generate-preview` shut down in Gemini API on Oct 22, 2026. AIMLAPI may still serve temporarily (no deprecation banner confirmed as of Nov 8), but DO NOT route new production here — treat as BROKEN. Replacement: **Gemini Omni 1.2 Flash** (`google/gemini-omni-1.2-flash`). Prior audio-off pricing ($0.039/sec, 720p) is moot — model is retired. All `generateAudio: false` parameter knowledge archived for reference only.
+
+**Gemini Omni 1.2 Flash T2V (SC427 2026-11-08):** `google/gemini-omni-1.2-flash` at **$0.0695/sec** (AIMLAPI flat rate, all resolutions). Google native rates: $0.023/sec at 360p → $0.07/sec at 720p → $0.104/sec at 1080p → $0.208/sec at 4K. AIMLAPI flat $0.0695/sec ≈ 720p tier. Clip duration: 3–15s (default 10s). Resolutions: 360p, 720p, 1080p, 4K at 24fps. Aspect ratio: 9:16 ✓. **⚠️ AUDIO ALWAYS ON, NO TOGGLE** — strip mandatory in post: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`. Budget impact: 6s B-roll now costs $0.417 vs $0.234 (Veo Lite audio-off est.) — 78% more expensive per clip. Per-video B-roll delta: +$0.37 for 2 establishing shots. T2V + I2V + R2V modes. Max 15s single-pass (3× longer than Veo Lite's 8s max). CANARY REQUIRED before routing production: confirm 9:16 `aspect_ratio` param name, actual AIMLAPI billing vs flat rate claim.
 
 **Veo 3.1 I2V (NEW — 2026-05-06):** `google/veo-3.1-i2v` at $0.20/sec = $1.00/5s — 32% cheaper than Kling v3 Pro ($1.46/5s). No Subject Binding, no character-locking. Suitable for truck/product shots and wide establishing shots where face identity lock is NOT required. DO NOT use for character face close-ups. Canary required before production use.
 
@@ -203,24 +204,29 @@ Exception: if the shot's key motion event occurs after 3s (e.g., character compl
 
 *Seedream 5.0 Lite Preview (`bytedance/seedream-5-0-lite-preview`, CONFIRMED on AIMLAPI — CANARY REQUIRED): ~$0.031–$0.035/image. Up to 14 refs (same slot count as NBP Edit). 9:16 via `size: "9:16"`. 2K default, 3K max. Chain-of-thought reasoning. Cheapest confirmed 14-ref image model — if character identity canary passes, saves $0.052–$0.056/draft iteration vs NB2 Edit. Full specs in `generation-image.md`.*
 
-## Veo 3.1 Lite API Template (T2V, no character)
+## ❌ Veo 3.1 Lite API Template — RETIRED Oct 22, 2026 (DO NOT USE)
+
+> Model `google/veo-3-1-lite-generate-preview` shut down in Gemini API Oct 22, 2026. Use Gemini Omni 1.2 Flash template below instead.
+
+## Gemini Omni 1.2 Flash API Template (T2V/I2V, no character — B-roll/establishing)
+
+**⚠️ AUDIO ALWAYS ON, NO TOGGLE — strip audio IMMEDIATELY after download.**
 
 ```python
-import httpx, os, time
+import httpx, os, time, subprocess
 
 API_KEY = os.environ['AIMLAPI_API_KEY']
 headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
-# Submit Veo 3.1 Lite T2V
+# Submit Gemini Omni 1.2 Flash T2V (replaces Veo 3.1 Lite)
+# Cost: $0.0695/sec → 6s = $0.417, 10s = $0.695. CANARY first call.
 resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
-    "model": "google/veo-3-1-lite-generate-preview",
+    "model": "google/gemini-omni-1.2-flash",
     "prompt": "<scene description with motion — creative director language, 30-80 words>",
-    "aspectRatio": "9:16",          # NOTE: camelCase for Veo (not snake_case like Kling)
-    "durationSeconds": 6,           # VALID VALUES: 4, 6, or 8 ONLY — 5 is INVALID and may error/default
-    "resolution": "720p",           # "720p" (cheaper, default) or "1080p" (requires durationSeconds: 8)
-    "generateAudio": False,         # ALWAYS false — saves ~46% (35cr vs 65cr)
-    "enhancePrompt": False,         # ALWAYS false — AI enhancement breaks brand control
-    "negativePrompt": "blurry, distorted, low quality, jittery, flickering, watermark, text overlay, logos, people, faces",
+    "aspect_ratio": "9:16",           # CANARY: confirm snake_case vs camelCase param name
+    "duration": 6,                    # 3-15s in 1s steps. Default: 10. CANARY: confirm int vs string.
+    "resolution": "720p",             # 360p / 720p / 1080p / 4K — AIMLAPI flat rate ignores tier
+    # NO generateAudio or generate_audio param — audio is ALWAYS generated, ALWAYS strip in post
 }, headers=headers, timeout=30)
 
 task_id = resp.json()["id"]
@@ -232,21 +238,24 @@ for i in range(30):
                    params={"generation_id": task_id}, headers=headers, timeout=30)
     if sr.json()["status"] == "completed":
         video_url = sr.json()["video"]["url"]
+        # Strip audio — MANDATORY before assembly (Shari'ah compliance)
+        subprocess.run([
+            "ffmpeg", "-i", "downloaded_clip.mp4",
+            "-an", "-c:v", "copy", "clip_silent.mp4", "-y"
+        ], check=True)
         break
 ```
 
-**Veo 3.1 Lite parameter differences from Kling (IMPORTANT):**
-- `durationSeconds` (int) — **VALID VALUES: 4, 6, or 8 ONLY** (NOT 5, not continuous). NOT `duration` (string)
-- `resolution` — "720p" (default, cheaper) or "1080p". **1080p REQUIRES durationSeconds: 8**
-- `aspectRatio` (camelCase) NOT `aspect_ratio` (snake_case)
-- `generateAudio` (camelCase) NOT `generate_audio` (snake_case)
-- `enhancePrompt` (camelCase) — must set false for brand control
-- `negativePrompt` (camelCase) — supported
-- `seed` (int, 0-4294967295) — supported for reproducibility
-- No `cfg_scale`, no `camera_control`, no `elements` (Subject Binding) — these are Kling-only
-- No `tail_image_url`, no `static_mask_url` — Kling-only
+**Gemini Omni 1.2 Flash vs Kling parameter differences (IMPORTANT):**
+- **Audio:** NO toggle — always generated. Must strip post: `ffmpeg -i in.mp4 -an -c:v copy out.mp4`
+- `aspect_ratio` or `aspectRatio` — CANARY: confirm exact param name (camelCase vs snake_case unknown)
+- `duration` (int, 3–15s) — 1-second steps, default 10
+- `resolution` — "360p" / "720p" / "1080p" / "4K". AIMLAPI flat rate $0.0695/sec regardless
+- No `generateAudio` parameter — there is NO audio disable toggle
+- No `cfg_scale`, no `camera_control`, no Subject Binding (`elements`) — Kling-only
+- No `negative_prompt` / `negativePrompt` — not documented; test if supported
 
-**Do NOT mix Kling and Veo parameter names in the same call — they will silently fail or use defaults.**
+**Do NOT mix Kling and Omni parameter names in the same call — they will silently fail or use defaults.**
 
 ## Kling API Template (Character/Truck shots, I2V)
 

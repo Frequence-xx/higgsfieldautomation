@@ -1063,7 +1063,7 @@ Available on AIMLAPI. AIMLAPI model string: **`minimax/hailuo-2.3-fast`** (confi
 
 **Cost:** ~$0.208/5s (routing matrix value). External sources cite ~$0.19/generation at Fast tier, suggesting pricing may be slightly under $0.208 — canary will confirm exact AIMLAPI rate.
 
-**Use case:** B-roll and transition clips where a static first-frame anchor is available and no characters appear. 24–36% cheaper per clip than Veo 3.1 Lite ($0.52/5s) depending on confirmed rate. CANARY REQUIRED before production use — run one 5s call, check audio (always strip: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`), confirm cost in AIMLAPI dashboard.
+**Use case:** B-roll and transition clips where a static first-frame anchor is available and no characters appear. ❌ Note: Veo 3.1 Lite comparison is now moot — Veo 3.1 Lite RETIRED Oct 22, 2026 (SC427). Current cheapest T2V B-roll is Gemini Omni 1.2 Flash ($0.0695/sec, $0.417/6s). Hailuo 2.3 Fast I2V ($0.208/5s) remains cheapest confirmed I2V B-roll option when anchor frame is available. CANARY REQUIRED before production use — run one 5s call, check audio (always strip: `ffmpeg -i in.mp4 -an -c:v copy out_silent.mp4`), confirm cost in AIMLAPI dashboard.
 
 ---
 
