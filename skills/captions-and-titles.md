@@ -701,10 +701,18 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.542 (Nov 9, 2026 — SC431):**
+- Core: Fixed missing images/videos in `<HtmlInCanvas>`, `<Sequence>` crash in `<ThreeCanvas>`, player playback timing after interruptions.
+- Lambda: Added `renderMediaOnLambdaAndStream()`, `renderFramesOnLambdaAndStream()`, `--chunks` flag.
+- Effects: Added `magnify()` and `lightning()` to `@remotion/effects`.
+- Studio: OpenTimelineIO import, high contrast mode, inline ChatGPT composer for annotations.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
+`npm install remotion@4.0.542`
+
 **Remotion v4.0.541 (Nov 5, 2026 — SC417):**
 - Studio: spring() and interpolateColors() fixes; additional visual/Studio improvements.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.541`
+`npm install remotion@4.0.542`
 
 **Remotion v4.0.540 (released npm Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
 - **`silenceGapMs` RENAMED → `breakOnSilenceAfterMilliseconds`** on `createTikTokStyleCaptions()`. Old name is gone — code using `silenceGapMs` will silently do nothing (TypeScript: compile error). Migrate: replace `silenceGapMs: 400` → `breakOnSilenceAfterMilliseconds: 400`. See parameter docs below.
@@ -713,7 +721,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **`parseVtt()` no longer drops YouTube auto-generated caption text** (PR #12623). Previously, YouTube auto-generated VTT files had a cue-identifier format that caused `parseVtt()` to skip the text entirely — lines were parsed but returned empty. Fixed in 4.0.540. If you use YouTube-sourced VTT captions, upgrade is required.
 - **New `TikTokToken.pageBreakAfter?: boolean` output field** — when a `Caption` has `pageBreakAfter: true`, the corresponding output `TikTokToken` also carries `pageBreakAfter: true`. Callers can detect explicit page breaks in rendered tokens.
 - **`@remotion/whisper-web` DEPRECATED** in v4.0.540 (PR #12828) in favor of `@remotion/whisper-webgpu`. See Option D below for migration guidance.
-`npm install remotion@4.0.541`
+`npm install remotion@4.0.542`
 
 **Remotion v4.0.539 (October 26, 2026 — superseded by v4.0.540 Nov 2, 2026):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
@@ -721,7 +729,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
 - `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
 - `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
-- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.541`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.542`.
 
 **Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
@@ -834,7 +842,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.541` (current latest on npm, Nov 5, 2026 — SC417). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu; 4.0.541 Studio/spring fixes, no caption changes. ElevenLabs Python SDK v2.77.0 (SC424, SDK regen + Speech Engine auth, zero pipeline impact), whisper.cpp v1.9.5 — unchanged from SC368.)*
+- `npm install remotion@4.0.542` (current latest on npm, Nov 9, 2026 — SC431). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu; 4.0.541 Studio/spring fixes, no caption changes; 4.0.542 Lambda streaming, effects, Studio improvements — no caption changes. ElevenLabs Python SDK v2.77.0 (SC424, SDK regen + Speech Engine auth, zero pipeline impact), whisper.cpp v1.9.5 — unchanged from SC368.)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -911,7 +919,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.541 current on npm Nov 5, 2026 — SC417 Nov 6, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes])
+### Full API (v4.0.542 current on npm Nov 9, 2026 — SC431 Nov 9, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes], 4.0.542 [no caption changes])
 
 | Export | Purpose |
 |--------|---------|
