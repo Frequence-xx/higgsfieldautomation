@@ -783,21 +783,26 @@ Strip immediately on download. DO NOT play audio before stripping — AI-generat
 
 ---
 
-## Kling O3 — IN AIMLAPI MODEL DATABASE + DEDICATED DOCS PAGES CONFIRMED (SC430 Nov 9, 2026)
+## Kling O3 — IN AIMLAPI MODEL DATABASE + DEDICATED DOCS PAGES CONFIRMED + MODEL STRINGS VERIFIED (SC437 Nov 11, 2026)
 
 Kling O3 (VIDEO 3.0 Omni, released Feb 5, 2026) is the premium tier above v3 Pro. **Status updated SC279 Aug 20, 2026: Kling O3/Omni NOW CONFIRMED in the AIMLAPI model database.** Prior study cycles (SC265 Aug 17, SC272 Aug 18) found no dedicated docs page — the models appear in the model database listing but may not yet have individual docs pages. **SC307 recheck (Aug 30, 2026):** No O3-specific commits in AIMLAPI api-docs repo during Aug 24-28, 2026 — status unchanged. **SC318 recheck (Sept 2, 2026):** Zero Kling commits in AIMLAPI api-docs repo Aug 31-Sept 1, 2026. site:docs.aimlapi.com search for Kling pages returns v1-standard, v1.6-standard, v2.6-pro, v3-standard, v1-pro — no O3/Omni page appears. Status: still model-database-only, no dedicated docs page. Canary remains the only path to verify live availability. **⚠️ SC430 recheck (Nov 9, 2026): Dedicated docs pages NOW CONFIRMED on docs.aimlapi.com — four pages found: v3-omni-720p-image-to-video, v3-omni-720p-text-to-video, v3-omni-1080p-image-to-video, v3-omni-1080p-text-to-video. Status upgraded to dedicated-docs-confirmed. CANARY still required to confirm live API activity and actual pricing.** The June 17, 2026 Turbo launch did NOT include O3/Omni; they were added to AIMLAPI subsequently (exact date TBD — first confirmed SC279).
 
-**Confirmed AIMLAPI model strings (SC279 Aug 20, 2026 — CANARY REQUIRED before production use):**
-- `klingai/video-v3-omni-720p-image-to-video`
-- `klingai/video-v3-omni-1080p-image-to-video`
-- `klingai/video-v3-omni-720p-text-to-video`
-- `klingai/video-v3-omni-1080p-text-to-video`
+**Confirmed AIMLAPI model strings (SC279 Aug 20, 2026; model strings explicitly verified from docs.aimlapi.com search results SC437 Nov 11, 2026 — CANARY REQUIRED before production use to confirm live API activity):**
+- `klingai/video-v3-omni-720p-image-to-video` ← explicitly confirmed in AIMLAPI docs page snippet (SC437)
+- `klingai/video-v3-omni-1080p-image-to-video` ← confirmed from AIMLAPI docs page existence (SC437)
+- `klingai/video-v3-omni-720p-text-to-video` ← inferred from docs URL pattern (SC430)
+- `klingai/video-v3-omni-1080p-text-to-video` ← inferred from docs URL pattern (SC430)
 
-**Expected AIMLAPI pricing (based on AIMLAPI ~2.6× markup over native rates — CANARY REQUIRED to confirm):**
-- 720p I2V (no audio): ~$1.09/5s (same price tier as v3 Standard, based on native $0.084/sec)
-- 1080p I2V (no audio): ~$1.46/5s (same price tier as v3 Pro, based on native $0.112/sec)
+**Expected AIMLAPI pricing (SC437 Nov 11, 2026 — CORRECTS SC279 estimate which used old 2.6× markup; now uses confirmed 1.3× markup from SC350):**
+- Native rates confirmed from Kling official pricing page (kling.ai/document-api/pricing/base/video.md, 1 unit = $0.14):
+  - O3 Standard/720p no audio: 0.6 units/sec = $0.084/sec (SAME native rate as v3 Standard)
+  - O3 Pro/1080p no audio: 0.8 units/sec = $0.112/sec (SAME native rate as v3 Pro)
+- **AIMLAPI estimates (1.3× markup, unconfirmed until canary):**
+  - 720p I2V (no audio): **~$0.546/5s** ($0.1092/sec) — same expected cost as v3 Standard
+  - 1080p I2V (no audio): **~$0.728/5s** ($0.1456/sec) — same expected cost as v3 Pro
+  - ⚠️ Old SC279 estimates of ~$1.09/5s and ~$1.46/5s were based on the 2.6× markup era and are WRONG — do not use them
 - Native audio included adds ~33% surcharge at native rates — **ALWAYS pass `generate_audio: false`**
-- **⚠️ Reference video input DOUBLES cost** (SC286 Aug 22, 2026): In O3 Omni mode, providing a reference video (`video_reference` mode) pushes the 1080p rate from 8 credits/sec to 16 credits/sec — i.e., ~2× the standard I2V rate. **NEVER use reference video input for Snelverhuizen character shots.** Use `refs` with image URLs only.
+- **⚠️ Reference video input DOUBLES cost** (SC286 Aug 22, 2026): In O3 Omni mode, providing a reference video (`video_reference` mode) pushes the 1080p rate from 8 credits/sec to 16 credits/sec — i.e., ~2× the standard I2V rate. Corrected estimate: ~$1.456/5s (1080p with video ref, AIMLAPI 1.3× markup of $0.224/sec native). **NEVER use reference video input for Snelverhuizen character shots.** Use `refs` with image URLs only.
 
 O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/kling-video/o3/...`. Also available on PiAPI, Atlas Cloud ($0.15/s), MindStudio, Vidguru, Picsart, Runware, and Freepik API. Farouq AIMLAPI-only directive applies — now that O3 is on AIMLAPI, it may be used after canary confirmation.
 
@@ -809,14 +814,14 @@ O3 model string on Replicate: `kwaivgi/kling-v3-omni-video`; on fal.ai: `fal-ai/
 - 3D Spacetime Joint Attention for stronger physics and consistency
 - Native audio generation with lip-sync in 5 languages (EN, ZH, JA, KO, ES) — **ALWAYS suppress with `generate_audio: false`**
 
-**Evaluate O3 1080p I2V for character-heavy clips where v3 Pro produces identity drift.** At ~$1.46/5s (estimated), it offers more identity anchors (7 refs vs 3) at the same expected cost as v3 Pro. Run canary first.
+**Evaluate O3 1080p I2V for character-heavy clips where v3 Pro produces identity drift.** At ~$0.728/5s (estimated, same as v3 Pro — SC437 pricing correction), it offers more identity anchors (7 refs vs 3) at the same expected AIMLAPI cost as v3 Pro. Run canary first.
 
 ### O3 Canary Checklist (updated SC286 Aug 22, 2026)
 
 - [ ] Submit one 5s I2V call with `klingai/video-v3-omni-1080p-image-to-video`, character hero frame, `aspect_ratio: "9:16"`, `generate_audio: false` (snake_case — AIMLAPI standard)
 - [ ] **If snake_case params rejected**: retry with camelCase native params: `aspectRatio: "9:16"`, `generateAudio: false`, `resolution: "1080P"` — O3 native API uses camelCase (SC286)
 - [ ] Strip audio immediately: `ffmpeg -i input.mp4 -an -c:v copy output_silent.mp4`
-- [ ] Record actual AIMLAPI cost — confirm expected ~$1.46/5s (1080p). Note: native O3 "Fast" tier is $0.0896/sec but this may be a cheaper sub-tier; do NOT use reference video mode (doubles cost to ~$2.92/5s)
+- [ ] Record actual AIMLAPI cost — confirm expected **~$0.728/5s (1080p)** per SC437 pricing correction (old $1.46/5s estimate used wrong 2.6× markup; correct 1.3× markup = $0.728/5s). Note: native O3 "Fast" tier is $0.0896/sec but this may be a cheaper sub-tier; do NOT use reference video mode (doubles cost to ~$1.456/5s)
 - [ ] Test element syntax order: (1) try `"elements"` array (AIMLAPI snake_case); (2) try `"refs"` array (native O3 name, SC286); (3) do NOT use `"kling_elements"` unless both prior fail
 - [ ] Test element reference syntax in prompt: (1) try `@Element1` (AIMLAPI positional); (2) try `@name-value` e.g. `@ZhangWei` (native O3 by-name syntax, SC286); (3) try `<<<element_1>>>` only as last resort
 - [ ] Test `negative_prompt`: **PLAUSIBLE in native O3 API** (SC293 — confirmed in Magnific/Apiframe/MaasUnion docs with default "blur, distort, and low quality"). Include as standalone field in first AIMLAPI call; if rejected, fall back to embedding negatives in main prompt: `"... negative: blur, distort, low quality, jittery, ..."`. Either way: document whether AIMLAPI accepts it as a separate key.
