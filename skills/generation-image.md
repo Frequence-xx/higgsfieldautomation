@@ -22,6 +22,24 @@ negatives:
 
 Tier 1A of the pipeline. Generate hero frames (still images) via AIMLAPI API. Every hero frame MUST pass QA before advancing to video animation.
 
+## ✅ SC436 2026-11-11 — FLUX.3 Image CONFIRMED on BFL API + OpenRouter (Oct 1, 2026); Kontext Max now "legacy" at BFL; Klein open weights released Oct 15
+
+**FLUX.3 Image — CONFIRMED on BFL API and OpenRouter (released Oct 1, 2026). NOT on AIMLAPI (SC436 2026-11-11).** Black Forest Labs formally released FLUX.3 Image to the public API on approximately October 1, 2026, after announcing the FLUX.3 family in July 2026 with limited access only. As of November 2026 this is confirmed:
+- **BFL native endpoint:** `POST https://api.bfl.ai/v1/flux-3-image` (x-key auth header)
+- **OpenRouter model string:** `black-forest-labs/flux-3-image`
+- **BFL docs:** `docs.bfl.ai/flux_3/flux3_image_overview`
+- **Capabilities:** T2I + I2I editing; 1–10 reference images (URL or base64); resolution tiers: 768sq, 1K, 1.5K, 2K, 4K; bounding-box layout control; 256×256px to 16MP per input ref
+- **BFL native pricing (confirmed):** $0.041/image at 768 · scaling up to $0.607/image at 4K. At 1K ~$0.08–$0.10/img estimated (canary to confirm on OpenRouter)
+- **AIMLAPI status: NOT CONFIRMED** — no AIMLAPI product page or docs page found as of SC436. CometAPI and MuAPI have FLUX.3 endpoints; OpenRouter confirmed. AIMLAPI-only pipeline — do NOT use until AIMLAPI listing is confirmed.
+- **CANARY REQUIRED before any pipeline use:** (1) confirm AIMLAPI model string when added (expected `blackforestlabs/flux-3-image`); (2) confirm 9:16 aspect ratio parameter syntax on AIMLAPI proxy; (3) confirm pricing on AIMLAPI; (4) confirm max ref count (10 per BFL docs — verify AIMLAPI ceiling); (5) test character face adherence vs Kontext Max baseline.
+- **Pipeline position when AIMLAPI-confirmed:** At $0.08–$0.10/img with 10 refs + bounding-box layout + I2I editing, FLUX.3 Image would be a direct Kontext Max competitor (same price range, more refs, adding layout control). Not a replacement for NBP Edit on character shots until face adherence is verified. Continue monitoring.
+
+**FLUX.3 Image Klein (open weights, 5.6B) — released October 15, 2026.** Apache 2.0-style license: free commercial use for individuals and organizations with annual revenue below $5M. Full FLUX.3 Image weights NOT open. Klein is a 5.6B distilled variant — lower quality ceiling than the full model but locally runnable. **For our pipeline:** irrelevant (AIMLAPI-only, no local GPU). No action required.
+
+**FLUX.1 Kontext Max now classed as "legacy" by BFL (SC436 2026-11-11).** BFL's own best-practices and product pages now direct new projects to FLUX.2 and FLUX.3 families, with Kontext described as "previous generation." **Kontext Max and Pro endpoints remain live and operational** — no deprecation date announced. All existing parameters (guidance_scale, safety_tolerance, prompt_upsampling, $0.08/$0.05 pricing, 10/8 ref ceilings) are unchanged. For our pipeline: Kontext Max stays the primary text/typography model (best typography rendering in class, $0.08/img confirmed) until FLUX.3 Image is confirmed on AIMLAPI and face adherence is verified. No migration required now — but monitor for Kontext endpoint retirement notices.
+
+---
+
 ## ✅ SC429 2026-11-09 — GPT Image 2.6 Flare/Sunburst LIKELY ON AIMLAPI (model database); complexity param; MAI-Image 2.7 Preview (no API)
 
 **GPT Image 2.6 Flare/Sunburst — LIKELY ON AIMLAPI (SC429 2026-11-09).** AIMLAPI model database page (docs.aimlapi.com/api-references/model-database) snippet from web search confirms `openai/gpt-image-2.6-flare` and `openai/gpt-image-2.6-sunburst` are listed in the Image Models section — added after the Nov 4, 2026 OpenAI release. **This upgrades both models from "NOT ON AIMLAPI" (SC422) to "LIKELY ON AIMLAPI".** Direct AIMLAPI confirmation blocked (aimlapi.com not reachable from this cloud session). **CANARY REQUIRED before any production use:** (1) confirm model strings work without 404; (2) confirm `size` syntax for 9:16 (`"864x1536"` string vs `width`/`height` object — same as GPT Image 2.5); (3) confirm `complexity` parameter accepted via AIMLAPI proxy; (4) confirm actual per-image billing on AIMLAPI. Token pricing unchanged from 2.5: $5/M input + $30/M output tokens on OpenAI-side; AIMLAPI markup TBD.
