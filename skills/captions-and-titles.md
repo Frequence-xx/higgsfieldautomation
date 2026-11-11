@@ -949,13 +949,13 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - Multi-line cue text is joined with newlines into the single `text` field
 - NOTE, STYLE, and REGION blocks are skipped entirely
 
-### Remotion v5.0 Watch Items (Pre-release as of SC389 Oct 29, 2026)
+### Remotion v5.0 Watch Items (Pre-release as of SC438 Nov 11, 2026)
 
-**Remotion v5.0 has NOT shipped yet** (PR #3750 "Prepare Remotion 5.0" is still open as of Oct 29, 2026). The v5.0 migration guide at remotion.dev/docs/5-0-migration is live but incomplete ("incomplete list of breaking changes"). Current latest is v4.0.539. Monitor npm for `remotion@5.0.0`.
+**Remotion v5.0 has NOT shipped yet** (confirmed still unreleased Nov 11, 2026 — SC438). The v5.0 migration guide at remotion.dev/docs/5-0-migration is live but notes "incomplete list of breaking changes". Current npm latest is v4.0.542. Monitor npm for `remotion@5.0.0`.
 
 **Breaking changes confirmed for our caption pipeline when v5.0 ships:**
 
-1. **`<Sequence>` now premounts by 1 second by default.** Caption `<Sequence>` components will prerender 1 second before their `from` frame. This is usually harmless for captions, but if it causes performance issues, opt out: `premountFor={0}` on each `<Sequence>`. (Official behavior: `premountFor` defaults to 30 frames at 30fps = 1 second.)
+1. **`<Sequence>` now premounts by default.** Caption `<Sequence>` components will prerender before their `from` frame. This is usually harmless for captions, but if it causes performance issues, opt out: `premountFor={0}` on each `<Sequence>`. (Official behavior: `premountFor` defaults to 30 frames at 30fps = 1 second per earlier SC; one SC438 source says 2 seconds — exact value unconfirmed until v5.0 ships. Mitigation: `premountFor={0}` suppresses it regardless of value.)
 
 2. **`--disable-headless` / `headless: false` removed.** Chrome Headless Shell is now always used. **Our pipeline uses `npx remotion render` (server-side, no headless flag) — unaffected.** Only relevant if running Remotion on a display server or passing `headless: false` explicitly.
 
@@ -967,6 +967,10 @@ If the Remotion paint-order approach does not work, render text twice: first pas
    - **Contractors count toward team size** for the company license threshold (was employees only). A 3-person team + 1 freelancer = 4 people → Company License required.
    - **Automators tier: `licenseKey` becomes mandatory for telemetry.** Our pipeline is automated rendering → Automators tier. After v5.0 ships, will need to add a `licenseKey` to renders or switch to Creator (manual) tier. **Action: verify Farouq's Remotion license tier before v5.0 upgrade.**
    - Free tier: still covers ≤3 employees for commercial use.
+
+6. **OpenGL renderer default changes from `null` → `angle` with `swangle` fallback (SC438 Nov 11, 2026).** In v4.x, the default renderer was `null` (SwiftShader). In v5.0, it becomes `angle` (GPU-accelerated) with automatic `swangle` (software) fallback. **Caption text rendering risk:** `-webkit-text-stroke` and `paint-order: stroke fill` behavior may differ between ANGLE and SwiftShader on server-side renders. Test caption text stroke and orange highlight rendering after any v5.0 upgrade — do a visual comparison on a sample clip before switching production pipeline.
+
+7. **Timed Captions Studio Element split (SC438 Nov 11, 2026 — Studio only, no API change).** A merged PR splits the existing combined timed-captions Studio Element into three separate Elements: `highlight`, `scale`, and `background`. Removes the old combined timed-captions Element API. **Our pipeline uses `@remotion/captions` package directly (`createTikTokStyleCaptions()`) — not the Studio Element — so this is NOT a breaking change for us.** Only relevant if manually using Studio's drag-and-drop timed-captions Element in a composition.
 
 **No `@remotion/captions` API breaking changes in v5.0 have been announced.** The caption API (`createTikTokStyleCaptions`, `parseSrt`, `parseVtt`, etc.) is unchanged. `@remotion/install-whisper-cpp` also unaffected.
 
