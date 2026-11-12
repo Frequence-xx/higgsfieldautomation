@@ -359,9 +359,11 @@ yt-dlp -x --audio-format mp3 --audio-quality 0 \
 | Furniture settling | `furniture drag wood floor` | 3–6s |
 | Family arrival warmth | `birds chirping morning quiet` | 30–60s loop |
 
-### Tier 1c: ElevenLabs SFX v2 (Generated — Use When Pixabay/Mixkit Come Up Empty)
+### Tier 1c: ElevenLabs SFX v3 (Generated — Use When Pixabay/Mixkit Come Up Empty)
 
-Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prompt. Use when Pixabay/Mixkit don't return a suitable match for a specific scene — this lets you specify exactly what the scene needs.
+**⚠ MODEL UPGRADE REQUIRED (SC439 2026-11-12):** `eleven_text_to_sound_v2` is DEPRECATED as of Nov 2, 2026 — removal date March 1, 2027. Use `eleven_text_to_sound_v3` for all new SFX generation. API parameters are identical; only the model_id string changes. The API default still sends v2 — always pass `model_id` explicitly to get v3.
+
+Model `eleven_text_to_sound_v3` generates custom ambient sounds from a text prompt. Use when Pixabay/Mixkit don't return a suitable match for a specific scene — this lets you specify exactly what the scene needs. **New in v3:** multi-part prompts are supported (the model follows several separate instructions in one prompt string) and handles vocal/atmospheric prompts better than v2.
 
 **Halal advantage over library search:** you control the prompt, so you can explicitly exclude music descriptors → zero risk of hidden instruments in the ambient bed.
 
@@ -373,10 +375,10 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `duration_seconds` | float | 0.5–30 | Set explicitly for ambient loops; leave None for short one-shots |
 | `loop` | bool | — | `True` = seamless loop output (no acrossfade post-processing needed) |
 | `prompt_influence` | float | 0–1 | Default 0.3; raise to 0.6+ if output drifts from description |
-| `model_id` | str | — | `"eleven_text_to_sound_v2"` |
+| `model_id` | str | — | `"eleven_text_to_sound_v3"` (v2 deprecated Nov 2, 2026 — removed March 1, 2027) |
 | `output_format` | str | see below | Default is MP3 22kHz/32kbps. **Always override for pipeline use.** |
 
-**`output_format` values for SFX v2** (format: `codec_samplerate_bitrate`) — confirmed from `AllowedOutputFormats` SDK type:
+**`output_format` values for SFX v3** (format: `codec_samplerate_bitrate`) — confirmed from `AllowedOutputFormats` SDK type (unchanged from v2):
 
 | Format string | Quality | Plan required | Use case |
 |---------------|---------|---------------|----------|
@@ -400,13 +402,13 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 | `pcm_32000` | Mid-rate PCM | Pro+ | 32kHz uncompressed — acceptable for preview-only use; use `pcm_44100` or `pcm_48000` for production. |
 | `alaw_8000` | Telephony | Free+ | A-law 8kHz codec — telephony only; not suitable for video mixing |
 | `ulaw_8000` | Telephony | Free+ | µ-law 8kHz codec — telephony only; not suitable for video mixing. Listed alongside `alaw_8000` in AllowedOutputFormats; use only for telephony integrations requiring µ-law encoding. |
-| `pcm_44100` | Lossless (44.1kHz) | Pro+ | **Do NOT use for SFX v2 masters.** SFX v2 native rate is 48kHz — requesting pcm_44100 forces a 44.1kHz downsample, degrading quality vs. `pcm_48000`. `pcm_44100` is the correct lossless format for TTS (eleven_v3 native 44.1kHz), not for SFX v2. Always use `pcm_48000` for lossless SFX v2 masters. |
+| `pcm_44100` | Lossless (44.1kHz) | Pro+ | **Do NOT use for SFX v3 masters.** SFX v3 native rate is 48kHz — requesting pcm_44100 forces a 44.1kHz downsample, degrading quality vs. `pcm_48000`. `pcm_44100` is the correct lossless format for TTS (eleven_v3 native 44.1kHz), not for SFX v3. Always use `pcm_48000` for lossless SFX v3 masters. |
 
-**⚠ `ultra_lossless` is NOT an `output_format` for TTS or SFX v2.** It is a `quality_preset` value used exclusively by the ElevenLabs Studio Podcasts API (`create_podcast`, `quality_preset="ultra_lossless"`). Do NOT pass it as `output_format` in any `text_to_speech.convert()` or `text_to_sound_effects.convert()` call — it will fail. For lossless TTS master (eleven_v3 native rate is 44.1kHz): use `pcm_44100`. For lossless SFX v2 (native 48kHz): use `pcm_48000`.
+**⚠ `ultra_lossless` is NOT an `output_format` for TTS or SFX v3.** It is a `quality_preset` value used exclusively by the ElevenLabs Studio Podcasts API (`create_podcast`, `quality_preset="ultra_lossless"`). Do NOT pass it as `output_format` in any `text_to_speech.convert()` or `text_to_sound_effects.convert()` call — it will fail. For lossless TTS master (eleven_v3 native rate is 44.1kHz): use `pcm_44100`. For lossless SFX v3 (native 48kHz): use `pcm_48000`.
 
-**⚠ `wav_44100` is NOT in `AllowedOutputFormats` for the SFX v2 endpoint** (verified against SDK source `src/elevenlabs/types/allowed_output_formats.py`). Using it may raise a type error or be silently rejected. Use `pcm_48000` instead for lossless masters. Raw PCM can be read by FFmpeg with `-f s16le -ar 48000 -ac 2` flags if needed, or use `mp3_44100_192` for a high-quality non-lossless alternative.
+**⚠ `wav_44100` is NOT in `AllowedOutputFormats` for the SFX v3 endpoint** (verified against SDK source `src/elevenlabs/types/allowed_output_formats.py` — unchanged from v2). Using it may raise a type error or be silently rejected. Use `pcm_48000` instead for lossless masters. Raw PCM can be read by FFmpeg with `-f s16le -ar 48000 -ac 2` flags if needed, or use `mp3_44100_192` for a high-quality non-lossless alternative.
 
-**SFX v2 native sample rate is 48kHz.** Requesting `pcm_48000` avoids any resampling and gives the highest fidelity master. The `aresample=48000` step in §4e becomes a no-op (already at native rate). Eleven_v3 TTS native rate is 44.1kHz — for lossless TTS master use `pcm_44100` (not `pcm_48000`, which would upsample; not `ultra_lossless`, which is Studio-only).
+**SFX v3 native sample rate is 48kHz** (same as v2). Requesting `pcm_48000` avoids any resampling and gives the highest fidelity master. The `aresample=48000` step in §4e becomes a no-op (already at native rate). Eleven_v3 TTS native rate is 44.1kHz — for lossless TTS master use `pcm_44100` (not `pcm_48000`, which would upsample; not `ultra_lossless`, which is Studio-only).
 
 **Always request `mp3_44100_128` or better for pipeline SFX.** The default 22kHz/32kbps output introduces noticeable artifacts at the top of the frequency range, which are amplified after the highpass filter (§4g) and loudnorm stages.
 
@@ -414,7 +416,7 @@ Model `eleven_text_to_sound_v2` generates custom ambient sounds from a text prom
 
 **Prompt patterns for Snelverhuizen scenes:**
 
-| Scene | SFX v2 prompt |
+| Scene | SFX v3 prompt |
 |-------|---------------|
 | Neighborhood establishing | `quiet Dutch residential street, birds chirping softly, distant light traffic, calm morning ambience, no music` |
 | Truck exterior | `diesel truck engine idling at low rpm, steady rumble, outdoor ambience, no music` |
@@ -430,7 +432,7 @@ client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 
 audio = b"".join(client.text_to_sound_effects.convert(
     text="quiet Dutch residential street, birds chirping, distant light traffic, no music",
-    model_id="eleven_text_to_sound_v2",
+    model_id="eleven_text_to_sound_v3",  # v2 deprecated Nov 2, 2026 — removed March 1, 2027
     duration_seconds=20.0,   # 20-second ambient bed: 800 credits
     loop=True,               # native seamless loop — skip acrossfade post-processing
     prompt_influence=0.4,    # slightly higher adherence for descriptive prompts
@@ -450,7 +452,7 @@ ElevenLabs Music API (`music_v1` and `music_v2` models) exposes three `generatio
 
 **`music_v2` (June 2026 UI default; fully live on API as of Sept 2026):** music_v2 is the default model in the ElevenLabs UI and introduces chunk-based composition plans (`GenerationChunk` / `AudioRefChunk` segments). Use `model_id="music_v2"` on Generate music, Stream music, Generate music detailed, and Upload music endpoints to call it explicitly. **Aug 31, 2026:** `with_waveform_visual` parameter added to music endpoints — confirms music_v2 is actively receiving API updates. It still generates music with instruments — no halal advantage over music_v1. Treat identically: **DO NOT USE either `music_v1` or `music_v2` in this pipeline. The explicit model_id is documented here only to help AVOID accidentally using it — never pass it.**
 
-**Rule: never use ElevenLabs Music API in this pipeline.** The SFX v2 API (`eleven_text_to_sound_v2`) is the correct tool for instrument-free ambient beds. The Music API exists for background music use cases — incompatible with Snelverhuizen halal audio policy. If an ambient SFX v2 generation sounds musical, that is a prompt issue (include "no music, no instruments, no melody" in the text prompt) — it is NOT a reason to switch to the Music API.
+**Rule: never use ElevenLabs Music API in this pipeline.** The SFX v3 API (`eleven_text_to_sound_v3`) is the correct tool for instrument-free ambient beds. The Music API exists for background music use cases — incompatible with Snelverhuizen halal audio policy. If an ambient SFX v3 generation sounds musical, that is a prompt issue (include "no music, no instruments, no melody" in the text prompt) — it is NOT a reason to switch to the Music API.
 
 ### Tier 2: Freesound (API, CC0 Filter Only)
 
@@ -1307,3 +1309,5 @@ with open("dialogue_output.mp3", "wb") as f:
 **SC425 recheck (Nov 8, 2026):** ONE UPDATE. **ElevenLabs SDK v2.77.0** released Nov 6, 2026: (1) new `auth` parameter for Speech Engine create/update endpoints (#921); (2) agent workflows-as-code via a workflow builder (#922); (3) SDK regeneration (#924). **All changes are Agents Platform / Speech Engine only — zero TTS/SFX v2/batch Scribe pipeline impact.** All `text_to_speech.convert()`, `text_to_sound_effects.convert()`, and `speech_to_text.convert()` batch calls remain valid on SDK v2.77.0. yt-dlp 2026.10.26 still current stable (confirmed GitHub releases — no November stable release; monthly cadence means next stable likely late Nov). ffmpeg-normalize v1.43.0 still latest (confirmed — no release since Oct 14, 2026). ElevenLabs November 2026 changelog: not yet indexed; SDK v2.77.0 release notes confirm only Agents Platform changes. Halal audio sources: no new providers or catalog changes (Aswati 90+ stable, NoorLoops unchanged, Lomeyo CANARY status unchanged). All TTS, SFX v2, VoiceSettings, AllowedOutputFormats, and batch Scribe v2 API calls in this skill file remain valid on SDK v2.77.0.
 
 **SC432 recheck (Nov 10, 2026):** TWO UPDATES. (1) **ffmpeg-normalize v1.43.1 and v1.44.0** both released November 9, 2026 (yesterday). v1.43.1 is a bug-fix patch: presets now respect explicit CLI defaults, colliding output paths rejected, album gain capped at peak headroom — **zero pipeline impact** (Snelverhuizen pipeline uses none of these modes). v1.44.0 adds a `--verify` feature that checks encoded output levels after normalization, confirming the loudnorm target was hit; also adds startup diagnostic messages when ffmpeg fails to start. **Actionable: consider adding `--verify` flag to §4a production loudnorm runs** as a lightweight QA gate — it auto-detects encoder deviations from the -14 LUFS target at zero cost. Version history in §4f updated with both entries; header updated from v1.43.0 → v1.44.0. (2) **ElevenLabs SDK v2.77.0 still latest** — confirmed GitHub releases; no v2.78.0 as of Nov 10. ElevenLabs November 2026 changelog: no entries indexed beyond what SDK confirms (all Agents Platform only). yt-dlp 2026.10.26 still current stable — confirmed; no new stable November release (nightly builds continue on separate channel). Halal audio sources: no new providers or catalog changes (Aswati 90+ stable, NoorLoops unchanged, Lomeyo CANARY status unchanged). All TTS, SFX v2, VoiceSettings, AllowedOutputFormats, and batch Scribe v2 API calls in this skill file remain valid on SDK v2.77.0.
+
+**SC439 recheck (Nov 12, 2026):** ONE CRITICAL UPDATE. **ElevenLabs SFX v3 (`eleven_text_to_sound_v3`) launched November 2, 2026** (from ElevenLabs changelog Nov 2, 2026). `eleven_text_to_sound_v2` is **DEPRECATED** — scheduled removal March 1, 2027. All SFX generation in this pipeline must migrate to `eleven_text_to_sound_v3`. API parameters are IDENTICAL (text, duration_seconds, loop, prompt_influence, output_format, enable_logging) — only the model_id string changes. **New in v3:** multi-part prompt support (the model follows several comma-separated instructions in one text string) and improved vocal/atmospheric accuracy. The API default still sends v2 until March 1, 2027 — always pass `model_id="eleven_text_to_sound_v3"` explicitly. §1c section header, model_id parameter table, output_format table header, all sdk examples, and all v2 references in §1c updated from v2 → v3 (SC439 2026-11-12). ElevenLabs SDK v2.77.0 (released Nov 6, after SFX v3 launched Nov 2) includes SDK regeneration — eleven_text_to_sound_v3 string is accepted by v2.77.0. No new SDK release found (v2.78.0 not found — confirmed GitHub releases up to Nov 12). yt-dlp 2026.10.26 still current stable (confirmed GitHub — no November stable release; last confirmed nightly 2026.11.04). ffmpeg-normalize v1.44.0 still latest (confirmed — no release since Nov 9, 2026). Halal audio sources: no new providers or catalog changes (Aswati 90+ stable, NoorLoops unchanged, Lomeyo CANARY status unchanged). ElevenLabs also announced Nov 2: PVC fine-tuning for eleven_v4/v4 Turbo now open to all workspaces; pronunciation dictionary expansion capped at 50×+10,000 chars (400 error on overflow — LOW pipeline risk for Snelverhuizen short scripts). All TTS, SFX v3, VoiceSettings, AllowedOutputFormats, and batch Scribe v2 API calls in this skill file are valid.
