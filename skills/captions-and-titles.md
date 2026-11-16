@@ -701,27 +701,36 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.543 (Nov 11, 2026 — SC445):**
+- Renderer: `chromiumOptions` now accepts a `chromeFlags` array for passing custom Chrome CLI flags; `proResBitsPerMacroblock` option added for ProRes file size tuning.
+- @remotion/cli: open-timeline import and canvas-capture import added.
+- Studio: Audio level meters; movable playback diagnostics panel.
+- Various renderer/Player/web renderer bug fixes (port lock release, CDP double-teardown, audio interruption from late preview frames, missing buffering indicator, SVG clip + CSS handling in web renderer).
+- **remotion.pro portal retired** — licensing moved to remotion.dev/pricing (see v5.0 licensing note below).
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
+`npm install remotion@4.0.543`
+
 **Remotion v4.0.542 (Nov 9, 2026 — SC431):**
 - Core: Fixed missing images/videos in `<HtmlInCanvas>`, `<Sequence>` crash in `<ThreeCanvas>`, player playback timing after interruptions.
 - Lambda: Added `renderMediaOnLambdaAndStream()`, `renderFramesOnLambdaAndStream()`, `--chunks` flag.
 - Effects: Added `magnify()` and `lightning()` to `@remotion/effects`.
 - Studio: OpenTimelineIO import, high contrast mode, inline ChatGPT composer for annotations.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.542`
+`npm install remotion@4.0.543` *(use 4.0.543 — current npm latest)*
 
 **Remotion v4.0.541 (Nov 5, 2026 — SC417):**
 - Studio: spring() and interpolateColors() fixes; additional visual/Studio improvements.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.542`
+`npm install remotion@4.0.543`
 
-**Remotion v4.0.540 (released npm Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
+**Remotion v4.0.540 (Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
 - **`silenceGapMs` RENAMED → `breakOnSilenceAfterMilliseconds`** on `createTikTokStyleCaptions()`. Old name is gone — code using `silenceGapMs` will silently do nothing (TypeScript: compile error). Migrate: replace `silenceGapMs: 400` → `breakOnSilenceAfterMilliseconds: 400`. See parameter docs below.
 - **`Caption.lineBreakAfter` RENAMED → `Caption.pageBreakAfter`**. Same meaning — forces a page break after this word. Old field is ignored. Migrate: replace `lineBreakAfter: true` → `pageBreakAfter: true` in all Caption arrays.
 - **`parseVtt()` NOW strips HTML cue tags and decodes HTML entities** (PR #12636). Cue markup tags (`<i>`, `<b>`, `<v Speaker>`, `<00:00:01.000>`, etc.) are stripped before text is returned. HTML entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`, `&lrm;`, `&rlm;`, decimal `&#123;`, hex `&#x7B;`) are decoded. NUL codepoints and surrogates are left as-is. Tag stripping runs BEFORE entity decoding (so `&lt;i&gt;` stays as literal `<i>` not a tag).
 - **`parseVtt()` no longer drops YouTube auto-generated caption text** (PR #12623). Previously, YouTube auto-generated VTT files had a cue-identifier format that caused `parseVtt()` to skip the text entirely — lines were parsed but returned empty. Fixed in 4.0.540. If you use YouTube-sourced VTT captions, upgrade is required.
 - **New `TikTokToken.pageBreakAfter?: boolean` output field** — when a `Caption` has `pageBreakAfter: true`, the corresponding output `TikTokToken` also carries `pageBreakAfter: true`. Callers can detect explicit page breaks in rendered tokens.
 - **`@remotion/whisper-web` DEPRECATED** in v4.0.540 (PR #12828) in favor of `@remotion/whisper-webgpu`. See Option D below for migration guidance.
-`npm install remotion@4.0.542`
+`npm install remotion@4.0.543`
 
 **Remotion v4.0.539 (October 26, 2026 — superseded by v4.0.540 Nov 2, 2026):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
@@ -729,7 +738,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
 - `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
 - `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
-- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.542`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.543`.
 
 **Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
@@ -919,7 +928,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.542 current on npm Nov 9, 2026 — SC431 Nov 9, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes], 4.0.542 [no caption changes])
+### Full API (v4.0.543 current on npm Nov 11, 2026 — SC445 Nov 16, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes], 4.0.542 [no caption changes], 4.0.543 [no caption changes — renderer/CLI/Studio fixes, remotion.pro portal retired])
 
 | Export | Purpose |
 |--------|---------|
@@ -963,10 +972,11 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 4. **`overwrite: true` is now the default in `renderMediaOnLambda()`.** Only affects Lambda users — we use local `npx remotion render`. Not relevant unless migrating to Lambda.
 
-5. **License changes (effective when v5.0 ships):**
-   - **Contractors count toward team size** for the company license threshold (was employees only). A 3-person team + 1 freelancer = 4 people → Company License required.
-   - **Automators tier: `licenseKey` becomes mandatory for telemetry.** Our pipeline is automated rendering → Automators tier. After v5.0 ships, will need to add a `licenseKey` to renders or switch to Creator (manual) tier. **Action: verify Farouq's Remotion license tier before v5.0 upgrade.**
-   - Free tier: still covers ≤3 employees for commercial use.
+5. **License changes (effective when v5.0 ships — confirmed from remotion.dev/pricing updated Nov 14, 2026):**
+   - **New Automators tier: $0.01/render, $100/month minimum.** Our pipeline is automated rendering — this tier applies. After v5.0 ships, production renders will incur per-render charges. A session producing 10 clips = ~$0.10, well under $100 minimum. **Action required before v5.0 upgrade: verify with Farouq whether to use Automators tier ($0.01/render, $100/mo minimum) or Creators tier ($25/mo, manual use — only valid if renders are manually triggered).**
+   - **Creators tier: $25/month** (no minimum seats, manual-trigger renders only — does NOT cover automated pipeline).
+   - **Free tier: ≤3 people for commercial use** (unchanged).
+   - **remotion.pro portal already retired** (SC445 Nov 11, 2026) — licensing is now purchased directly at remotion.dev/pricing. `licenseKey` added to render config once purchased.
 
 6. **OpenGL renderer default changes from `null` → `angle` with `swangle` fallback (SC438 Nov 11, 2026).** In v4.x, the default renderer was `null` (SwiftShader). In v5.0, it becomes `angle` (GPU-accelerated) with automatic `swangle` (software) fallback. **Caption text rendering risk:** `-webkit-text-stroke` and `paint-order: stroke fill` behavior may differ between ANGLE and SwiftShader on server-side renders. Test caption text stroke and orange highlight rendering after any v5.0 upgrade — do a visual comparison on a sample clip before switching production pipeline.
 
