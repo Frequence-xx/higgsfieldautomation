@@ -546,6 +546,45 @@ resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
 
 **Cost: ~$0.208/sec on AIMLAPI.** A 5s clip costs ~$1.04 — use sparingly; only when FaceFusion unavailable. FaceFusion lip_syncer (free, local) is the primary option for lip sync. QA note: run InsightFace identity check on OmniHuman output — full-body re-animation can alter facial geometry.
 
+**Kling Avatar Standard / Pro — Cheaper OmniHuman Alternative (SC447 finding, 2026-11-17):**
+
+`klingai/avatar-standard` and `klingai/avatar-pro` on AIMLAPI are audio-driven character animation models (image + audio → animated video). Same use case as OmniHuman v1.5 but cheaper. Confirmed on AIMLAPI since November 24, 2025 — previously undocumented in this skill.
+
+| Model | AIMLAPI ID | Resolution | FPS | Cost/sec | Cost/5s | vs OmniHuman |
+|-------|-----------|-----------|-----|---------|---------|-------------|
+| Kling Avatar Standard | `klingai/avatar-standard` | 720p | 24fps | ~$0.073 | **~$0.36** | 3× cheaper |
+| Kling Avatar Pro | `klingai/avatar-pro` | 1080p | 48fps | ~$0.112 | **~$0.56** | ~2× cheaper |
+| OmniHuman v1.5 | `bytedance/omnihuman/v1.5` | 720p/1080p | — | ~$0.208 | ~$1.04 | — |
+
+**Key differences from OmniHuman:**
+- Provider routing: `auto` (default) = Kling native → fal.ai fallback; pass `"provider": "kling"` for Kling-only
+- Audio output: OUTPUT contains the input audio (input audio drives lip sync and IS the soundtrack) — no mandatory FFmpeg mute needed; this is the voiceover, not generated audio
+- Max audio length: 5 MB per upload (vs OmniHuman 30s max)
+
+```python
+resp = httpx.post("https://api.aimlapi.com/v2/video/generations", json={
+    "model": "klingai/avatar-standard",   # or "klingai/avatar-pro" for 1080p
+    "image_url": "https://cdn.example.com/characters/crew_lead/front.png",
+    "audio_url": "https://cdn.example.com/voiceover/dutch_line.wav",
+    # Optional: "prompt": "Scene description up to 2500 chars"
+    # Optional: "provider": "kling"  # force Kling native (no fal.ai fallback)
+}, headers=headers, timeout=120)
+# Output video contains the input audio as its soundtrack
+```
+
+**Routing decision:**
+- FaceFusion available → FaceFusion lip_syncer (free, local)
+- FaceFusion unavailable, full-body animation needed, final quality → Kling Avatar Pro (~$0.56/5s)
+- FaceFusion unavailable, full-body animation needed, draft/iteration → Kling Avatar Standard (~$0.36/5s)
+- OmniHuman remains only if Kling Avatar produces worse results on a specific clip (canary before committing)
+
+**Canary checklist (Kling Avatar Standard — run before switching from OmniHuman):**
+1. Submit: `klingai/avatar-standard`, `image_url` = Karel/Mourad front.png, `audio_url` = 5s Dutch VO clip
+2. Confirm actual cost from dashboard (~$0.36 expected)
+3. InsightFace identity score ≥ 0.62 on output
+4. Lip sync quality vs OmniHuman on same audio clip
+5. If pass → replaces OmniHuman as default cloud audio-driven animation
+
 **CodeFormer alternative (better for olive/brown skin):** GFPGAN can whiten/flatten brown skin features at high fidelity. Use CodeFormer with `w=0.5–0.6` instead — lower w preserves skin tone accuracy.
 
 ```bash
