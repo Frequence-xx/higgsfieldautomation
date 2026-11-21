@@ -69,7 +69,7 @@ the vehicle remains rigid and solid, metal does not deform,
 motion intensity 0.1
 ```
 
-**`motion intensity 0.1` is a Prompt Syntax 2.0 text technique (June 2026):** Kling 3.0 responds to numeric intensity values embedded in prompt text. Scale is 0–3 (July 2026 community consensus: 0.4 = arabesque, 2.8 = sprinting). 0.1 is the minimum extreme on this scale — use it for maximum stationarity. Older guides described a 0.1–1.0 range; the 0–3 scale is now more consistently documented (SC223, July 18, 2026). Not an API parameter; must appear in the `prompt` string itself. Community-reported; combine with all other layers for maximum protection.
+**`motion intensity 0.1` is a Prompt Syntax 2.0 text technique (June 2026):** Kling 3.0 responds to numeric intensity values embedded in prompt text. Scale is 0–1 (community convention: 0.3 = subtle/calm, 0.5 = moderate, 0.8 = energetic action). 0.1 is the minimum — use it for maximum stationarity. **⚠️ SCALE CORRECTED (SC451 2026-11-21):** SC223 documented a "0–3" scale with "0.4=arabesque, 2.8=sprinting" — this was unconfirmed and is retracted. Multiple independent guides (VEED, fal.ai, AI Tool Curator, Nov 2026) consistently use 0–1; no source confirmed a 0–3 range. The 0.1 recommendation is unchanged on either scale. Not an API parameter; must appear in the `prompt` string itself. Community-reported; combine with all other layers for maximum protection.
 
 ### Layer 2: Negative Prompt
 
