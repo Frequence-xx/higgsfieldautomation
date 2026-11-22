@@ -101,28 +101,29 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
 
    **IPA achieves 80–90% consistency** on eleven_v3 (not 100% — re-test if a specific phrase still sounds off). Only `eleven_v3` and `eleven_flash_v2` support phoneme rules; `eleven_multilingual_v2` does not. Alias rules (string substitution) work on all models.
 
-   **Option A2: ElevenLabs Scribe v2 (paid, use for non-TTS / client-provided audio)**
-   **⛔ `scribe_v1` was REMOVED on July 9, 2026 (confirmed). Any code using `scribe_v1` will throw 404 — use `scribe_v2` only.**
+   **Option A2: ElevenLabs Scribe v3 (paid, use for non-TTS / client-provided audio)**
+   **⛔ `scribe_v1` was REMOVED on July 9, 2026 (confirmed). Any code using `scribe_v1` will throw 404.**
+   **Scribe v3 launched November 10, 2026 (SC452 2026-11-22). 27% fewer word errors vs Scribe v2 across 102 FLEURS languages — Dutch confirmed. Drop-in replacement: same API params, same response schema. Use `scribe_v3` as primary; `scribe_v2` remains valid fallback.**
 
    **⛔ Also removed July 9, 2026: `eleven_monolingual_v1` and `eleven_multilingual_v1` (legacy v1 TTS models — confirmed removed).** Our pipeline uses `eleven_v3` (primary) and `eleven_multilingual_v2` (fallback) — no migration needed.
-   When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v2 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
+   When the audio is NOT ElevenLabs TTS (e.g. client testimonial, on-site recording, phone call), forced alignment is unavailable. Scribe v3 is the best alternative within the ElevenLabs ecosystem — no Python or Node.js model download required.
 
    - **Dutch supported** (`language: "nl"` or leave null for auto-detect)
    - **Word-level timestamps** returned in response: `words[].text`, `words[].start` (seconds), `words[].end` (seconds)
-   - **Pricing:** $0.22/hour of audio — a 30-second voiceover costs ~$0.002. Negligible.
+   - **Pricing:** ~$0.20/hour of audio (Scribe v3; v2 was $0.22/hr) — a 30-second voiceover costs ~$0.002. Negligible.
    - **File size limit:** Up to 5.0GB per submission (increased from 3.0GB in June 2026). Our 30-60s WAV files (~5–20MB) are far below this.
    - **Keyterm biasing** (`+$0.05/hr`): pass up to **1,000 keyterms** (50 characters each, expanded April 2026 — was 100). Use for Dutch brand names that would otherwise be mangled. **⚠️ Billing note:** requests with >100 keyterms incur a minimum billable unit of 20 seconds. For our short 30-60s voiceovers this has no practical impact.
      ```python
      keyterms = ["SNELVERHUIZEN", "snelverhuizen.nl", "085 3331133", "VERHUIZEN ZONDER ZORGEN"]
      ```
    - **`no_verbatim: True`** — strips filler words ("uh", "uhm") from transcription output; leave False for voiceovers (TTS never produces fillers).
-   - **`tag_audio_events` (default: `True`) — ⚠️ ALWAYS set `False` for TTS voiceover audio.** Scribe v2 defaults to tagging non-speech events (`[laughter]`, `[music]`, `[footsteps]`, etc.) in the transcript word list. For clean TTS audio these tags never occur naturally, but if present they add spurious tokens with their own timestamps that pollute the word list and cause off-by-one errors when converting to Remotion captions. Explicitly set `tag_audio_events=False` for all voiceover audio. Only set `True` when processing client-recorded field audio where ambient events are meaningful.
-   - **`additional_formats`** — Scribe v2 can emit SRT/TXT/DOCX in the same response. Pass `additional_formats=["srt"]` to receive a ready-made SRT string alongside the JSON transcript. Useful shortcut for the ASS/FFmpeg fallback path (Option B in ASS Karaoke section below) — no need to post-process JSON to SRT manually.
+   - **`tag_audio_events` (default: `True`) — ⚠️ ALWAYS set `False` for TTS voiceover audio.** Scribe v3 defaults to tagging non-speech events (`[laughter]`, `[music]`, `[footsteps]`, etc.) in the transcript word list. For clean TTS audio these tags never occur naturally, but if present they add spurious tokens with their own timestamps that pollute the word list and cause off-by-one errors when converting to Remotion captions. Explicitly set `tag_audio_events=False` for all voiceover audio. Only set `True` when processing client-recorded field audio where ambient events are meaningful.
+   - **`additional_formats`** — Scribe v3 can emit SRT/TXT/DOCX in the same response. Pass `additional_formats=["srt"]` to receive a ready-made SRT string alongside the JSON transcript. Useful shortcut for the ASS/FFmpeg fallback path (Option B in ASS Karaoke section below) — no need to post-process JSON to SRT manually.
    - **`seed`** — pass any integer (e.g. `seed=42`) for deterministic output across re-runs. Useful when the pipeline retries transcription after a failure and needs identical timestamps.
    - **`entity_detection` (default: `False`) — detects and tags up to 56 entity categories** (names, dates, locations, credit card numbers, SSNs, etc.) with their timestamps. Adds cost. **ALWAYS leave `False` for TTS brand-ad voiceovers** — there is no PII in "Bel SNELVERHUIZEN nu!" and the extra tags pollute the word list. Only relevant for client-provided testimonial recordings where PII might appear.
    - **`redact_pii` (default: `False`) — automatically removes PII from the returned transcript.** Three output modes: complete → `[REDACTED]`; categorized → `[CREDIT_CARD]`; enumerated → `[CREDIT_CARD_1]`. **ALWAYS leave `False` for TTS voiceover** — brand ad scripts contain no PII. Setting this on a clean voiceover transcript achieves nothing and risks mangling brand names. Only use for client-provided recordings with real personal data.
-   - **Mixed language support (automatic, no config needed):** Scribe v2 auto-transcribes English words embedded in Dutch audio correctly — e.g. "call us" spoken in English within a Dutch voiceover stays as "call us" rather than being force-normalized to Dutch. This requires no parameter; it is on by default. Relevant for ads that mix Dutch narration with English brand phrases.
-   - **Dutch accuracy (Scribe v2 benchmark):** WER ≤5% — Excellent tier on ElevenLabs' internal multilingual benchmark. In practice: brand names and phone numbers may still need keyterm biasing; normal narration transcribes correctly without it.
+   - **Mixed language support (automatic, no config needed):** Scribe v3 auto-transcribes English words embedded in Dutch audio correctly — e.g. "call us" spoken in English within a Dutch voiceover stays as "call us" rather than being force-normalized to Dutch. This requires no parameter; it is on by default. Relevant for ads that mix Dutch narration with English brand phrases.
+   - **Dutch accuracy (Scribe v3):** 27% fewer word errors vs Scribe v2 across 102 FLEURS languages; Dutch in confirmed set. WER expected ≤4%. In practice: brand names and phone numbers may still need keyterm biasing; normal narration transcribes correctly without it.
 
    ```python
    from elevenlabs import ElevenLabs
@@ -133,7 +134,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
    with open("voiceover.wav", "rb") as f:
        result = client.speech_to_text.convert(
            file=f,
-           model_id="scribe_v2",         # scribe_v1 removed July 9, 2026 (confirmed). scribe_v2 only.
+           model_id="scribe_v3",         # scribe_v3 primary (SC452 Nov 22, 2026 — 27% fewer WER, Dutch confirmed). scribe_v1 removed July 9, 2026. scribe_v2 valid fallback.
            language_code="nl",           # Dutch; omit for auto-detect
            timestamps_granularity="word", # required for word-level timestamps
            tag_audio_events=False,       # ⚠️ REQUIRED for TTS audio — default True adds spurious event tokens
@@ -145,7 +146,7 @@ Every video gets cinematic animated captions. No exceptions. No generic AI capti
        )
 
    # Convert to Remotion Caption format:
-   # ⚠️ SPACE CONVENTION: same as forced alignment — Scribe v2 returns clean words.
+   # ⚠️ SPACE CONVENTION: same as forced alignment — Scribe v3 returns clean words.
    # Add leading space to every word except the first so createTikTokStyleCaptions()
    # can detect page-break boundaries via text.startsWith(' ').
    word_tokens = [w for w in result.words if w.type == "word"]  # filter out spacing tokens
@@ -701,6 +702,19 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 
 ## @remotion/captions Integration
 
+**Remotion v4.0.545 (Nov 18, 2026 — SC452):**
+- `@remotion/transitions`: Motion blur support added (`motionBlur` option on transitions).
+- `remotion`: Reject non-finite volume values (audio safety validation).
+- Fix: Seek behavior on videos inside `<Freeze>` corrected.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
+`npm install remotion@4.0.545`
+
+**Remotion v4.0.544 (Nov 16, 2026 — SC452):**
+- `remotion`: Props validated against the composition schema during rendering — runtime type safety for composition props.
+- `@remotion/web-renderer`: Cancelled renders while queued are now rejected cleanly instead of hanging.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
+`npm install remotion@4.0.545`
+
 **Remotion v4.0.543 (Nov 11, 2026 — SC445):**
 - Renderer: `chromiumOptions` now accepts a `chromeFlags` array for passing custom Chrome CLI flags; `proResBitsPerMacroblock` option added for ProRes file size tuning.
 - @remotion/cli: open-timeline import and canvas-capture import added.
@@ -708,7 +722,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - Various renderer/Player/web renderer bug fixes (port lock release, CDP double-teardown, audio interruption from late preview frames, missing buffering indicator, SVG clip + CSS handling in web renderer).
 - **remotion.pro portal retired** — licensing moved to remotion.dev/pricing (see v5.0 licensing note below).
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.543`
+`npm install remotion@4.0.545`
 
 **Remotion v4.0.542 (Nov 9, 2026 — SC431):**
 - Core: Fixed missing images/videos in `<HtmlInCanvas>`, `<Sequence>` crash in `<ThreeCanvas>`, player playback timing after interruptions.
@@ -716,12 +730,12 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - Effects: Added `magnify()` and `lightning()` to `@remotion/effects`.
 - Studio: OpenTimelineIO import, high contrast mode, inline ChatGPT composer for annotations.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.543` *(use 4.0.543 — current npm latest)*
+`npm install remotion@4.0.545` *(use 4.0.545 — current npm latest)*
 
 **Remotion v4.0.541 (Nov 5, 2026 — SC417):**
 - Studio: spring() and interpolateColors() fixes; additional visual/Studio improvements.
 - **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected.
-`npm install remotion@4.0.543`
+`npm install remotion@4.0.545`
 
 **Remotion v4.0.540 (Nov 2, 2026 — SC410 Nov 4, 2026): THREE BREAKING CHANGES NOW LIVE:**
 - **`silenceGapMs` RENAMED → `breakOnSilenceAfterMilliseconds`** on `createTikTokStyleCaptions()`. Old name is gone — code using `silenceGapMs` will silently do nothing (TypeScript: compile error). Migrate: replace `silenceGapMs: 400` → `breakOnSilenceAfterMilliseconds: 400`. See parameter docs below.
@@ -730,7 +744,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **`parseVtt()` no longer drops YouTube auto-generated caption text** (PR #12623). Previously, YouTube auto-generated VTT files had a cue-identifier format that caused `parseVtt()` to skip the text entirely — lines were parsed but returned empty. Fixed in 4.0.540. If you use YouTube-sourced VTT captions, upgrade is required.
 - **New `TikTokToken.pageBreakAfter?: boolean` output field** — when a `Caption` has `pageBreakAfter: true`, the corresponding output `TikTokToken` also carries `pageBreakAfter: true`. Callers can detect explicit page breaks in rendered tokens.
 - **`@remotion/whisper-web` DEPRECATED** in v4.0.540 (PR #12828) in favor of `@remotion/whisper-webgpu`. See Option D below for migration guidance.
-`npm install remotion@4.0.543`
+`npm install remotion@4.0.545`
 
 **Remotion v4.0.539 (October 26, 2026 — superseded by v4.0.540 Nov 2, 2026):**
 - `@remotion/effects`: Added `curves()` (graphical color controls) and `shatter()` (3D fragment animations).
@@ -738,7 +752,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - `remotion`: Fixed multi-keyframe loops in `interpolate()`.
 - `@remotion/renderer`: Fixed deadlock when concurrent renders merge 32+ audio tracks.
 - `@remotion/media-utils`: Fixed multichannel audio corruption in `audioBufferToDataUrl()`.
-- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.543`.
+- **No `@remotion/captions` or `@remotion/install-whisper-cpp` changes.** Caption pipeline unaffected. `npm install remotion@4.0.545`.
 
 **Remotion v4.0.538 (October 22, 2026):**
 - Studio: pitch preservation when changing playback speed.
@@ -851,7 +865,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - v4.0.510: Studio multi-selection improvements, crop value clamping, CanvasImage visual mode editing, chart elements (line/pie/vertical bar), timeline precision inputs; `@remotion/media` audio iterator destruction fix; AWS Lambda China region support. **No @remotion/captions changes.**
 - v4.0.511: Reverted keyframe clock modifications in `@remotion/studio` (fixes interactivity regression from v4.0.510). **No @remotion/captions changes.**
 - v4.0.512: Republished v4.0.511 to fix incomplete npm staging; no code changes over v4.0.511. **No @remotion/captions changes.**
-- `npm install remotion@4.0.542` (current latest on npm, Nov 9, 2026 — SC431). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu; 4.0.541 Studio/spring fixes, no caption changes; 4.0.542 Lambda streaming, effects, Studio improvements — no caption changes. ElevenLabs Python SDK v2.77.0 (SC424, SDK regen + Speech Engine auth, zero pipeline impact), whisper.cpp v1.9.5 — unchanged from SC368.)*
+- `npm install remotion@4.0.545` (current latest on npm, Nov 18, 2026 — SC452). *(4.0.514 added silenceGapMs; 4.0.515 ESM export; 4.0.518 lineBreakAfter; 4.0.521 install-whisper-cpp Windows path fix; 4.0.528 parseSrt precision+arrow fix + ensureMaxCharactersPerLine fixes; 4.0.537 parseVtt added; 4.0.540 BREAKING: silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode + YouTube VTT fix, TikTokToken.pageBreakAfter output, whisper-web deprecated → whisper-webgpu; 4.0.541 Studio/spring fixes, no caption changes; 4.0.542 Lambda streaming, effects, Studio improvements; 4.0.543 renderer/CLI/Studio fixes, remotion.pro retired; 4.0.544 props schema validation, web-renderer cancelled render fix; 4.0.545 motion blur on transitions, non-finite volume rejection, Freeze seek fix — all no caption changes. ElevenLabs Python SDK v2.77.0 (SC424, zero pipeline impact), whisper.cpp v1.9.5 (Oct 6, 2026 — current stable; v1.9.6 version bump merged Nov 18 to master, no release tag yet). Scribe v3 primary model_id from SC452 Nov 22, 2026.)*
 
 **Remotion v4.0.509 (August 13, 2026):**
 - No changes to `@remotion/captions` API in v4.0.500–4.0.509.
@@ -928,7 +942,7 @@ If the Remotion paint-order approach does not work, render text twice: first pas
 - **Fixed `media playbackRate` duration calculation in loops.** If your caption composition includes looped ambient audio/video, its duration was calculated incorrectly at non-1x playback rates. Now fixed — verify any looped audio layer timing after upgrading.
 - Preview frame accuracy improved (Studio only).
 
-### Full API (v4.0.543 current on npm Nov 11, 2026 — SC445 Nov 16, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes], 4.0.542 [no caption changes], 4.0.543 [no caption changes — renderer/CLI/Studio fixes, remotion.pro portal retired])
+### Full API (v4.0.545 current on npm Nov 18, 2026 — SC452 Nov 22, 2026; caption API changes: 4.0.514 [silenceGapMs added], 4.0.515 [ESM export], 4.0.518 [lineBreakAfter added], 4.0.528 [parseSrt fixes + ensureMaxCharactersPerLine fixes], 4.0.537 [parseVtt added], 4.0.540 [silenceGapMs→breakOnSilenceAfterMilliseconds, lineBreakAfter→pageBreakAfter, parseVtt cue-tag strip + HTML entity decode, parseVtt YouTube auto-captions fix, TikTokToken.pageBreakAfter output field, whisper-web deprecated], 4.0.541 [no caption changes], 4.0.542 [no caption changes], 4.0.543 [no caption changes — renderer/CLI/Studio fixes, remotion.pro portal retired], 4.0.544 [no caption changes — props schema validation, web-renderer fix], 4.0.545 [no caption changes — motion blur transitions, non-finite volume rejection, Freeze seek fix])
 
 | Export | Purpose |
 |--------|---------|
