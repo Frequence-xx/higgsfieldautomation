@@ -21,6 +21,28 @@ negatives:
 
 Tier 1B of the pipeline. Animate QA-passed hero frames into 5-second video clips via AIMLAPI Kling v3 I2V.
 
+## ✅ SC457 2026-11-25 — FLUX.3 Video CONFIRMED ON AIMLAPI (since Aug 12, 2026 — previously undocumented)
+
+**FLUX.3 Video family CONFIRMED ON AIMLAPI (SC457 2026-11-25) — 6 model variants, undocumented until now.** AIMLAPI product pages + docs pages confirmed at `aimlapi.com/models/blackforestlabs-flux-3-video` and `docs.aimlapi.com/api-references/video-models/black-forest-labs/`. Release date: Aug 12, 2026. Duration: 5–20 seconds. Endpoint: `https://api.aimlapi.com/v2/video/generations`.
+
+**Model strings confirmed:**
+- `blackforestlabs/flux-3-video-t2v` — text-to-video (HD/FHD)
+- `blackforestlabs/flux-3-video-i2v` — image-to-video (animates one keyframe; HD/FHD)
+- `blackforestlabs/flux-3-video-v2v` — video continuation (extends existing clip from final frames; HD/FHD)
+- `blackforestlabs/flux-3-video-draft-t2v` — draft T2V (HD only, cheaper)
+- `blackforestlabs/flux-3-video-draft-i2v` — draft I2V (HD only, cheaper)
+- `blackforestlabs/flux-3-video-draft-v2v` — draft V2V (HD only, cheaper)
+
+**Pricing (conflicting sources — CANARY REQUIRED):**
+- BFL native I2V HD: $0.17/sec → 5s = $0.85 (cheaper than Kling v3 Pro at $0.728/5s AIMLAPI)
+- AIMLAPI model page (I2V): $0.221–$0.377/sec (HD/FHD) — conflicts with BFL native and AIMLAPI comparison table
+- AIMLAPI comparison table: $0.17/sec listed (matches BFL native)
+- Draft I2V: $0.06/sec (BFL native) → 5s = $0.30; AIMLAPI page shows $0.078/sec → 5s = $0.39
+
+**Pipeline position:** NO Subject Binding — NOT for character shots. Potential B-roll/establishing shots alternative (no-character only). **CANARY REQUIRED:** (1) confirm actual AIMLAPI billing rate; (2) confirm 9:16 aspect ratio parameter syntax; (3) confirm video quality vs Veo 3.1 Lite at comparable cost; (4) confirm whether `generate_audio` parameter exists or audio handling. **Do not use in production until canary confirms pricing + 9:16 + audio off.**
+
+---
+
 ## Critical Rules
 
 1. **MUST NOT animate a hero frame that has not passed QA AND received owner approval.** Static-first validation + owner sign-off are both mandatory before spending video credits.
