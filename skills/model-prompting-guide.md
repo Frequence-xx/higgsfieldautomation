@@ -214,6 +214,35 @@ Formula: [Shot type], [focal length], [camera motion]. Subject [does specific mo
 - Universal: `https://api.aimlapi.com/v2/video/generations`
 - Legacy: `https://api.aimlapi.com/v2/generate/video/kling/generation`
 
+**Prompt character limit (SC458 2026-11-26):** 2,500 characters for `prompt`, separate 2,500 characters for `negative_prompt`. (Third-party-sourced via Atlas Cloud guide citing Kling API docs — not independently verified against official API schema. Use as a safe ceiling.)
+
+**Multi-shot parameters — `shot_type` + `multi_prompt` (SC458 2026-11-26 — confirmed on AIMLAPI v3 Pro I2V and T2V from AIMLAPI docs search snippets):**
+
+- **`shot_type`** (string, default `"customize"`): `"customize"` = per-shot prompts via `multi_prompt`; `"intelligent"` = Kling auto-segments the video, `multi_prompt` becomes optional.
+- **`multi_prompt`** (array): list of shot objects each with a `prompt` string and `duration` in seconds. Use EITHER `prompt` OR `multi_prompt` — **NOT both** (AIMLAPI will reject if both are present). Total durations must sum to `duration`. Up to 6 shots / 15s total confirmed on other providers (Magnific); exact AIMLAPI ceiling unconfirmed.
+
+```python
+# Multi-shot example — two distinct actions in one 5s clip (SC458 2026-11-26):
+{
+    "model": "klingai/video-v3-pro-image-to-video",
+    "image_url": hero_frame_url,
+    "shot_type": "customize",           # default; explicit for clarity
+    "multi_prompt": [
+        {"prompt": "Subject walks toward camera, heel-first, weight transfer. Camera pushes in slowly.", "duration": 3},
+        {"prompt": "Subject stops, head turns left 15 degrees, then settles.", "duration": 2},
+    ],
+    # NOTE: omit "prompt" entirely when using multi_prompt
+    "duration": "5",
+    "aspect_ratio": "9:16",
+    "generate_audio": False,
+    "cfg_scale": 0.5,
+    "face_consistency": True,
+    "negative_prompt": "...",
+}
+```
+
+**When to use `multi_prompt`:** Only when two distinct motions are needed in one clip (e.g., walk then stop). Single-action clips: use standard `prompt`. Do NOT combine with `intelligent` shot_type unless intentionally auto-segmenting.
+
 **Camera control — named presets (verified 2026-04-29):**
 
 Five `camera_control.type` presets. Use named presets for cinematic movement; use `simple` for fine-grained numeric control.

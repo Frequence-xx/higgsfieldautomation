@@ -141,7 +141,7 @@ Use when the shot requires a visible camera orbit or push-in. Accept higher ghos
 }
 ```
 
-**DO NOT use the end-frame parameter as a substitute** — it prevents net displacement but allows significant mid-clip drift, making it the weakest option alone. Native Kling API name: `image_tail`. AIMLAPI wrapper: may use `tail_image_url` (canary required). If neither static_mask nor camera_control is needed, omit all three and rely on prompt + negative_prompt + cfg_scale 0.7.
+**DO NOT use the end-frame parameter as a substitute** — it prevents net displacement but allows significant mid-clip drift, making it the weakest option alone. Native Kling API name: `image_tail`. AIMLAPI wrapper: `tail_image_url` **CONFIRMED on AIMLAPI v3 Pro I2V (SC458 2026-11-26)** — AIMLAPI docs search snippets list it as an optional parameter alongside `image_url`. If neither static_mask nor camera_control is needed, omit all three and rely on prompt + negative_prompt + cfg_scale 0.7.
 
 ---
 
